@@ -1,4 +1,6 @@
 #pragma once
+#include <cstdint>
+
 namespace lz
 {
 	// QueueFamilyIndices: Structure to store queue family indices for graphics and presentation

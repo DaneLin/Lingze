@@ -93,7 +93,7 @@ namespace lz
 		}
 
 		friend Factory;
-		bool isAttached;    // Whether the handle is attached to a resource
-		HandleInfo info;    // The underlying handle information
+		bool isAttached; // Whether the handle is attached to a resource
+		HandleInfo info; // The underlying handle information
 	};
 }

@@ -1,5 +1,12 @@
 #pragma once
 #include <iostream>
+
+#include "Image.h"
+#include "ImageView.h"
+#include "LingzeVK.h"
+#include "QueueIndices.h"
+#include "Surface.h"
+
 namespace lz
 {
 	// Swapchain: Manages the Vulkan swapchain for image presentation to the window
@@ -7,121 +14,28 @@ namespace lz
 	{
 	public:
 		// GetFormat: Returns the image format of the swapchain
-		vk::Format GetFormat()
-		{
-			return this->surfaceFormat.format;
-		}
+		vk::Format GetFormat();
 
 		// GetSize: Returns the size of the swapchain images
-		vk::Extent2D GetSize()
-		{
-			return extent;
-		}
+		vk::Extent2D GetSize();
 
 		// GetImageViews: Returns all image views in the swapchain
-		std::vector<ImageView*> GetImageViews()
-		{
-			std::vector<ImageView*> resImageViews;
-			for (auto& image : this->images)
-				resImageViews.push_back(image.imageView.get());
-			return resImageViews;
-		}
+		std::vector<ImageView*> GetImageViews();
 
 		// AcquireNextImage: Acquires the next available image from the swapchain
 		// Parameters:
 		//   - semaphore: Semaphore to signal when image acquisition is complete
 		// Returns: Result value containing the index of the acquired image
-		vk::ResultValue<uint32_t> AcquireNextImage(vk::Semaphore semaphore)
-		{
-			return logicalDevice.acquireNextImageKHR(swapchain.get(), std::numeric_limits<uint64_t>::max(), semaphore,
-			                                         nullptr);
-		}
+		vk::ResultValue<uint32_t> AcquireNextImage(vk::Semaphore semaphore);
 
 		// GetHandle: Returns the native Vulkan swapchain handle
-		vk::SwapchainKHR GetHandle()
-		{
-			return swapchain.get();
-		}
-		
+		vk::SwapchainKHR GetHandle();
+
 		// Recreate: Rebuilds the swapchain, typically called when window size changes
 		// Parameters:
 		//   - newSize: New dimensions for the swapchain
 		// Returns: True if recreation was successful, false otherwise
-		bool Recreate(vk::Extent2D newSize)
-		{
-			// Query surface capabilities again
-			this->surfaceDetails = GetSurfaceDetails(physicalDevice, surface.get());
-			
-			// Recalculate swapchain extent using the new window size
-			this->extent = FindSwapchainExtent(surfaceDetails.capabilities, newSize);
-			
-			// Clear old images and image views
-			this->images.clear();
-			
-			// Create new swapchain with the same image count as before
-			uint32_t imageCount = std::max(surfaceDetails.capabilities.minImageCount, desiredImageCount);
-			if (surfaceDetails.capabilities.maxImageCount > 0 && imageCount > surfaceDetails.capabilities.maxImageCount)
-				imageCount = surfaceDetails.capabilities.maxImageCount;
-			
-			auto swapchainCreateInfo = vk::SwapchainCreateInfoKHR()
-			                           .setSurface(surface.get())
-			                           .setMinImageCount(imageCount)
-			                           .setImageFormat(surfaceFormat.format)
-			                           .setImageColorSpace(surfaceFormat.colorSpace)
-			                           .setImageExtent(extent)
-			                           .setImageArrayLayers(1)
-			                           .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
-			                           .setPreTransform(surfaceDetails.capabilities.currentTransform)
-			                           .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
-			                           .setPresentMode(presentMode)
-			                           .setClipped(true)
-			                           .setOldSwapchain(swapchain.get()); // Use old swapchain as reference
-			
-			uint32_t familyIndices[] = {queueFamilyIndices.graphicsFamilyIndex, queueFamilyIndices.presentFamilyIndex};
-			
-			// Configure image sharing mode based on queue family indices
-			if (queueFamilyIndices.graphicsFamilyIndex != queueFamilyIndices.presentFamilyIndex)
-			{
-				swapchainCreateInfo
-					.setImageSharingMode(vk::SharingMode::eConcurrent)
-					.setQueueFamilyIndexCount(2)
-					.setPQueueFamilyIndices(familyIndices);
-			}
-			else
-			{
-				swapchainCreateInfo
-					.setImageSharingMode(vk::SharingMode::eExclusive);
-			}
-			
-			// Create the new swapchain
-			vk::UniqueSwapchainKHR newSwapchain;
-			try {
-				newSwapchain = logicalDevice.createSwapchainKHRUnique(swapchainCreateInfo);
-			} catch (vk::SystemError& err) {
-				std::cerr << "Failed to recreate swapchain: " << err.what() << std::endl;
-				return false;
-			}
-			
-			// Replace and clean up old swapchain
-			swapchain = std::move(newSwapchain);
-			
-			// Get new swapchain images and create image views
-			std::vector<vk::Image> swapchainImages = logicalDevice.getSwapchainImagesKHR(swapchain.get());
-			
-			for (size_t imageIndex = 0; imageIndex < swapchainImages.size(); imageIndex++)
-			{
-				Image newbie;
-				newbie.imageData = std::unique_ptr<ImageData>(new ImageData(
-					swapchainImages[imageIndex], vk::ImageType::e2D, glm::vec3(extent.width, extent.height, 1), 1, 1,
-					surfaceFormat.format, vk::ImageLayout::eUndefined));
-				newbie.imageView = std::unique_ptr<ImageView>(
-					new ImageView(logicalDevice, newbie.imageData.get(), 0, 1, 0, 1));
-				
-				this->images.emplace_back(std::move(newbie));
-			}
-			
-			return true;
-		}
+		bool Recreate(vk::Extent2D newSize);
 
 	private:
 		// Private constructor - called by Core::CreateSwapchain
@@ -135,84 +49,7 @@ namespace lz
 		//   - preferredMode: Preferred presentation mode
 		Swapchain(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device logicalDevice,
 		          WindowDesc windowDesc, uint32_t imagesCount, QueueFamilyIndices queueFamilyIndices,
-		          vk::PresentModeKHR preferredMode)
-		{
-			this->logicalDevice = logicalDevice;
-			this->physicalDevice = physicalDevice;
-			this->queueFamilyIndices = queueFamilyIndices;
-			this->desiredImageCount = imagesCount;
-			this->presentMode = preferredMode;
-			
-			// Create Win32 surface for the window
-			this->surface = lz::CreateWin32Surface(instance, windowDesc);
-			if (queueFamilyIndices.presentFamilyIndex == uint32_t(-1) || !physicalDevice.getSurfaceSupportKHR(
-				queueFamilyIndices.presentFamilyIndex, surface.get()))
-				throw std::runtime_error("Window surface is incompatible with device");
-
-			// Get surface details (capabilities, formats, present modes)
-			this->surfaceDetails = GetSurfaceDetails(physicalDevice, surface.get());
-
-			// Select appropriate format, present mode and extent
-			this->surfaceFormat = FindSwapchainSurfaceFormat(surfaceDetails.formats);
-			this->presentMode = FindSwapchainPresentMode(surfaceDetails.presentModes, preferredMode);
-			this->extent = FindSwapchainExtent(surfaceDetails.capabilities, vk::Extent2D(100, 100));
-
-			// Determine the number of images in the swapchain
-			uint32_t imageCount = std::max(surfaceDetails.capabilities.minImageCount, imagesCount);
-			if (surfaceDetails.capabilities.maxImageCount > 0 && imageCount > surfaceDetails.capabilities.maxImageCount)
-				imageCount = surfaceDetails.capabilities.maxImageCount;
-
-			// Configure swapchain creation parameters
-			auto swapchainCreateInfo = vk::SwapchainCreateInfoKHR()
-			                           .setSurface(surface.get())
-			                           .setMinImageCount(imageCount)
-			                           .setImageFormat(surfaceFormat.format)
-			                           .setImageColorSpace(surfaceFormat.colorSpace)
-			                           .setImageExtent(extent)
-			                           .setImageArrayLayers(1)
-			                           .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
-			                           .setPreTransform(surfaceDetails.capabilities.currentTransform)
-			                           .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
-			                           .setPresentMode(presentMode)
-			                           .setClipped(true)
-			                           .setOldSwapchain(nullptr);
-
-			uint32_t familyIndices[] = {queueFamilyIndices.graphicsFamilyIndex, queueFamilyIndices.presentFamilyIndex};
-
-			// Configure image sharing mode based on queue family indices
-			if (queueFamilyIndices.graphicsFamilyIndex != queueFamilyIndices.presentFamilyIndex)
-			{
-				swapchainCreateInfo
-					.setImageSharingMode(vk::SharingMode::eConcurrent)
-					.setQueueFamilyIndexCount(2)
-					.setPQueueFamilyIndices(familyIndices);
-			}
-			else
-			{
-				swapchainCreateInfo
-					.setImageSharingMode(vk::SharingMode::eExclusive);
-			}
-			
-			// Create the swapchain
-			this->swapchain = logicalDevice.createSwapchainKHRUnique(swapchainCreateInfo);
-
-			// Get the swapchain images
-			std::vector<vk::Image> swapchainImages = logicalDevice.getSwapchainImagesKHR(swapchain.get());
-
-			// Create image views for all swapchain images
-			this->images.clear();
-			for (size_t imageIndex = 0; imageIndex < swapchainImages.size(); imageIndex++)
-			{
-				Image newbie;
-				newbie.imageData = std::unique_ptr<ImageData>(new ImageData(
-					swapchainImages[imageIndex], vk::ImageType::e2D, glm::vec3(extent.width, extent.height, 1), 1, 1,
-					surfaceFormat.format, vk::ImageLayout::eUndefined));
-				newbie.imageView = std::unique_ptr<ImageView>(
-					new ImageView(logicalDevice, newbie.imageData.get(), 0, 1, 0, 1));
-
-				this->images.emplace_back(std::move(newbie));
-			}
-		}
+		          vk::PresentModeKHR preferredMode);
 
 		// SurfaceDetails: Structure to hold surface capabilities, formats and present modes
 		struct SurfaceDetails
@@ -227,65 +64,16 @@ namespace lz
 		//   - physicalDevice: Physical device to query capabilities from
 		//   - surface: Surface to query details for
 		// Returns: Surface details including capabilities, formats and present modes
-		static SurfaceDetails GetSurfaceDetails(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
-		{
-			SurfaceDetails surfaceDetails;
-			surfaceDetails.capabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
-			surfaceDetails.formats = physicalDevice.getSurfaceFormatsKHR(surface);
-			surfaceDetails.presentModes = physicalDevice.getSurfacePresentModesKHR(surface);
-
-			return surfaceDetails;
-		}
+		static SurfaceDetails GetSurfaceDetails(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
 
 		static vk::SurfaceFormatKHR FindSwapchainSurfaceFormat(
-			const std::vector<vk::SurfaceFormatKHR>& availableFormats)
-		{
-			vk::SurfaceFormatKHR bestFormat = {vk::Format::eB8G8R8A8Srgb, vk::ColorSpaceKHR::eSrgbNonlinear};
-
-			if (availableFormats.size() == 1 && availableFormats[0].format == vk::Format::eUndefined)
-			{
-				return bestFormat;
-			}
-
-			for (const auto& availableFormat : availableFormats)
-			{
-				if (availableFormat.format == bestFormat.format && availableFormat.colorSpace == bestFormat.colorSpace)
-					return availableFormat;
-			}
-			throw std::runtime_error("No suitable format found");
-			return bestFormat;
-		}
+			const std::vector<vk::SurfaceFormatKHR>& availableFormats);
 
 		static vk::PresentModeKHR FindSwapchainPresentMode(const std::vector<vk::PresentModeKHR> availablePresentModes,
-		                                                   vk::PresentModeKHR preferredMode)
-		{
-			for (const auto& availablePresentMode : availablePresentModes)
-			{
-				if (availablePresentMode == preferredMode)
-					return availablePresentMode;
-			}
+		                                                   vk::PresentModeKHR preferredMode);
 
-			return vk::PresentModeKHR::eFifo;
-		}
-
-		static vk::Extent2D FindSwapchainExtent(const vk::SurfaceCapabilitiesKHR& capabilities, vk::Extent2D windowSize)
-		{
-			if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-			{
-				return capabilities.currentExtent;
-			}
-			else
-			{
-				vk::Extent2D actualExtent = windowSize;
-
-				actualExtent.width = std::max(capabilities.minImageExtent.width,
-				                              std::min(capabilities.maxImageExtent.width, actualExtent.width));
-				actualExtent.height = std::max(capabilities.minImageExtent.height,
-				                               std::min(capabilities.maxImageExtent.height, actualExtent.height));
-
-				return actualExtent;
-			}
-		}
+		static vk::Extent2D FindSwapchainExtent(const vk::SurfaceCapabilitiesKHR& capabilities,
+		                                        vk::Extent2D windowSize);
 
 		SurfaceDetails surfaceDetails;
 		vk::PhysicalDevice physicalDevice;

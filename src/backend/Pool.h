@@ -1,3 +1,7 @@
+#pragma once
+
+#include <vector>
+
 namespace Utils
 {
     template<typename T>

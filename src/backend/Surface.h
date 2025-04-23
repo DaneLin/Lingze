@@ -1,4 +1,6 @@
 #pragma once
+#include "LingzeVK.h"
+
 namespace lz
 {
 	// WindowDesc: Structure to store Win32 window information
@@ -16,9 +18,9 @@ namespace lz
 	// Returns: A unique handle to the created Vulkan surface
 	static vk::UniqueSurfaceKHR CreateWin32Surface(vk::Instance instance, WindowDesc desc)
 	{
-		auto surfaceCreateInfo = vk::Win32SurfaceCreateInfoKHR()
-		                         .setHwnd(desc.hWnd)
-		                         .setHinstance(desc.hInstance);
+		const auto& surfaceCreateInfo = vk::Win32SurfaceCreateInfoKHR()
+			.setHwnd(desc.hWnd)
+			.setHinstance(desc.hInstance);
 
 		return instance.createWin32SurfaceKHRUnique(surfaceCreateInfo);
 	}

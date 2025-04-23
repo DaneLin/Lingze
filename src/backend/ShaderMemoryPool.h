@@ -1,34 +1,20 @@
 #pragma once
+
+#include "LingzeVK.h"
+#include "ShaderProgram.h"
+
 namespace lz
 {
 	class ShaderMemoryPool
 	{
 	public:
-		ShaderMemoryPool(uint32_t alignment)
-		{
-			this->alignment = alignment;
-		}
+		ShaderMemoryPool(uint32_t alignment);
 
-		void MapBuffer(lz::Buffer* buffer)
-		{
-			this->buffer = buffer;
-			dstMemory = this->buffer->Map();
-			currOffset = 0;
-			currSize = 0;
-			currSetInfo = nullptr;
-		}
+		void MapBuffer(lz::Buffer* buffer);
 
-		void UnmapBuffer()
-		{
-			buffer->Unmap();
-			buffer = nullptr;
-			dstMemory = nullptr;
-		}
+		void UnmapBuffer();
 
-		lz::Buffer* GetBuffer()
-		{
-			return buffer;
-		}
+		lz::Buffer* GetBuffer();
 
 		struct SetDynamicUniformBindings
 		{
@@ -36,38 +22,9 @@ namespace lz
 			uint32_t dynamicOffset;
 		};
 
-		SetDynamicUniformBindings BeginSet(const lz::DescriptorSetLayoutKey* setInfo)
-		{
-			this->currSetInfo = setInfo;
-			currSize += currSetInfo->GetTotalConstantBufferSize();
-			currSize = AlignSize(currSize, alignment);
+		SetDynamicUniformBindings BeginSet(const lz::DescriptorSetLayoutKey* setInfo);
 
-			SetDynamicUniformBindings dynamicBindings;
-			dynamicBindings.dynamicOffset = currOffset;
-
-			std::vector<lz::DescriptorSetLayoutKey::UniformBufferId> uniformBufferIds;
-			uniformBufferIds.resize(setInfo->GetUniformBuffersCount());
-			setInfo->GetUniformBufferIds(uniformBufferIds.data());
-
-			uint32_t setUniformTotalSize = 0;
-			for (auto uniformBufferId : uniformBufferIds)
-			{
-				auto uniformBufferInfo = setInfo->GetUniformBufferInfo(uniformBufferId);
-				setUniformTotalSize += uniformBufferInfo.size;
-				dynamicBindings.uniformBufferBindings.push_back(lz::UniformBufferBinding(
-					this->GetBuffer(), uniformBufferInfo.shaderBindingIndex, uniformBufferInfo.offsetInSet,
-					uniformBufferInfo.size));
-			}
-			assert(currSetInfo->GetTotalConstantBufferSize() == setUniformTotalSize);
-
-			return dynamicBindings;
-		}
-
-		void EndSet()
-		{
-			currOffset = currSize;
-			currSetInfo = nullptr;
-		}
+		void EndSet();
 
 		template <typename BufferType>
 		BufferType* GetUniformBufferData(lz::DescriptorSetLayoutKey::UniformBufferId uniformBufferId)
@@ -106,16 +63,9 @@ namespace lz
 			return (UniformType*)((char*)dstMemory + totalOffset);
 		}
 
+
 	private:
-		static uint32_t AlignSize(uint32_t size, uint32_t alignment)
-		{
-			uint32_t resSize = size;
-			if (resSize % alignment != 0)
-			{
-				resSize += (alignment - (resSize % alignment));
-			}
-			return resSize;
-		}
+		static uint32_t AlignSize(uint32_t size, uint32_t alignment);
 
 		uint32_t alignment;
 		lz::Buffer* buffer;

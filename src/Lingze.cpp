@@ -25,6 +25,8 @@
 #include <sstream>
 #include <array>
 
+#include "backend/Core.h"
+
 glm::vec3 ReadJsonVec3f(Json::Value vectorValue)
 {
 	return glm::vec3(vectorValue[0].asFloat(), vectorValue[1].asFloat(), vectorValue[2].asFloat());
@@ -97,7 +99,7 @@ int main()
         bool enableDebugging = true;
         auto core = std::make_unique<lz::Core>(glfwExtensions, glfwExtensionCount, &windowDesc, enableDebugging);
 
-        ImGuiRenderer imguiRenderer(core.get(), window);
+        lz::ImGuiRenderer imguiRenderer(core.get(), window);
         ImGuiUtils::ProfilersWindow profilersWindow;
 
         

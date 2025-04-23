@@ -1,6 +1,11 @@
 #pragma once
 #include <map>
+
+#include "Framebuffer.h"
+#include "ImageView.h"
 #include "RenderPass.h"
+
+#include "LingzeVK.h"
 
 namespace lz
 {
@@ -59,81 +64,19 @@ namespace lz
 			vk::ClearValue clearValue;
 		};
 
-		PassInfo BeginPass(vk::CommandBuffer commandBuffer, const std::vector<Attachment> colorAttachments,
-		                   Attachment* depthAttachment, lz::RenderPass* renderPass, vk::Extent2D renderAreaExtent)
-		{
-			PassInfo passInfo;
+		PassInfo BeginPass(vk::CommandBuffer commandBuffer, const std::vector<Attachment>& colorAttachments,
+		                   Attachment* depthAttachment, lz::RenderPass* renderPass, vk::Extent2D renderAreaExtent);
 
-			FramebufferKey framebufferKey;
+		void EndPass(vk::CommandBuffer commandBuffer);
 
-			std::vector<vk::ClearValue> clearValues;
-
-			size_t attachmentsUsed = 0;
-			for (auto attachment : colorAttachments)
-			{
-				clearValues.push_back(attachment.clearValue);
-				framebufferKey.colorAttachmentViews[attachmentsUsed++] = attachment.imageView;
-			}
-
-			if (depthAttachment)
-			{
-				framebufferKey.depthAttachmentView = depthAttachment->imageView;
-				clearValues.push_back(depthAttachment->clearValue);
-			}
-
-			passInfo.renderPass = renderPass;
-
-			framebufferKey.extent = renderAreaExtent;
-			framebufferKey.renderPass = renderPass->GetHandle();
-			lz::Framebuffer* framebuffer = GetFramebuffer(framebufferKey);
-			passInfo.framebuffer = framebuffer;
-
-			vk::Rect2D rect = vk::Rect2D(vk::Offset2D(), renderAreaExtent);
-			auto passBeginInfo = vk::RenderPassBeginInfo()
-			                     .setRenderPass(renderPass->GetHandle())
-			                     .setFramebuffer(framebuffer->GetHandle())
-			                     .setRenderArea(rect)
-			                     .setClearValueCount(static_cast<uint32_t>(clearValues.size()))
-			                     .setPClearValues(clearValues.data());
-
-			commandBuffer.beginRenderPass(passBeginInfo, vk::SubpassContents::eInline);
-
-			auto viewport = vk::Viewport()
-			                .setWidth(float(renderAreaExtent.width))
-			                .setHeight(float(renderAreaExtent.height))
-			                .setMinDepth(0.0f)
-			                .setMaxDepth(1.0f);
-
-			commandBuffer.setViewport(0, {viewport});
-			commandBuffer.setScissor(0, {vk::Rect2D(vk::Offset2D(), renderAreaExtent)});
-
-			return passInfo;
-		}
-
-		void EndPass(vk::CommandBuffer commandBuffer)
-		{
-			commandBuffer.endRenderPass();
-		}
-
-		FramebufferCache(vk::Device _logicalDevice) : logicalDevice(_logicalDevice)
-		{
-		}
+		FramebufferCache(vk::Device _logicalDevice);
 
 	private:
 		struct FramebufferKey
 		{
-			FramebufferKey()
-			{
-				std::fill(colorAttachmentViews.begin(), colorAttachmentViews.end(), nullptr);
-				depthAttachmentView = nullptr;
-				renderPass = nullptr;
-			}
+			FramebufferKey();
 
-			bool operator <(const FramebufferKey& other) const
-			{
-				return std::tie(colorAttachmentViews, depthAttachmentView, extent.width, extent.height) < std::tie(
-					other.colorAttachmentViews, other.depthAttachmentView, other.extent.width, other.extent.height);
-			}
+			bool operator <(const FramebufferKey& other) const;
 
 			std::array<const lz::ImageView*, 8> colorAttachmentViews;
 			const lz::ImageView* depthAttachmentView;
@@ -141,33 +84,12 @@ namespace lz
 			vk::RenderPass renderPass;
 		};
 
-		lz::Framebuffer* GetFramebuffer(FramebufferKey key)
-		{
-			auto& framebuffer = framebufferCache[key];
-
-			if (!framebuffer)
-			{
-				std::vector<const lz::ImageView*> imageViews;
-				for (auto imageView : key.colorAttachmentViews)
-				{
-					if (imageView)
-					{
-						imageViews.push_back(imageView);
-					}
-				}
-				if (key.depthAttachmentView)
-				{
-					imageViews.push_back(key.depthAttachmentView);
-				}
-
-				framebuffer = std::unique_ptr<lz::Framebuffer>(
-					new lz::Framebuffer(logicalDevice, imageViews, key.extent, key.renderPass));
-			}
-			return framebuffer.get();
-		}
+		lz::Framebuffer* GetFramebuffer(FramebufferKey key);
 
 		std::map<FramebufferKey, std::unique_ptr<lz::Framebuffer>> framebufferCache;
 
 		vk::Device logicalDevice;
 	};
+
+	
 }

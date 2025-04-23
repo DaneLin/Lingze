@@ -343,7 +343,7 @@ namespace lz
 		{
 			AddTransitionBarrier(dstImageData, lz::ImageUsageTypes::None, lz::ImageUsageTypes::TransferDst,
 			                     transferCommandBuffer);
-			transferCommandBuffer.copyBufferToImage(stagingBuffer->GetHandle(), dstImageData->GetHandle(),
+			transferCommandBuffer.copyBufferToImage(stagingBuffer->get_handle(), dstImageData->GetHandle(),
 			                                        vk::ImageLayout::eTransferDstOptimal, copyRegions);
 			AddTransitionBarrier(dstImageData, lz::ImageUsageTypes::TransferDst, dstUsageType, transferCommandBuffer);
 		}

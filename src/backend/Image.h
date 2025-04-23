@@ -1,4 +1,7 @@
 #pragma once
+
+#include "LingzeVK.h"
+
 namespace lz
 {
 	// IsDepthFormat: Checks if a format is a depth format
@@ -46,24 +49,17 @@ namespace lz
 		// Parameters:
 		// - other: The range to check against
 		// Returns: True if this range fully contains the other range
-		bool Contains(const ImageSubresourceRange& other)
-		{
-			return baseMipLevel <= other.baseMipLevel && baseArrayLayer <= other.baseArrayLayer && mipsCount >= other.
-				mipsCount && arrayLayersCount >= other.arrayLayersCount;
-		}
+		bool Contains(const ImageSubresourceRange& other);
 
 		// Comparison operator for container sorting
-		bool operator <(const ImageSubresourceRange& other) const
-		{
-			return std::tie(baseMipLevel, mipsCount, baseArrayLayer, arrayLayersCount) < std::tie(
-				other.baseMipLevel, other.mipsCount, other.baseArrayLayer, other.arrayLayersCount);
-		}
+		bool operator <(const ImageSubresourceRange& other) const;
 
-		uint32_t baseMipLevel;      // First mipmap level in the range
-		uint32_t mipsCount;         // Number of mipmap levels in the range
-		uint32_t baseArrayLayer;    // First array layer in the range
-		uint32_t arrayLayersCount;  // Number of array layers in the range
+		uint32_t baseMipLevel; // First mipmap level in the range
+		uint32_t mipsCount; // Number of mipmap levels in the range
+		uint32_t baseArrayLayer; // First array layer in the range
+		uint32_t arrayLayersCount; // Number of array layers in the range
 	};
+
 
 	// ImageData: Class that holds information about a Vulkan image without owning the resource
 	// - Contains image metadata and layout tracking for each mip level and array layer
@@ -71,101 +67,34 @@ namespace lz
 	{
 	public:
 		// GetHandle: Returns the native Vulkan image handle
-		vk::Image GetHandle() const
-		{
-			return imageHandle;
-		}
+		vk::Image GetHandle() const;
 
 		// GetFormat: Returns the format of the image
-		vk::Format GetFormat() const
-		{
-			return format;
-		}
+		vk::Format GetFormat() const;
 
 		// GetType: Returns the type of the image (1D, 2D, or 3D)
-		vk::ImageType GetType() const
-		{
-			return imageType;
-		}
+		vk::ImageType GetType() const;
 
 		// GetMipSize: Returns the size of a specific mipmap level
 		// Parameters:
 		// - mipLevel: Mipmap level to query
 		// Returns: Size of the specified mipmap level
-		glm::uvec3 GetMipSize(uint32_t mipLevel)
-		{
-			return mipInfos[mipLevel].size;
-		}
+		glm::uvec3 GetMipSize(uint32_t mipLevel);
 
 		// GetAspectFlags: Returns the aspect flags of the image (color or depth)
-		vk::ImageAspectFlags GetAspectFlags() const
-		{
-			return aspectFlags;
-		}
+		vk::ImageAspectFlags GetAspectFlags() const;
 
-		uint32_t GetArrayLayersCount()
-		{
-			return arrayLayersCount;
-		}
+		uint32_t GetArrayLayersCount();
 
-		uint32_t GetMipsCount()
-		{
-			return mipsCount;
-		}
+		uint32_t GetMipsCount();
 
-		bool operator <(const ImageData& other) const
-		{
-			return std::tie(imageHandle) < std::tie(other.imageHandle);
-		}
+		bool operator <(const ImageData& other) const;
 
 	private:
 		ImageData(vk::Image imageHandle, vk::ImageType imageType, glm::uvec3 size, uint32_t mipsCount,
-		          uint32_t arrayLayersCount, vk::Format format, vk::ImageLayout layout)
-		{
-			this->imageHandle = imageHandle;
-			this->format = format;
-			this->mipsCount = mipsCount;
-			this->arrayLayersCount = arrayLayersCount;
-			this->imageType = imageType;
+		          uint32_t arrayLayersCount, vk::Format format, vk::ImageLayout layout);
 
-			glm::vec3 currSize = size;
-
-			for (size_t mipLevel = 0; mipLevel < mipsCount; ++mipLevel)
-			{
-				MipInfo mipInfo;
-				mipInfo.size = currSize;
-				currSize.x /= 2;
-				if (imageType == vk::ImageType::e2D || imageType == vk::ImageType::e3D)
-				{
-					currSize.y /= 2;
-				}
-				if (imageType == vk::ImageType::e3D)
-				{
-					currSize.z /= 2;
-				}
-
-				mipInfo.layerInfos.resize(arrayLayersCount);
-
-				for (size_t layerIndex = 0; layerIndex < arrayLayersCount; ++layerIndex)
-				{
-					mipInfo.layerInfos[layerIndex].currLayout = layout;
-				}
-				mipInfos.push_back(mipInfo);
-			}
-			if (lz::IsDepthFormat(format))
-			{
-				this->aspectFlags = vk::ImageAspectFlagBits::eDepth;
-			}
-			else
-			{
-				this->aspectFlags = vk::ImageAspectFlagBits::eColor;
-			}
-		}
-
-		void SetDebugName(std::string debugName)
-		{
-			this->debugName = debugName;
-		}
+		void SetDebugName(std::string debugName);
 
 		struct SubImageInfo
 		{
@@ -193,37 +122,16 @@ namespace lz
 		friend class Core;
 	};
 
+
 	class Image
 	{
 	public:
-		lz::ImageData* GetImageData()
-		{
-			return imageData.get();
-		}
+		lz::ImageData* GetImageData();
 
-		vk::DeviceMemory GetMemory()
-		{
-			return imageMemory.get();
-		}
+		vk::DeviceMemory GetMemory();
 
 		static vk::ImageCreateInfo CreateInfo2d(glm::uvec2 size, uint32_t mipsCount, uint32_t arrayLayersCount,
-		                                        vk::Format format, vk::ImageUsageFlags usage)
-		{
-			auto layout = vk::ImageLayout::eUndefined;
-			auto imageInfo = vk::ImageCreateInfo()
-			                 .setImageType(vk::ImageType::e2D)
-			                 .setExtent(vk::Extent3D(size.x, size.y, 1))
-			                 .setMipLevels(mipsCount)
-			                 .setArrayLayers(arrayLayersCount)
-			                 .setFormat(format)
-			                 .setInitialLayout(layout)
-			                 .setUsage(usage)
-			                 .setSharingMode(vk::SharingMode::eExclusive)
-			                 .setSamples(vk::SampleCountFlagBits::e1)
-			                 .setFlags(vk::ImageCreateFlags());
-
-			return imageInfo;
-		}
+		                                        vk::Format format, vk::ImageUsageFlags usage);
 
 		// CreateInfoVolume: Creates an image create info structure for 3D volume images
 		// Parameters:
@@ -234,23 +142,7 @@ namespace lz
 		// - usage: Usage flags for the image
 		// Returns: Configured image create info structure for a 3D volume image
 		static vk::ImageCreateInfo CreateInfoVolume(glm::uvec3 size, uint32_t mipsCount, uint32_t arrayLayersCount,
-		                                            vk::Format format, vk::ImageUsageFlags usage)
-		{
-			auto layout = vk::ImageLayout::eUndefined;
-			auto imageInfo = vk::ImageCreateInfo()
-			                 .setImageType(vk::ImageType::e3D)
-			                 .setExtent(vk::Extent3D(size.x, size.y, size.z))
-			                 .setMipLevels(mipsCount)
-			                 .setArrayLayers(arrayLayersCount)
-			                 .setFormat(format)
-			                 .setInitialLayout(layout) //images must be created in undefined layout
-			                 .setUsage(usage)
-			                 .setSharingMode(vk::SharingMode::eExclusive)
-			                 .setSamples(vk::SampleCountFlagBits::e1)
-			                 .setFlags(vk::ImageCreateFlags())
-			                 .setTiling(vk::ImageTiling::eOptimal);
-			return imageInfo;
-		}
+		                                            vk::Format format, vk::ImageUsageFlags usage);
 
 		// CreateInfoCube: Creates an image create info structure for cubemap images
 		// Parameters:
@@ -260,23 +152,7 @@ namespace lz
 		// - usage: Usage flags for the image
 		// Returns: Configured image create info structure for a cubemap
 		static vk::ImageCreateInfo CreateInfoCube(glm::uvec2 size, uint32_t mipsCount, vk::Format format,
-		                                          vk::ImageUsageFlags usage)
-		{
-			auto layout = vk::ImageLayout::eUndefined;
-			auto imageInfo = vk::ImageCreateInfo()
-			                 .setImageType(vk::ImageType::e2D)
-			                 .setExtent(vk::Extent3D(size.x, size.y, 1))
-			                 .setMipLevels(mipsCount)
-			                 .setArrayLayers(6)  // Cubemap has 6 faces
-			                 .setFormat(format)
-			                 .setInitialLayout(layout)
-			                 .setUsage(usage)
-			                 .setSharingMode(vk::SharingMode::eExclusive)
-			                 .setSamples(vk::SampleCountFlagBits::e1)
-			                 .setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
-
-			return imageInfo;
-		}
+		                                          vk::ImageUsageFlags usage);
 
 		// Constructor: Creates a new image with specified properties
 		// Parameters:
@@ -285,35 +161,11 @@ namespace lz
 		// - imageInfo: Image creation parameters
 		// - memFlags: Memory property flags for the image allocation
 		Image(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::ImageCreateInfo imageInfo,
-		      vk::MemoryPropertyFlags memFlags = vk::MemoryPropertyFlagBits::eDeviceLocal)
-		{
-			// Create the image resource
-			imageHandle = logicalDevice.createImageUnique(imageInfo);
-			glm::uvec3 size = {imageInfo.extent.width, imageInfo.extent.height, imageInfo.extent.depth};
-
-			// Create image data object to track image properties and layout
-			imageData.reset(new lz::ImageData(imageHandle.get(), imageInfo.imageType, size, imageInfo.mipLevels,
-			                                  imageInfo.arrayLayers, imageInfo.format, imageInfo.initialLayout));
-
-			// Get memory requirements for the image
-			vk::MemoryRequirements imageMemRequirements = logicalDevice.getImageMemoryRequirements(imageHandle.get());
-
-			// Allocate memory for the image
-			auto allocInfo = vk::MemoryAllocateInfo()
-			                 .setAllocationSize(imageMemRequirements.size)
-			                 .setMemoryTypeIndex(
-				                 lz::FindMemoryTypeIndex(physicalDevice, imageMemRequirements.memoryTypeBits,
-				                                         memFlags));
-
-			imageMemory = logicalDevice.allocateMemoryUnique(allocInfo);
-
-			// Bind the image to the allocated memory
-			logicalDevice.bindImageMemory(imageHandle.get(), imageMemory.get(), 0);
-		}
+		      vk::MemoryPropertyFlags memFlags = vk::MemoryPropertyFlagBits::eDeviceLocal);
 
 	private:
-		vk::UniqueImage imageHandle;             // Native Vulkan image handle
+		vk::UniqueImage imageHandle; // Native Vulkan image handle
 		std::unique_ptr<lz::ImageData> imageData; // Image metadata and layout tracking
-		vk::UniqueDeviceMemory imageMemory;      // Device memory allocation for this image
+		vk::UniqueDeviceMemory imageMemory; // Device memory allocation for this image
 	};
 }

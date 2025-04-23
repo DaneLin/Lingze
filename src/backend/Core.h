@@ -3,11 +3,16 @@
 
 #include <vector>
 #include <set>
+#include "Surface.h"
+#include "DescriptorSetCache.h"
+#include "PipelineCache.h"
+#include "QueueIndices.h"
+#include "RenderGraph.h"
+
 
 namespace lz
 {
-	class Swapchain;
-	class RenderGraph;
+	
 
 	// Core: Main engine class that manages Vulkan instance, devices, and core resources
 	class Core

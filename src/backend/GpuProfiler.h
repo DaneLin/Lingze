@@ -1,74 +1,33 @@
 #pragma once
 #include <chrono>
 
+#include "Handles.h"
+#include "ProfilerTask.h"
+#include "TimestampQuery.h"
+
 namespace lz
 {
 	class GpuProfiler
 	{
 	public:
-		GpuProfiler(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, uint32_t maxTimestampsCount) :
-			logicalDevice(logicalDevice),
-			timestampQuery(physicalDevice, logicalDevice, maxTimestampsCount)
-		{
-			frameIndex = 0;
-		}
+		GpuProfiler(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, uint32_t maxTimestampsCount);
 
-		size_t StartTask(std::string taskName, uint32_t taskColor, vk::PipelineStageFlagBits pipelineStageFlags)
-		{
-			timestampQuery.AddTimestamp(frameCommandBuffer, profilerTasks.size(), pipelineStageFlags);
+		size_t StartTask(std::string taskName, uint32_t taskColor, vk::PipelineStageFlagBits pipelineStageFlags);
 
-			lz::ProfilerTask task;
-			task.color = taskColor;
-			task.name = taskName;
-			task.startTime = -1.0;
-			task.endTime = -1.0;
-			size_t taskId = profilerTasks.size();
-			profilerTasks.push_back(task);
+		void EndTask(size_t taskId);
 
+		size_t StartFrame(vk::CommandBuffer commandBuffer);
 
-			return taskId;
-		}
+		void EndFrame(size_t frameId);
 
-		void EndTask(size_t taskId)
-		{
-			assert(profilerTasks.size() == taskId + 1 && profilerTasks.back().endTime < 0.0);
-		}
-
-		size_t StartFrame(vk::CommandBuffer commandBuffer)
-		{
-			this->frameCommandBuffer = commandBuffer;
-			profilerTasks.clear();
-			timestampQuery.ResetQueryPool(frameCommandBuffer);
-			return frameIndex;
-		}
-
-		void EndFrame(size_t frameId)
-		{
-			timestampQuery.AddTimestamp(frameCommandBuffer, profilerTasks.size(),
-			                            vk::PipelineStageFlagBits::eBottomOfPipe);
-
-			assert(frameId == frameIndex);
-			frameIndex++;
-		}
-
-		const std::vector<ProfilerTask>& GetProfilerTasks()
-		{
-			return profilerTasks;
-		}
+		const std::vector<ProfilerTask>& GetProfilerTasks();
 
 	private:
 		struct TaskHandleInfo
 		{
-			TaskHandleInfo(GpuProfiler* _profiler, size_t _taskId)
-			{
-				this->profiler = _profiler;
-				this->taskId = _taskId;
-			}
+			TaskHandleInfo(GpuProfiler* _profiler, size_t _taskId);
 
-			void Reset()
-			{
-				profiler->EndTask(taskId);
-			}
+			void Reset();
 
 			GpuProfiler* profiler;
 			size_t taskId;
@@ -76,16 +35,9 @@ namespace lz
 
 		struct FrameHandleInfo
 		{
-			FrameHandleInfo(GpuProfiler* _profiler, size_t _frameId)
-			{
-				this->profiler = _profiler;
-				this->frameId = _frameId;
-			}
+			FrameHandleInfo(GpuProfiler* _profiler, size_t _frameId);
 
-			void Reset()
-			{
-				profiler->EndFrame(frameId);
-			}
+			void Reset();
 
 			GpuProfiler* profiler;
 			size_t frameId;
@@ -107,26 +59,9 @@ namespace lz
 			return ScopedFrame(FrameHandleInfo(this, StartFrame(commandBuffer)), true);
 		}
 
-		const std::vector<lz::ProfilerTask>& GetProfilerData()
-		{
-			return profilerTasks;
-		}
+		const std::vector<lz::ProfilerTask>& GetProfilerData();
 
-		void GatherTimestamps()
-		{
-			if (profilerTasks.size() > 0)
-			{
-				lz::TimestampQuery::QueryResult res = timestampQuery.QueryResults(logicalDevice);
-				assert(res.size == this->profilerTasks.size() + 1); //1 is because of end-of-frame timestamp
-
-				for (size_t taskIndex = 0; taskIndex < profilerTasks.size(); taskIndex++)
-				{
-					auto& task = profilerTasks[taskIndex];
-					task.startTime = res.data[taskIndex].time;
-					task.endTime = res.data[taskIndex + 1].time;
-				}
-			}
-		}
+		void GatherTimestamps();
 
 	private:
 		vk::Device logicalDevice;

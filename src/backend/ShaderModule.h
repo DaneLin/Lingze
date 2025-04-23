@@ -2,6 +2,8 @@
 #include <string>
 #include <fstream>
 
+#include "LingzeVK.h"
+
 namespace lz
 {
 	class Core;
@@ -13,32 +15,20 @@ namespace lz
 	{
 	public:
 		// GetHandle: Returns the native Vulkan shader module handle
-		vk::ShaderModule GetHandle()
-		{
-			return shaderModule.get();
-		}
+		vk::ShaderModule GetHandle();
 
 		// Constructor: Creates a new shader module from SPIR-V bytecode
 		// Parameters:
 		// - device: Logical device for creating the shader module
 		// - bytecode: SPIR-V bytecode as a vector of 32-bit words
-		ShaderModule(vk::Device device, const std::vector<uint32_t>& bytecode)
-		{
-			Init(device, bytecode);
-		}
+		ShaderModule(vk::Device device, const std::vector<uint32_t>& bytecode);
 
 	private:
 		// Init: Internal initialization method
 		// Parameters:
 		// - device: Logical device for creating the shader module
 		// - bytecode: SPIR-V bytecode as a vector of 32-bit words
-		void Init(vk::Device device, const std::vector<uint32_t>& bytecode)
-		{
-			auto shaderModuleCreateInfo = vk::ShaderModuleCreateInfo()
-			                              .setCodeSize(bytecode.size() * sizeof(uint32_t))
-			                              .setPCode(bytecode.data());
-			this->shaderModule = device.createShaderModuleUnique(shaderModuleCreateInfo);
-		}
+		void Init(vk::Device device, const std::vector<uint32_t>& bytecode);
 
 		vk::UniqueShaderModule shaderModule;  // Native Vulkan shader module handle
 		friend class Core;

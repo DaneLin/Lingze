@@ -1,4 +1,7 @@
-#pragma once
+﻿#pragma once
+
+#include "LingzeVK.h"
+
 namespace lz
 {
 	// QueueFamilyTypes: Enumeration of different Vulkan queue family types
