@@ -14,40 +14,56 @@ namespace lz
 	class ImageView;
 	class Buffer;
 
+	// ShaderResourceId: Template class for type-safe identifiers of shader resources
+	// - Provides strong typing to prevent mixing different resource types
+	// - Used to reference resources like uniforms, samplers, etc.
 	template <typename Base>
 	struct ShaderResourceId
 	{
+		// Default constructor: Creates an invalid resource ID
 		ShaderResourceId()
 			: id(size_t(-1))
 		{
 		}
 
+		// Equality operator
 		bool operator==(const ShaderResourceId<Base>& other) const
 		{
 			return this->id == other.id;
 		}
 
+		// IsValid: Checks if this is a valid resource ID
+		// Returns: True if the ID is valid, false otherwise
 		bool IsValid()
 		{
 			return id != size_t(-1);
 		}
 
 	private:
+		// Private constructor used by friend classes
 		explicit ShaderResourceId(size_t id) : id(id)
 		{
 		}
 
-		size_t id;
+		size_t id;  // Internal ID value
 		friend class DescriptorSetLayoutKey;
 		friend class Shader;
 	};
 
+	// ImageSamplerBinding: Structure for combined image sampler binding data
+	// - Represents a binding between an image view and a sampler for use in shaders
 	struct ImageSamplerBinding
 	{
+		// Default constructor: Creates an empty binding
 		ImageSamplerBinding() : imageView(nullptr), sampler(nullptr)
 		{
 		}
 
+		// Constructor: Creates a binding with specified image view and sampler
+		// Parameters:
+		// - imageView: Image view to bind
+		// - sampler: Sampler to bind
+		// - shaderBindingId: Binding point in the shader
 		ImageSamplerBinding(lz::ImageView* imageView, lz::Sampler* sampler, uint32_t shaderBindingId)
 			: imageView(imageView), sampler(sampler), shaderBindingId(shaderBindingId)
 		{
@@ -55,47 +71,67 @@ namespace lz
 			assert(sampler);
 		}
 
+		// Comparison operator for container ordering
 		bool operator<(const ImageSamplerBinding& other) const
 		{
 			return std::tie(imageView, sampler, shaderBindingId) < std::tie(
 				other.imageView, other.sampler, other.shaderBindingId);
 		}
 
-		lz::ImageView* imageView;
-		lz::Sampler* sampler;
-		uint32_t shaderBindingId;
+		lz::ImageView* imageView;     // Image view to bind
+		lz::Sampler* sampler;         // Sampler to bind
+		uint32_t shaderBindingId;     // Binding point in the shader
 	};
 
+	// UniformBufferBinding: Structure for uniform buffer binding data
+	// - Represents a binding between a buffer and a uniform buffer binding point in the shader
 	struct UniformBufferBinding
 	{
+		// Default constructor: Creates an empty binding
 		UniformBufferBinding() : buffer(nullptr), offset(-1), size(-1)
 		{
 		}
 
+		// Constructor: Creates a binding with specified buffer
+		// Parameters:
+		// - buffer: Buffer to bind
+		// - shaderBindingId: Binding point in the shader
+		// - offset: Offset within the buffer
+		// - size: Size of the data to bind
 		UniformBufferBinding(lz::Buffer* buffer, uint32_t shaderBindingId, vk::DeviceSize offset, vk::DeviceSize size)
 			: buffer(buffer), shaderBindingId(shaderBindingId), offset(offset), size(size)
 		{
 			assert(buffer);
 		}
 
+		// Comparison operator for container ordering
 		bool operator <(const UniformBufferBinding& other) const
 		{
 			return std::tie(buffer, shaderBindingId, offset, size) < std::tie(
 				other.buffer, other.shaderBindingId, other.offset, other.size);
 		}
 
-		lz::Buffer* buffer;
-		uint32_t shaderBindingId;
-		vk::DeviceSize offset;
-		vk::DeviceSize size;
+		lz::Buffer* buffer;        // Buffer to bind
+		uint32_t shaderBindingId;  // Binding point in the shader
+		vk::DeviceSize offset;     // Offset within the buffer
+		vk::DeviceSize size;       // Size of the data to bind
 	};
 
+	// StorageBufferBinding: Structure for storage buffer binding data
+	// - Represents a binding between a buffer and a storage buffer binding point in the shader
 	struct StorageBufferBinding
 	{
+		// Default constructor: Creates an empty binding
 		StorageBufferBinding() : buffer(nullptr), offset(-1), size(-1)
 		{
 		}
 
+		// Constructor: Creates a binding with specified buffer
+		// Parameters:
+		// - _buffer: Buffer to bind
+		// - _shaderBindingId: Binding point in the shader
+		// - _offset: Offset within the buffer
+		// - _size: Size of the data to bind
 		StorageBufferBinding(lz::Buffer* _buffer, uint32_t _shaderBindingId, vk::DeviceSize _offset,
 		                     vk::DeviceSize _size) : buffer(_buffer), shaderBindingId(_shaderBindingId),
 		                                             offset(_offset), size(_size)
@@ -103,42 +139,55 @@ namespace lz
 			assert(_buffer);
 		}
 
+		// Comparison operator for container ordering
 		bool operator <(const StorageBufferBinding& other) const
 		{
 			return std::tie(buffer, shaderBindingId, offset, size) < std::tie(
 				other.buffer, other.shaderBindingId, other.offset, other.size);
 		}
 
-		lz::Buffer* buffer;
-		uint32_t shaderBindingId;
-		vk::DeviceSize offset;
-		vk::DeviceSize size;
+		lz::Buffer* buffer;        // Buffer to bind
+		uint32_t shaderBindingId;  // Binding point in the shader
+		vk::DeviceSize offset;     // Offset within the buffer
+		vk::DeviceSize size;       // Size of the data to bind
 	};
 
+	// StorageImageBinding: Structure for storage image binding data
+	// - Represents a binding between an image view and a storage image binding point in the shader
 	struct StorageImageBinding
 	{
+		// Default constructor: Creates an empty binding
 		StorageImageBinding() : imageView(nullptr)
 		{
 		}
 
+		// Constructor: Creates a binding with specified image view
+		// Parameters:
+		// - _imageView: Image view to bind
+		// - _shaderBindingId: Binding point in the shader
 		StorageImageBinding(lz::ImageView* _imageView, uint32_t _shaderBindingId) : imageView(_imageView),
 			shaderBindingId(_shaderBindingId)
 		{
 			assert(_imageView);
 		}
 
+		// Comparison operator for container ordering
 		bool operator <(const StorageImageBinding& other) const
 		{
 			return std::tie(imageView, shaderBindingId) < std::tie(other.imageView, other.shaderBindingId);
 		}
 
-		lz::ImageView* imageView;
-		uint32_t shaderBindingId;
+		lz::ImageView* imageView;    // Image view to bind
+		uint32_t shaderBindingId;    // Binding point in the shader
 	};
 
+	// DescriptorSetLayoutKey: Class for managing descriptor set layouts
+	// - Provides methods for querying and creating bindings for shader resources
+	// - Maintains information about uniform buffers, storage buffers, combined image samplers, etc.
 	class DescriptorSetLayoutKey
 	{
 	public:
+		// Type definitions for various shader resource IDs
 		struct UniformBase;
 		using UniformId = ShaderResourceId<UniformBase>;
 		struct UniformBufferBase;
@@ -150,50 +199,58 @@ namespace lz
 		struct StorageImageBase;
 		using StorageImageId = ShaderResourceId<StorageImageBase>;
 
+		// UniformData: Structure for individual uniform variable information
 		struct UniformData
 		{
+			// Comparison operator for container ordering
 			bool operator<(const UniformData& other) const
 			{
 				return std::tie(name, offsetInBinding, size) < std::tie(other.name, other.offsetInBinding, other.size);
 			}
 
-			std::string name;
-			uint32_t offsetInBinding;
-			uint32_t size;
-			UniformBufferId uniformBufferId;
+			std::string name;             // Name of the uniform variable
+			uint32_t offsetInBinding;     // Offset within the uniform buffer
+			uint32_t size;                // Size of the uniform variable
+			UniformBufferId uniformBufferId;  // ID of the parent uniform buffer
 		};
 
+		// UniformBufferData: Structure for uniform buffer information
 		struct UniformBufferData
 		{
+			// Comparison operator for container ordering
 			bool operator<(const UniformBufferData& other) const
 			{
 				return std::tie(name, shaderBindingIndex, size) < std::tie(
 					other.name, other.shaderBindingIndex, other.size);
 			}
 
-			std::string name;
-			uint32_t shaderBindingIndex;
-			vk::ShaderStageFlags stageFlags;
+			std::string name;                // Name of the uniform buffer
+			uint32_t shaderBindingIndex;     // Binding point in the shader
+			vk::ShaderStageFlags stageFlags; // Shader stages that use this uniform buffer
 
-			uint32_t size;
-			uint32_t offsetInSet;
-			std::vector<UniformId> uniformIds;
+			uint32_t size;                   // Size of the uniform buffer
+			uint32_t offsetInSet;            // Offset within the descriptor set
+			std::vector<UniformId> uniformIds;  // IDs of uniform variables in this buffer
 		};
 
+		// ImageSamplerData: Structure for combined image sampler information
 		struct ImageSamplerData
 		{
+			// Comparison operator for container ordering
 			bool operator<(const ImageSamplerData& other) const
 			{
 				return std::tie(name, shaderBindingIndex) < std::tie(other.name, other.shaderBindingIndex);
 			}
 
-			std::string name;
-			uint32_t shaderBindingIndex;
-			vk::ShaderStageFlags stageFlags;
+			std::string name;                // Name of the combined image sampler
+			uint32_t shaderBindingIndex;     // Binding point in the shader
+			vk::ShaderStageFlags stageFlags; // Shader stages that use this image sampler
 		};
 
+		// StorageBufferData: Structure for storage buffer information
 		struct StorageBufferData
 		{
+			// Comparison operator for container ordering
 			bool operator<(const StorageBufferData& other) const
 			{
 				return std::tie(name, shaderBindingIndex, podPartSize, arrayMemberSize) < std::tie(
@@ -209,8 +266,10 @@ namespace lz
 			uint32_t offsetInSet;
 		};
 
+		// StorageImageData: Structure for storage image information
 		struct StorageImageData
 		{
+			// Comparison operator for container ordering
 			bool operator<(const StorageImageData& other) const
 			{
 				return std::tie(name, shaderBindingIndex) < std::tie(other.name, other.shaderBindingIndex);

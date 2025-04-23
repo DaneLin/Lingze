@@ -4,8 +4,12 @@ namespace lz
 {
 	class Core;
 
+	// DepthSettings: Structure for configuring depth testing and writing
+	// - Controls depth test function and whether depth writing is enabled
 	struct DepthSettings
 	{
+		// DepthTest: Creates depth settings with depth testing enabled
+		// Returns: Depth settings configured for standard depth testing
 		static DepthSettings DepthTest()
 		{
 			DepthSettings settings;
@@ -14,6 +18,8 @@ namespace lz
 			return settings;
 		}
 
+		// Disabled: Creates depth settings with depth testing disabled
+		// Returns: Depth settings configured with depth testing disabled
 		static DepthSettings Disabled()
 		{
 			DepthSettings settings;
@@ -22,17 +28,22 @@ namespace lz
 			return settings;
 		}
 
-		vk::CompareOp depthFunc;
-		bool writeEnable;
+		vk::CompareOp depthFunc;  // Depth comparison function
+		bool writeEnable;         // Whether depth writing is enabled
 
+		// Comparison operator for container ordering
 		bool operator<(const DepthSettings& other) const
 		{
 			return std::tie(depthFunc, writeEnable) < std::tie(other.depthFunc, other.writeEnable);
 		}
 	};
 
+	// BlendSettings: Structure for configuring color blending
+	// - Controls how fragment colors are blended with the framebuffer
 	struct BlendSettings
 	{
+		// Opaque: Creates blend settings for opaque rendering (no blending)
+		// Returns: Blend settings configured for opaque rendering
 		static BlendSettings Opaque()
 		{
 			BlendSettings blendSettings;
@@ -44,6 +55,8 @@ namespace lz
 			return blendSettings;
 		}
 
+		// Add: Creates blend settings for additive blending
+		// Returns: Blend settings configured for additive blending
 		static BlendSettings Add()
 		{
 			BlendSettings blendSettings;
@@ -59,6 +72,8 @@ namespace lz
 			return blendSettings;
 		}
 
+		// Mixed: Creates blend settings for mixed blending
+		// Returns: Blend settings configured for mixed color and alpha blending
 		static BlendSettings Mixed()
 		{
 			BlendSettings blendSettings;
@@ -74,6 +89,8 @@ namespace lz
 			return blendSettings;
 		}
 
+		// AlphaBlend: Creates blend settings for standard alpha blending
+		// Returns: Blend settings configured for standard alpha blending
 		static BlendSettings AlphaBlend()
 		{
 			BlendSettings blendSettings;
@@ -89,6 +106,7 @@ namespace lz
 			return blendSettings;
 		}
 
+		// Comparison operator for container ordering
 		bool operator <(const BlendSettings& other) const
 		{
 			return
@@ -98,33 +116,51 @@ namespace lz
 				         other.blendState.srcColorBlendFactor, other.blendState.dstColorBlendFactor);
 		}
 
-		vk::PipelineColorBlendAttachmentState blendState;
+		vk::PipelineColorBlendAttachmentState blendState;  // Native Vulkan blend state
 	};
 
+	// GraphicsPipeline: Class for managing Vulkan graphics pipelines
+	// - Encapsulates the state for rendering operations
+	// - Includes vertex input, blending, depth testing, and shader stages
 	class GraphicsPipeline
 	{
 	public:
+		// Enumeration of predefined blend modes
 		enum struct BlendModes
 		{
 			Opaque
 		};
 
+		// Enumeration of predefined depth/stencil modes
 		enum struct DepthStencilModes
 		{
 			DepthNone,
 			DepthLess
 		};
 
+		// GetHandle: Returns the native Vulkan pipeline handle
 		vk::Pipeline GetHandle()
 		{
 			return pipeline.get();
 		}
 
+		// GetLayout: Returns the pipeline layout
 		vk::PipelineLayout GetLayout()
 		{
 			return pipelineLayout;
 		}
 
+		// Constructor: Creates a new graphics pipeline with the specified parameters
+		// Parameters:
+		// - logicalDevice: Logical device for creating the pipeline
+		// - vertexShader: Vertex shader module
+		// - fragmentShader: Fragment shader module
+		// - vertexDecl: Vertex declaration describing input vertex data
+		// - pipelineLayout: Pipeline layout for uniform and push constant access
+		// - depthSettings: Depth testing and writing configuration
+		// - attachmentBlendSettings: Blend settings for each color attachment
+		// - primitiveTopology: Type of primitives to render
+		// - renderPass: Render pass the pipeline is compatible with
 		GraphicsPipeline(
 			vk::Device logicalDevice,
 			vk::ShaderModule vertexShader,
@@ -138,11 +174,14 @@ namespace lz
 		)
 		{
 			this->pipelineLayout = pipelineLayout;
+			
+			// Configure vertex shader stage
 			auto vertexStageCreateInfo = vk::PipelineShaderStageCreateInfo()
 			                             .setStage(vk::ShaderStageFlagBits::eVertex)
 			                             .setModule(vertexShader)
 			                             .setPName("main");
 
+			// Configure fragment shader stage
 			auto fragmentStageCreateInfo = vk::PipelineShaderStageCreateInfo()
 			                               .setStage(vk::ShaderStageFlagBits::eFragment)
 			                               .setModule(fragmentShader)
@@ -150,6 +189,7 @@ namespace lz
 
 			vk::PipelineShaderStageCreateInfo shaderStageInfos[] = {vertexStageCreateInfo, fragmentStageCreateInfo};
 
+			// Configure vertex input state
 			auto vertexInputInfo = vk::PipelineVertexInputStateCreateInfo()
 			                       .setVertexBindingDescriptionCount(
 				                       uint32_t(vertexDecl.GetBindingDescriptors().size()))
@@ -158,10 +198,12 @@ namespace lz
 				                       uint32_t(vertexDecl.GetVertexAttributes().size()))
 			                       .setPVertexAttributeDescriptions(vertexDecl.GetVertexAttributes().data());
 
+			// Configure input assembly state
 			auto inputAssemblyInfo = vk::PipelineInputAssemblyStateCreateInfo()
 			                         .setTopology(primitiveTopology)
 			                         .setPrimitiveRestartEnable(false);
 
+			// Configure rasterization state
 			auto rasterizationStateInfo = vk::PipelineRasterizationStateCreateInfo()
 			                              .setDepthClampEnable(false)
 			                              .setPolygonMode(vk::PolygonMode::eFill)
@@ -170,10 +212,12 @@ namespace lz
 			                              .setFrontFace(vk::FrontFace::eClockwise)
 			                              .setDepthBiasEnable(false);
 
+			// Configure multisample state
 			auto multisampleStateInfo = vk::PipelineMultisampleStateCreateInfo()
 			                            .setSampleShadingEnable(false)
 			                            .setRasterizationSamples(vk::SampleCountFlagBits::e1);
 
+			// Configure color blend state for each attachment
 			std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates;
 			for (const auto& blendSettings : attachmentBlendSettings)
 			{
@@ -185,6 +229,7 @@ namespace lz
 			                           .setAttachmentCount(uint32_t(colorBlendAttachmentStates.size()))
 			                           .setPAttachments(colorBlendAttachmentStates.data());
 
+			// Configure depth/stencil state
 			auto depthStencilState = vk::PipelineDepthStencilStateCreateInfo()
 			                         .setStencilTestEnable(false)
 			                         .setDepthTestEnable(depthSettings.depthFunc == vk::CompareOp::eAlways
@@ -194,6 +239,7 @@ namespace lz
 			                         .setDepthWriteEnable(depthSettings.writeEnable)
 			                         .setDepthBoundsTestEnable(false);
 
+			// Configure dynamic state (viewport and scissor)
 			vk::DynamicState dynamicStates[] = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 			auto dynamicStateInfo = vk::PipelineDynamicStateCreateInfo()
 			                        .setDynamicStateCount(2)
