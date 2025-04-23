@@ -56,7 +56,13 @@ struct ImGuiScopedFrame
     }
 };
 
+// 窗口大小变化的全局标志
+static bool g_framebufferResized = false;
 
+// 窗口大小变化的回调函数
+static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+    g_framebufferResized = true;
+}
 
 int main()
 {
@@ -74,6 +80,9 @@ int main()
         glfwTerminate();
         return -1;
     }
+    
+    // 设置窗口大小变化的回调函数
+    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 
     try {
         // 设置Vulkan实例和窗口
@@ -105,12 +114,29 @@ int main()
             
             imguiRenderer.ProcessInput(window);
 
-            if (!inFlightQueue)
+            // 检查是否需要重建交换链 (窗口大小改变或初始化)
+            if (!inFlightQueue || g_framebufferResized)
             {
-                std::cout << "Recreating in flight queue" << std::endl;
-                core->ClearCaches();
-                inFlightQueue = std::unique_ptr<lz::InFlightQueue>(new lz::InFlightQueue(core.get(), windowDesc, 2, vk::PresentModeKHR::eMailbox));
-                imguiRenderer.RecreateSwapchainResources(inFlightQueue->GetImageSize(), inFlightQueue->GetInFlightFramesCount());
+                if (g_framebufferResized) {
+                    std::cout << "Window resized, recreating swapchain" << std::endl;
+                    g_framebufferResized = false;
+                    
+                    if (inFlightQueue) {
+                        // 如果已存在交换链，只需重建交换链
+                        inFlightQueue->RecreateSwapchain();
+                        imguiRenderer.RecreateSwapchainResources(inFlightQueue->GetImageSize(), inFlightQueue->GetInFlightFramesCount());
+                    } else {
+                        // 如果还没有创建交换链，则创建整个队列
+                        core->ClearCaches();
+                        inFlightQueue = std::unique_ptr<lz::InFlightQueue>(new lz::InFlightQueue(core.get(), windowDesc, 2, vk::PresentModeKHR::eMailbox));
+                        imguiRenderer.RecreateSwapchainResources(inFlightQueue->GetImageSize(), inFlightQueue->GetInFlightFramesCount());
+                    }
+                } else {
+                    std::cout << "Recreating in flight queue" << std::endl;
+                    core->ClearCaches();
+                    inFlightQueue = std::unique_ptr<lz::InFlightQueue>(new lz::InFlightQueue(core.get(), windowDesc, 2, vk::PresentModeKHR::eMailbox));
+                    imguiRenderer.RecreateSwapchainResources(inFlightQueue->GetImageSize(), inFlightQueue->GetInFlightFramesCount());
+                }
             }
             
 
@@ -143,8 +169,10 @@ int main()
             }
             catch (vk::OutOfDateKHRError err)
             {
+                // 交换链过时，需要重新创建
                 core->WaitIdle();
                 inFlightQueue.reset();
+                g_framebufferResized = true; // 确保重新创建交换链
             }
             
         }

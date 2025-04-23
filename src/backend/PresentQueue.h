@@ -1,3 +1,5 @@
+#include <Windows.h>
+
 namespace lz
 {
     struct PresentQueue
@@ -5,11 +7,47 @@ namespace lz
         PresentQueue(lz::Core* core, lz::WindowDesc windowDesc, uint32_t imagesCount, vk::PresentModeKHR preferredMode)
         {
             this->core = core;
+            this->windowDesc = windowDesc;
+            this->imagesCount = imagesCount;
+            this->preferredMode = preferredMode;
+            
+            RecreateSwapchain();
+        }
+        
+        void RecreateSwapchain()
+        {
+            // 完全重新创建交换链，而不是重用现有的交换链
+            if (this->swapchain) {
+                // 首先尝试使用更优雅的方式重建交换链
+                int width, height;
+                RECT rect;
+                GetClientRect(windowDesc.hWnd, &rect);
+                width = rect.right - rect.left;
+                height = rect.bottom - rect.top;
+                
+                if (width > 0 && height > 0) {
+                    vk::Extent2D newSize(width, height);
+                    bool recreateSuccess = swapchain->Recreate(newSize);
+                    if (recreateSuccess) {
+                        // 重建成功
+                        this->swapchainImageViews = swapchain->GetImageViews();
+                        this->swapchainRect = vk::Rect2D(vk::Offset2D(), swapchain->GetSize());
+                        this->imageIndex = -1;
+                        return;
+                    }
+                }
+                
+                // 如果重建失败，则释放旧的交换链，创建新的
+                this->swapchain.reset();
+            }
+            
+            // 创建全新的交换链
             this->swapchain = core->CreateSwapchain(windowDesc, imagesCount, preferredMode);
             this->swapchainImageViews = swapchain->GetImageViews();
             this->swapchainRect = vk::Rect2D(vk::Offset2D(), swapchain->GetSize());
             this->imageIndex = -1;
         }
+        
         lz::ImageView* AcquireImage(vk::Semaphore signalSemaphore)
         {
             this->imageIndex = swapchain->AcquireNextImage(signalSemaphore).value;
@@ -36,6 +74,10 @@ namespace lz
     private:
         lz::Core* core;
         std::unique_ptr<lz::Swapchain> swapchain;
+        
+        lz::WindowDesc windowDesc;
+        uint32_t imagesCount;
+        vk::PresentModeKHR preferredMode;
 
         std::vector<lz::ImageView*> swapchainImageViews;
         uint32_t imageIndex;
@@ -48,11 +90,31 @@ namespace lz
         InFlightQueue(lz::Core* core, lz::WindowDesc windowDesc, uint32_t inFlightCount, vk::PresentModeKHR preferredMode)
         {
             this->core = core;
+            this->windowDesc = windowDesc;
+            this->inFlightCount = inFlightCount;
+            this->preferredMode = preferredMode;
             this->memoryPool = std::make_unique<lz::ShaderMemoryPool>(core->GetDynamicMemoryAlignment());
 
             presentQueue.reset(new PresentQueue(core, windowDesc, inFlightCount, preferredMode));
-
-
+            InitFrameResources();
+        }
+        
+        // 重建交换链
+        void RecreateSwapchain()
+        {
+            // 等待设备空闲
+            core->WaitIdle();
+            
+            // 删除所有与旧交换链相关的资源
+            swapchainImageViewProxies.clear();
+            
+            // 重新创建交换链
+            presentQueue->RecreateSwapchain();
+        }
+        
+        void InitFrameResources()
+        {
+            frames.clear();
             for (size_t frameIndex = 0; frameIndex < inFlightCount; frameIndex++)
             {
                 FrameResources frame;
@@ -68,6 +130,7 @@ namespace lz
             }
             frameIndex = 0;
         }
+        
         vk::Extent2D GetImageSize()
         {
             return presentQueue->GetImageSize();
@@ -180,6 +243,10 @@ namespace lz
     private:
         std::unique_ptr<lz::ShaderMemoryPool> memoryPool;
         std::map<lz::ImageView*, lz::RenderGraph::ImageViewProxyUnique> swapchainImageViewProxies;
+        
+        lz::WindowDesc windowDesc;
+        uint32_t inFlightCount;
+        vk::PresentModeKHR preferredMode;
 
         struct FrameResources
         {

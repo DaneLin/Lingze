@@ -1,5 +1,5 @@
 #pragma once
-
+#include <iostream>
 namespace lz
 {
 	class Swapchain
@@ -33,6 +33,82 @@ namespace lz
 		{
 			return swapchain.get();
 		}
+		
+		// 重新创建交换链，可以在窗口大小变化时调用
+		bool Recreate(vk::Extent2D newSize)
+		{
+			// 重新查询表面能力
+			this->surfaceDetails = GetSurfaceDetails(physicalDevice, surface.get());
+			
+			// 使用新的窗口大小重新计算交换链的大小
+			this->extent = FindSwapchainExtent(surfaceDetails.capabilities, newSize);
+			
+			// 清理旧的图像和图像视图
+			this->images.clear();
+			
+			// 使用与之前相同的图像数量来创建新的交换链
+			uint32_t imageCount = std::max(surfaceDetails.capabilities.minImageCount, desiredImageCount);
+			if (surfaceDetails.capabilities.maxImageCount > 0 && imageCount > surfaceDetails.capabilities.maxImageCount)
+				imageCount = surfaceDetails.capabilities.maxImageCount;
+			
+			auto swapchainCreateInfo = vk::SwapchainCreateInfoKHR()
+			                           .setSurface(surface.get())
+			                           .setMinImageCount(imageCount)
+			                           .setImageFormat(surfaceFormat.format)
+			                           .setImageColorSpace(surfaceFormat.colorSpace)
+			                           .setImageExtent(extent)
+			                           .setImageArrayLayers(1)
+			                           .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
+			                           .setPreTransform(surfaceDetails.capabilities.currentTransform)
+			                           .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+			                           .setPresentMode(presentMode)
+			                           .setClipped(true)
+			                           .setOldSwapchain(swapchain.get()); // 使用旧的交换链
+			
+			uint32_t familyIndices[] = {queueFamilyIndices.graphicsFamilyIndex, queueFamilyIndices.presentFamilyIndex};
+			
+			if (queueFamilyIndices.graphicsFamilyIndex != queueFamilyIndices.presentFamilyIndex)
+			{
+				swapchainCreateInfo
+					.setImageSharingMode(vk::SharingMode::eConcurrent)
+					.setQueueFamilyIndexCount(2)
+					.setPQueueFamilyIndices(familyIndices);
+			}
+			else
+			{
+				swapchainCreateInfo
+					.setImageSharingMode(vk::SharingMode::eExclusive);
+			}
+			
+			// 创建新的交换链
+			vk::UniqueSwapchainKHR newSwapchain;
+			try {
+				newSwapchain = logicalDevice.createSwapchainKHRUnique(swapchainCreateInfo);
+			} catch (vk::SystemError& err) {
+				std::cerr << "Failed to recreate swapchain: " << err.what() << std::endl;
+				return false;
+			}
+			
+			// 旧的交换链会在这里被替换和清理
+			swapchain = std::move(newSwapchain);
+			
+			// 获取新交换链的图像并创建新的图像视图
+			std::vector<vk::Image> swapchainImages = logicalDevice.getSwapchainImagesKHR(swapchain.get());
+			
+			for (size_t imageIndex = 0; imageIndex < swapchainImages.size(); imageIndex++)
+			{
+				Image newbie;
+				newbie.imageData = std::unique_ptr<ImageData>(new ImageData(
+					swapchainImages[imageIndex], vk::ImageType::e2D, glm::vec3(extent.width, extent.height, 1), 1, 1,
+					surfaceFormat.format, vk::ImageLayout::eUndefined));
+				newbie.imageView = std::unique_ptr<ImageView>(
+					new ImageView(logicalDevice, newbie.imageData.get(), 0, 1, 0, 1));
+				
+				this->images.emplace_back(std::move(newbie));
+			}
+			
+			return true;
+		}
 
 	private:
 		Swapchain(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device logicalDevice,
@@ -40,6 +116,11 @@ namespace lz
 		          vk::PresentModeKHR preferredMode)
 		{
 			this->logicalDevice = logicalDevice;
+			this->physicalDevice = physicalDevice;
+			this->queueFamilyIndices = queueFamilyIndices;
+			this->desiredImageCount = imagesCount;
+			this->presentMode = preferredMode;
+			
 			this->surface = lz::CreateWin32Surface(instance, windowDesc);
 			if (queueFamilyIndices.presentFamilyIndex == uint32_t(-1) || !physicalDevice.getSurfaceSupportKHR(
 				queueFamilyIndices.presentFamilyIndex, surface.get()))
@@ -169,10 +250,13 @@ namespace lz
 		}
 
 		SurfaceDetails surfaceDetails;
+		vk::PhysicalDevice physicalDevice;
 		vk::Device logicalDevice;
 		vk::SurfaceFormatKHR surfaceFormat;
 		vk::PresentModeKHR presentMode;
 		vk::Extent2D extent;
+		QueueFamilyIndices queueFamilyIndices;
+		uint32_t desiredImageCount;
 
 		struct Image
 		{
