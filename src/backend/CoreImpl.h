@@ -29,17 +29,17 @@ namespace lz
 		}
 		this->physicalDevice = FindPhysicalDevice(instance.get());
 
-		/*std::cout << "Supported extensions:\n";
-		auto extensions = physicalDevice.enumerateDeviceExtensionProperties();
-		for (auto extension : extensions)
-		{
-		  std::cout << "  " << extension.extensionName << "\n";
-		}*/
+		// std::cout << "Supported extensions:\n";
+		// auto extensions = physicalDevice.enumerateDeviceExtensionProperties();
+		// for (auto extension : extensions)
+		// {
+		//   std::cout << "  " << extension.extensionName << "\n";
+		// }
 
 		if (compatibleWindowDesc)
 		{
 			vk::UniqueSurfaceKHR compatibleSurface;
-			if (compatibleSurface)
+			if (!compatibleSurface)
 			{
 				compatibleSurface = CreateWin32Surface(instance.get(), *compatibleWindowDesc);
 			}
@@ -173,9 +173,9 @@ namespace lz
 	                                        const std::vector<const char*>& validationLayers)
 	{
 		auto appInfo = vk::ApplicationInfo()
-		               .setPApplicationName("Legit app")
+		               .setPApplicationName("Lingze app")
 		               .setApplicationVersion(VK_MAKE_VERSION(-1, 0, 0))
-		               .setPEngineName("Legit engine")
+		               .setPEngineName("Lingze engine")
 		               .setEngineVersion(VK_MAKE_VERSION(-1, 0, 0))
 		               .setApiVersion(VK_API_VERSION_1_2);
 

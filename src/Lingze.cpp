@@ -41,11 +41,125 @@ glm::uvec3 ReadJsonVec3u(Json::Value vectorValue)
 
 #include "imgui.h"
 #include "backend/ImGuiProfilerRenderer.h"
-
+#include "render/common/ImguiRenderer.h"
 using namespace std;
+
+struct ImGuiScopedFrame
+{
+    ImGuiScopedFrame()
+    {
+        ImGui::NewFrame();
+    }
+    ~ImGuiScopedFrame()
+    {
+        ImGui::EndFrame();
+    }
+};
+
+
 
 int main()
 {
-	cout << "Hello CMake." << endl;
-	return 0;
+    // 初始化GLFW
+    if (!glfwInit()) {
+        std::cerr << "GLFW initialization failed" << std::endl;
+        return -1;
+    }
+
+    // 设置GLFW窗口
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    GLFWwindow* window = glfwCreateWindow(1280, 760, "Lingze", nullptr, nullptr);
+    if (!window) {
+        std::cerr << "GLFW window creation failed" << std::endl;
+        glfwTerminate();
+        return -1;
+    }
+
+    try {
+        // 设置Vulkan实例和窗口
+        const char* glfwExtensions[] = { "VK_KHR_surface", "VK_KHR_win32_surface" };
+        uint32_t glfwExtensionCount = sizeof(glfwExtensions) / sizeof(glfwExtensions[0]);
+
+        lz::WindowDesc windowDesc = {};
+        windowDesc.hInstance = GetModuleHandle(NULL);
+        windowDesc.hWnd = glfwGetWin32Window(window);
+
+        // 创建Vulkan核心
+        bool enableDebugging = true;
+        auto core = std::make_unique<lz::Core>(glfwExtensions, glfwExtensionCount, &windowDesc, enableDebugging);
+
+        ImGuiRenderer imguiRenderer(core.get(), window);
+        ImGuiUtils::ProfilersWindow profilersWindow;
+
+        
+        std::unique_ptr<lz::InFlightQueue> inFlightQueue;
+
+        glm::f64vec2 mousePos;
+        glfwGetCursorPos(window, &mousePos.x, &mousePos.y);
+
+        glm::f64vec2 prevMousePos = mousePos;
+
+        // 简单的主循环
+        while (!glfwWindowShouldClose(window)) {
+            glfwPollEvents();
+            
+            imguiRenderer.ProcessInput(window);
+
+            if (!inFlightQueue)
+            {
+                std::cout << "Recreating in flight queue" << std::endl;
+                core->ClearCaches();
+                inFlightQueue = std::unique_ptr<lz::InFlightQueue>(new lz::InFlightQueue(core.get(), windowDesc, 2, vk::PresentModeKHR::eMailbox));
+                imguiRenderer.RecreateSwapchainResources(inFlightQueue->GetImageSize(), inFlightQueue->GetInFlightFramesCount());
+            }
+            
+
+            auto& imguiIO = ImGui::GetIO();
+            imguiIO.DeltaTime = 1.0f / 60.0f;              // set the time elapsed since the previous frame (in seconds)
+            imguiIO.DisplaySize.x = float(inFlightQueue->GetImageSize().width);             // set the current display width
+            imguiIO.DisplaySize.y = float(inFlightQueue->GetImageSize().height);             // set the current display height here
+
+            try
+            {
+                auto frameInfo = inFlightQueue->BeginFrame();
+                {
+                    ImGuiScopedFrame scopedFrame;
+
+                    ImGui::Begin("Demo controls", 0, ImGuiWindowFlags_NoScrollbar);
+                    {
+                        ImGui::Text("esdf, c, space: move camera");
+                        ImGui::Text("v: live reload shaders");
+                    }
+                    ImGui::End();
+
+                    //ImGui::ShowStyleEditor();
+                    //ImGui::ShowDemoWindow();
+
+
+                    ImGui::Render();
+                    imguiRenderer.RenderFrame(frameInfo, window, ImGui::GetDrawData());
+                }
+                inFlightQueue->EndFrame();
+            }
+            catch (vk::OutOfDateKHRError err)
+            {
+                core->WaitIdle();
+                inFlightQueue.reset();
+            }
+            
+        }
+        
+        // 在销毁资源前等待设备空闲
+        core->WaitIdle();
+    }
+    catch (const std::exception& e) {
+        std::cerr << "错误: " << e.what() << std::endl;
+        return -1;
+    }
+
+    // 清理资源
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    
+    return 0;
 }

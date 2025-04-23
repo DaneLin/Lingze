@@ -17,39 +17,39 @@ find_package(Vulkan)
 message(STATUS "Found Vulkan in ${Vulkan_INCLUDE_DIRS}")
 message(STATUS "Found Vulkan libs in ${Vulkan_LIBRARIES}")
 
-set(TINYOBJ_INCLUDE_DIR ./deps/tiny_obj_loader/include)
-set(SPIRVCROSS_INCLUDE_DIR ./deps/spirv-cross)
-set(GLI_INCLUDE_DIR ./deps/gli)
-set(GLM_INCLUDE_DIR ./deps/glm/include)
-set(GLFW3_INCLUDE_DIR ./deps/glfw/include)
-set(JSONCPP_INCLUDE_DIR ./deps/jsoncpp)
-set(IMGUI_INCLUDE_DIR ./deps/imgui)
+# 添加deps子目录，依赖库的配置将在deps/CMakeLists.txt中管理
+add_subdirectory(deps)
 
-set(GLFW3_LIBRARIES "${CMAKE_SOURCE_DIR}/deps/glfw/lib-vc2015/glfw3.lib")
 #find_package(GLM)
 #find_package(GLFW3)
 
+# 只保留Vulkan的包含路径，其他依赖库通过deps_include管理
 include_directories ("${Vulkan_INCLUDE_DIRS}")
-include_directories ("${GLM_INCLUDE_DIR}")
-include_directories ("${GLFW3_INCLUDE_DIR}")
-include_directories ("${SPIRVCROSS_INCLUDE_DIR}")
-include_directories ("${GLI_INCLUDE_DIR}")
-include_directories ("${TINYOBJ_INCLUDE_DIR}")
-include_directories ("${JSONCPP_INCLUDE_DIR}")
-include_directories ("${IMGUI_INCLUDE_DIR}")
 
 #include_directories ("${CMAKE_SOURCE_DIR}/deps/glm/include")
 #include_directories ("${CMAKE_SOURCE_DIR}/deps/glfw/include")
 
-file(GLOB_RECURSE dep_sources ${SPIRVCROSS_INCLUDE_DIR}/*.cpp ${TINYOBJ_INCLUDE_DIR}/*.cc ${JSONCPP_INCLUDE_DIR}/*.cpp ${IMGUI_INCLUDE_DIR}/*.cpp)
+# Define shader compilation custom target
+add_custom_target(
+    CompileShaders
+    COMMAND ${CMAKE_COMMAND} -E echo "Compiling shaders..."
+    COMMAND cmd.exe /c "${CMAKE_SOURCE_DIR}/shaders/buildShaders.bat"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Compiling modified shader files to SPIR-V"
+    VERBATIM
+)
+
 file(GLOB_RECURSE lingze_sources ./src/*.cpp)
 file(GLOB_RECURSE lingze_headers ./src/*.h)
 
 add_executable(LingzeEngine)
 
+# Add dependency on shader compilation
+add_dependencies(LingzeEngine CompileShaders)
+
 #source_group(TREE src/)
-target_sources(LingzeEngine PRIVATE ${dep_sources} ${lingze_sources} ${lingze_headers})
-target_link_libraries(LingzeEngine ${Vulkan_LIBRARIES} ${GLFW3_LIBRARIES})
+target_sources(LingzeEngine PRIVATE ${DEP_SOURCES} ${lingze_sources} ${lingze_headers})
+target_link_libraries(LingzeEngine ${Vulkan_LIBRARIES} ${GLFW3_LIBRARIES} deps_include)
 set_target_properties(LingzeEngine PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/bin/cmaked")
 set_target_properties(LingzeEngine PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/bin/cmake")
 

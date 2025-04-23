@@ -97,6 +97,7 @@ namespace lz
 				                         imageKey.debugName);
 				cacheEntry.images.emplace_back(std::move(newImage));
 			}
+			return cacheEntry.images[cacheEntry.usedCount++]->GetImageData();
 		}
 
 	private:
@@ -393,8 +394,7 @@ namespace lz
 			return ImageViewProxyUnique(ImageViewHandleInfo(this, imageViewProxies.Add(std::move(imageViewProxy))));
 		}
 
-		ImageViewProxyUnique AddExternalImageView(lz::ImageView* imageView,
-		                                          lz::ImageUsageTypes usageType = lz::ImageUsageTypes::Unknown)
+		ImageViewProxyUnique AddExternalImageView(lz::ImageView* imageView, lz::ImageUsageTypes usageType = lz::ImageUsageTypes::Unknown)
 		{
 			ImageViewProxy imageViewProxy;
 			imageViewProxy.externalView = imageView;
