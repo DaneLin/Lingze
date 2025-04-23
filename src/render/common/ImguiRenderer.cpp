@@ -1,18 +1,18 @@
 #include "ImguiRenderer.h"
 
 
-#include "../../backend/Sampler.h"
-#include "../../backend/Core.h"
-#include "../../backend/Buffer.h"
-#include "../../backend/VertexDeclaration.h"
-#include "../../backend/PipelineCache.h"
-#include "../../backend/RenderGraph.h"
-#include "../../backend/Pipeline.h"
-#include "../../backend/ShaderMemoryPool.h"
-#include "../../backend/ShaderProgram.h"
-#include "../../backend/DescriptorSetCache.h"
-#include "../../backend/ImageLoader.h"
-#include "../../backend/ImageView.h"
+#include "backend/Sampler.h"
+#include "backend/Core.h"
+#include "backend/Buffer.h"
+#include "backend/VertexDeclaration.h"
+#include "backend/PipelineCache.h"
+#include "backend/RenderGraph.h"
+#include "backend/Pipeline.h"
+#include "backend/ShaderMemoryPool.h"
+#include "backend/ShaderProgram.h"
+#include "backend/DescriptorSetCache.h"
+#include "backend/ImageLoader.h"
+#include "backend/ImageView.h"
 
 
 namespace lz
@@ -416,8 +416,8 @@ namespace lz
 
 	void ImGuiRenderer::ReloadShaders()
 	{
-		imGuiShader.vertex.reset(new lz::Shader(core->GetLogicalDevice(), "../../Shaders/spirv/ImGui/ImGui.vert.spv"));
-		imGuiShader.fragment.reset(new lz::Shader(core->GetLogicalDevice(), "../../Shaders/spirv/ImGui/ImGui.frag.spv"));
+		imGuiShader.vertex.reset(new lz::Shader(core->GetLogicalDevice(), std::string(SHADER_SPIRV_DIR) + "/ImGui/ImGui.vert.spv"));
+		imGuiShader.fragment.reset(new lz::Shader(core->GetLogicalDevice(), std::string(SHADER_SPIRV_DIR) + "/ImGui/ImGui.frag.spv"));
 		imGuiShader.program.reset(new lz::ShaderProgram(imGuiShader.vertex.get(), imGuiShader.fragment.get()));
 	}
 

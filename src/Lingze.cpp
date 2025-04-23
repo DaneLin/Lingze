@@ -183,7 +183,7 @@ int main()
         core->WaitIdle();
     }
     catch (const std::exception& e) {
-        std::cerr << "错误: " << e.what() << std::endl;
+        std::cerr << "error: " << e.what() << std::endl;
         return -1;
     }
 

@@ -2,9 +2,9 @@
 #include "imgui.h"
 #include "GLFW/glfw3.h"
 
-#include "../../backend/LingzeVK.h"
-#include "../../backend/PresentQueue.h"
-#include "../../backend/Core.h"
+#include "backend/LingzeVK.h"
+#include "backend/PresentQueue.h"
+#include "backend/Core.h"
 
 namespace lz
 {
