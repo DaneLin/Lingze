@@ -13,107 +13,106 @@
 namespace lz
 {
 	struct PresentQueue
-    {
-        PresentQueue(lz::Core* core, lz::WindowDesc window_desc, uint32_t images_count, vk::PresentModeKHR preferred_mode);
+	{
+		PresentQueue(lz::Core* core, lz::WindowDesc window_desc, uint32_t images_count,
+		             vk::PresentModeKHR preferred_mode);
 
-        void recreate_swapchain();
+		void recreate_swapchain();
 
-        lz::ImageView* acquire_image(vk::Semaphore signal_semaphore);
+		lz::ImageView* acquire_image(vk::Semaphore signal_semaphore);
 
-        void present_image(vk::Semaphore wait_semaphore);
+		void present_image(vk::Semaphore wait_semaphore);
 
-        vk::Extent2D get_image_size();
+		vk::Extent2D get_image_size();
 
-    private:
-        lz::Core* core_;
-        std::unique_ptr<lz::Swapchain> swapchain_;
-        
-        lz::WindowDesc window_desc_;
-        uint32_t images_count_;
-        vk::PresentModeKHR preferred_mode_;
+	private:
+		lz::Core* core_;
+		std::unique_ptr<lz::Swapchain> swapchain_;
 
-        std::vector<lz::ImageView*> swapchain_image_views_;
-        uint32_t image_index_;
+		lz::WindowDesc window_desc_;
+		uint32_t images_count_;
+		vk::PresentModeKHR preferred_mode_;
 
-        vk::Rect2D swapchain_rect_;
-    };
+		std::vector<lz::ImageView*> swapchain_image_views_;
+		uint32_t image_index_;
 
-    
+		vk::Rect2D swapchain_rect_;
+	};
 
-    struct InFlightQueue
-    {
-        InFlightQueue(lz::Core* core, lz::WindowDesc window_desc, uint32_t in_flight_count, vk::PresentModeKHR preferred_mode);
 
-        // Recreate swapchain
-        void recreate_swapchain();
+	struct InFlightQueue
+	{
+		InFlightQueue(lz::Core* core, lz::WindowDesc window_desc, uint32_t in_flight_count,
+		              vk::PresentModeKHR preferred_mode);
 
-        void init_frame_resources();
+		// Recreate swapchain
+		void recreate_swapchain();
 
-        vk::Extent2D get_image_size() const;
+		void init_frame_resources();
 
-        size_t get_in_flight_frames_count() const;
+		vk::Extent2D get_image_size() const;
 
-        struct FrameInfo
-        {
-            lz::ShaderMemoryPool* memory_pool;
-            size_t frame_index;
-            lz::RenderGraph::ImageViewProxyId swapchain_image_view_proxy_id;
-        };
+		size_t get_in_flight_frames_count() const;
 
-        FrameInfo begin_frame();
+		struct FrameInfo
+		{
+			lz::ShaderMemoryPool* memory_pool;
+			size_t frame_index;
+			lz::RenderGraph::ImageViewProxyId swapchain_image_view_proxy_id;
+		};
 
-        void end_frame();
+		FrameInfo begin_frame();
 
-        const std::vector<lz::ProfilerTask>& get_last_frame_cpu_profiler_data();
+		void end_frame();
 
-        const std::vector<lz::ProfilerTask>& get_last_frame_gpu_profiler_data();
+		const std::vector<lz::ProfilerTask>& get_last_frame_cpu_profiler_data();
 
-        CpuProfiler& get_cpu_profiler();
+		const std::vector<lz::ProfilerTask>& get_last_frame_gpu_profiler_data();
 
-    private:
-        std::unique_ptr<lz::ShaderMemoryPool> memory_pool_;
-        std::map<lz::ImageView*, lz::RenderGraph::ImageViewProxyUnique> swapchain_image_view_proxies_;
-        
-        lz::WindowDesc window_desc_;
-        uint32_t in_flight_count_;
-        vk::PresentModeKHR preferred_mode_;
+		CpuProfiler& get_cpu_profiler();
 
-        struct FrameResources
-        {
-            vk::UniqueSemaphore image_acquired_semaphore;
-            vk::UniqueSemaphore rendering_finished_semaphore;
-            vk::UniqueFence in_flight_fence;
+	private:
+		std::unique_ptr<lz::ShaderMemoryPool> memory_pool_;
+		std::map<lz::ImageView*, lz::RenderGraph::ImageViewProxyUnique> swapchain_image_view_proxies_;
 
-            vk::UniqueCommandBuffer command_buffer;
-            std::unique_ptr<lz::Buffer> shader_memory_buffer;
-            std::unique_ptr<lz::GpuProfiler> gpu_profiler;
-        };
-        std::vector<FrameResources> frames_;
-        size_t frame_index_;
+		lz::WindowDesc window_desc_;
+		uint32_t in_flight_count_;
+		vk::PresentModeKHR preferred_mode_;
 
-        lz::Core* core_;
-        lz::ImageView* curr_swapchain_image_view_;
-        std::unique_ptr<PresentQueue> present_queue_;
-        lz::CpuProfiler cpu_profiler_;
-        std::vector<lz::ProfilerTask> last_frame_cpu_profiler_tasks_;
+		struct FrameResources
+		{
+			vk::UniqueSemaphore image_acquired_semaphore;
+			vk::UniqueSemaphore rendering_finished_semaphore;
+			vk::UniqueFence in_flight_fence;
 
-        size_t profiler_frame_id_;
-    };
+			vk::UniqueCommandBuffer command_buffer;
+			std::unique_ptr<lz::Buffer> shader_memory_buffer;
+			std::unique_ptr<lz::GpuProfiler> gpu_profiler;
+		};
 
-    
+		std::vector<FrameResources> frames_;
+		size_t frame_index_;
 
-    struct ExecuteOnceQueue
-    {
-	    explicit ExecuteOnceQueue(lz::Core* core);
+		lz::Core* core_;
+		lz::ImageView* curr_swapchain_image_view_;
+		std::unique_ptr<PresentQueue> present_queue_;
+		lz::CpuProfiler cpu_profiler_;
+		std::vector<lz::ProfilerTask> last_frame_cpu_profiler_tasks_;
 
-        vk::CommandBuffer begin_command_buffer();
+		size_t profiler_frame_id_;
+	};
 
-        void end_command_buffer();
 
-    private:
-        lz::Core* core_;
-        vk::UniqueCommandBuffer command_buffer_;
-    };
+	struct ExecuteOnceQueue
+	{
+		explicit ExecuteOnceQueue(lz::Core* core);
 
-    
+		vk::CommandBuffer begin_command_buffer();
+
+		void end_command_buffer();
+
+	private:
+		lz::Core* core_;
+		vk::UniqueCommandBuffer command_buffer_;
+	};
 }

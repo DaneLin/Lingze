@@ -98,7 +98,7 @@ namespace lz
 		}
 	}
 
-	void Scene::IterateObjects(ObjectCallback object_callback)
+	void Scene::iterate_objects(ObjectCallback object_callback)
 	{
 		for (auto& object : objects_)
 		{

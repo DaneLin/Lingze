@@ -31,7 +31,7 @@ namespace lz
 		std::cout << "Loading mesh :" << file_name << '\n';
 		bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, file_name.c_str(), nullptr);
 		
-		if (warn.length())
+		if (!warn.empty())
 		{
 			std::cout << "Warning : " << warn << '\n';
 		}
@@ -104,7 +104,7 @@ namespace lz
 	MeshData MeshData::generate_point_mesh(MeshData src_mesh, float density)
 	{
 		assert(src_mesh.primitive_topology == vk::PrimitiveTopology::eTriangleList);
-		IndexType triangles_count = IndexType(src_mesh.indices.size() / 3);
+		const IndexType triangles_count = IndexType(src_mesh.indices.size() / 3);
 
 		std::vector<float> triangle_areas;
 		triangle_areas.resize(triangles_count);
@@ -139,7 +139,7 @@ namespace lz
 				continue;
 			}
 
-			size_t triangle_index = it - triangle_areas.begin();
+			const size_t triangle_index = it - triangle_areas.begin();
 
 			Vertex triangle_vertices[3];
 			for (size_t vertex_number = 0; vertex_number < 3; ++vertex_number)
@@ -220,35 +220,35 @@ namespace lz
 		static std::uniform_real_distribution<float> dis(0.0f, 1.0f);
 
 		assert(src_mesh.primitive_topology == vk::PrimitiveTopology::eTriangleList);
-		IndexType trianglesCount = IndexType(src_mesh.indices.size() / 3);
+		const IndexType triangles_count = IndexType(src_mesh.indices.size() / 3);
 
 		MeshData res;
 		res.primitive_topology = vk::PrimitiveTopology::ePointList;
 
-		for (size_t triangleIndex = 0; triangleIndex < trianglesCount; triangleIndex++)
+		for (size_t triangle_index = 0; triangle_index < triangles_count; triangle_index++)
 		{
 			glm::vec3 points[3];
 			for (size_t vertexNumber = 0; vertexNumber < 3; vertexNumber++)
-				points[vertexNumber] = src_mesh.vertices[src_mesh.indices[triangleIndex * 3 + vertexNumber]].pos;
+				points[vertexNumber] = src_mesh.vertices[src_mesh.indices[triangle_index * 3 + vertexNumber]].pos;
 			float area = get_triangle_area(points);
 
-			Vertex triangleVertices[3];
-			for (size_t vertexNumber = 0; vertexNumber < 3; vertexNumber++)
-				triangleVertices[vertexNumber] = src_mesh.vertices[src_mesh.indices[triangleIndex * 3 + vertexNumber]];
+			Vertex triangle_vertices[3];
+			for (size_t vertex_number = 0; vertex_number < 3; vertex_number++)
+				triangle_vertices[vertex_number] = src_mesh.vertices[src_mesh.indices[triangle_index * 3 + vertex_number]];
 
-			glm::uint resPointsCount = glm::uint(points_per_triangle_count);
-			float resPointRadius = 2.0f * sqrt(area / points_per_triangle_count);
-			float maxPointRadius = 0.6f; //0.6f
+			glm::uint res_points_count = glm::uint(points_per_triangle_count);
+			float res_point_radius = 2.0f * sqrt(area / points_per_triangle_count);
+			constexpr float max_point_radius = 0.6f; //0.6f
 
-			if (resPointRadius > maxPointRadius)
+			if (res_point_radius > max_point_radius)
 			{
-				resPointsCount = glm::uint(resPointsCount * std::pow(resPointRadius / maxPointRadius, 2.0) + 0.5f);
-				resPointRadius = maxPointRadius;
+				res_points_count = glm::uint(res_points_count * std::pow(res_point_radius / max_point_radius, 2.0) + 0.5f);
+				res_point_radius = max_point_radius;
 			}
-			for (glm::uint pointNumber = 0; pointNumber < resPointsCount; pointNumber++)
+			for (glm::uint point_number = 0; point_number < res_points_count; point_number++)
 			{
-				Vertex vertex = triangle_vertex_sample(triangleVertices, /*HammersleyNorm(pointNumber, resPointsCount)*/glm::vec2(dis(eng), dis(eng)));
-				vertex.uv.x = resPointRadius;
+				Vertex vertex = triangle_vertex_sample(triangle_vertices, /*HammersleyNorm(pointNumber, resPointsCount)*/glm::vec2(dis(eng), dis(eng)));
+				vertex.uv.x = res_point_radius;
 				res.vertices.push_back(vertex);
 			}
 		}
@@ -260,7 +260,7 @@ namespace lz
 		float sqx = sqrt(rand_val.x);
 		float y = rand_val.y;
 
-		float weights[] = { 1.0f - sqx, sqx * (1.0f - y), y * sqx };
+		const float weights[] = { 1.0f - sqx, sqx * (1.0f - y), y * sqx };
 
 		Vertex res = { glm::vec3(0.0), glm::vec3(0.0f), glm::vec2(0.0f) };
 
@@ -276,16 +276,30 @@ namespace lz
 	Mesh::Mesh(const MeshData& mesh_data, vk::PhysicalDevice physical_device, vk::Device logical_device,
 	           vk::CommandBuffer transfer_command_buffer)
 	{
+		this->primitive_topology = mesh_data.primitive_topology;
+		indices_count = mesh_data.indices.size();
+		vertices_count = mesh_data.vertices.size();
+
+		vertex_buffer = std::make_unique<lz::StagedBuffer>(physical_device, logical_device, mesh_data.vertices.size() * sizeof(MeshData::Vertex), vk::BufferUsageFlagBits::eVertexBuffer);
+		memcpy(vertex_buffer->map(), mesh_data.vertices.data(), sizeof(MeshData::Vertex) * mesh_data.vertices.size());
+		vertex_buffer->unmap(transfer_command_buffer);
+
+		if (indices_count > 0)
+		{
+			index_buffer = std::make_unique<lz::StagedBuffer>(physical_device, logical_device, mesh_data.indices.size() * sizeof(MeshData::IndexType), vk::BufferUsageFlagBits::eIndexBuffer);
+			memcpy(index_buffer->map(), mesh_data.indices.data(), sizeof(MeshData::IndexType) * mesh_data.indices.size());
+			index_buffer->unmap(transfer_command_buffer);
+		}
 	}
 
 	lz::VertexDeclaration Mesh::get_vertex_declaration()
 	{
-		lz::VertexDeclaration vertexDecl;
+		lz::VertexDeclaration vertex_decl;
 		//interleaved variant
-		vertexDecl.add_vertex_input_binding(0, sizeof(MeshData::Vertex));
-		vertexDecl.add_vertex_attribute(0, offsetof(MeshData::Vertex, pos), lz::VertexDeclaration::AttribTypes::eVec3, 0);
-		vertexDecl.add_vertex_attribute(0, offsetof(MeshData::Vertex, normal), lz::VertexDeclaration::AttribTypes::eVec3, 1);
-		vertexDecl.add_vertex_attribute(0, offsetof(MeshData::Vertex, uv), lz::VertexDeclaration::AttribTypes::eVec2, 2);
+		vertex_decl.add_vertex_input_binding(0, sizeof(MeshData::Vertex));
+		vertex_decl.add_vertex_attribute(0, offsetof(MeshData::Vertex, pos), lz::VertexDeclaration::AttribTypes::eVec3, 0);
+		vertex_decl.add_vertex_attribute(0, offsetof(MeshData::Vertex, normal), lz::VertexDeclaration::AttribTypes::eVec3, 1);
+		vertex_decl.add_vertex_attribute(0, offsetof(MeshData::Vertex, uv), lz::VertexDeclaration::AttribTypes::eVec2, 2);
 		//separate buffers variant
 		/*vertexDecl.add_vertex_input_binding(0, sizeof(glm::vec3));
 		vertexDecl.add_vertex_attribute(0, 0, lz::VertexDeclaration::AttribTypes::eVec3, 0);
@@ -294,6 +308,6 @@ namespace lz
 		vertexDecl.add_vertex_input_binding(2, sizeof(glm::vec2));
 		vertexDecl.add_vertex_attribute(2, 0, lz::VertexDeclaration::AttribTypes::eVec2, 2);*/
 
-		return vertexDecl;
+		return vertex_decl;
 	}
 }

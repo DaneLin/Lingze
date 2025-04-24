@@ -21,11 +21,9 @@ namespace lz
 		// - size: Width and height of the framebuffer
 		// - renderPass: Render pass this framebuffer is compatible with
 		Framebuffer(vk::Device logical_device, const std::vector<const ImageView*>& image_views,
-			vk::Extent2D size, vk::RenderPass render_pass);
+		            vk::Extent2D size, vk::RenderPass render_pass);
 
 	private:
-		vk::UniqueFramebuffer framebuffer_;  // Native Vulkan framebuffer handle
+		vk::UniqueFramebuffer framebuffer_; // Native Vulkan framebuffer handle
 	};
-
-	
 }

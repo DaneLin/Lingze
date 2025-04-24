@@ -63,7 +63,7 @@ namespace lz
 		curr_set_info_ = nullptr;
 	}
 
-	
+
 	uint32_t ShaderMemoryPool::align_size(uint32_t size, uint32_t alignment)
 	{
 		uint32_t res_size = size;

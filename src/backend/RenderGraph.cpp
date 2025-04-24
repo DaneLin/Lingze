@@ -810,8 +810,8 @@ namespace lz
 					pass_context.render_pass_ = render_pass;
 
 					framebuffer_cache_.begin_pass(command_buffer, color_attachments,
-					                             depth_present ? (&depth_attachment) : nullptr, render_pass,
-					                             render_pass_desc.render_area_extent);
+					                              depth_present ? (&depth_attachment) : nullptr, render_pass,
+					                              render_pass_desc.render_area_extent);
 					pass_context.command_buffer_ = command_buffer;
 					render_pass_desc.record_func(pass_context);
 					framebuffer_cache_.end_pass(command_buffer);
@@ -1331,7 +1331,8 @@ namespace lz
 		auto range = vk::ImageSubresourceRange()
 			.setAspectMask(image_view->get_image_data()->get_aspect_flags());
 
-		for (uint32_t array_layer = image_view->get_base_array_layer(); array_layer < image_view->get_base_array_layer() +
+		for (uint32_t array_layer = image_view->get_base_array_layer(); array_layer < image_view->get_base_array_layer()
+		     +
 		     image_view->get_array_layers_count(); ++array_layer)
 		{
 			range.setBaseArrayLayer(array_layer)
@@ -1374,16 +1375,16 @@ namespace lz
 			const auto src_buffer_access_pattern = get_src_buffer_access_pattern(src_usage_type);
 			const auto dst_buffer_access_pattern = get_dst_buffer_access_pattern(dst_usage_type);
 			auto buffer_barrier = vk::BufferMemoryBarrier()
-			                     .setSrcAccessMask(src_buffer_access_pattern.access_mask)
-			                     .setOffset(0)
-			                     .setSize(VK_WHOLE_SIZE)
-			                     .setDstAccessMask(dst_buffer_access_pattern.access_mask)
-			                     .setBuffer(buffer->get_handle());
+			                      .setSrcAccessMask(src_buffer_access_pattern.access_mask)
+			                      .setOffset(0)
+			                      .setSize(VK_WHOLE_SIZE)
+			                      .setDstAccessMask(dst_buffer_access_pattern.access_mask)
+			                      .setBuffer(buffer->get_handle());
 
 			if (src_buffer_access_pattern.queue_family_type == dst_buffer_access_pattern.queue_family_type)
 			{
 				buffer_barrier.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-				             .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+				              .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
 			}
 			else
 			{

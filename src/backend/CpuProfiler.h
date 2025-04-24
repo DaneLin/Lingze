@@ -33,7 +33,7 @@ namespace lz
 
             void reset() const;
             CpuProfiler* profiler;
-            size_t taskId;
+            size_t task_id;
         };
         struct FrameHandleInfo
         {
@@ -41,13 +41,13 @@ namespace lz
 
             void reset() const;
             CpuProfiler* profiler;
-            size_t frameId;
+            size_t frame_id;
         };
     public:
-        using scoped_task = UniqueHandle<TaskHandleInfo, CpuProfiler>;
-        scoped_task start_scoped_task(const std::string& task_name, uint32_t task_color);
-        using scoped_frame = UniqueHandle<FrameHandleInfo, CpuProfiler>;
-        scoped_frame start_scoped_frame();
+        using ScopedTask = UniqueHandle<TaskHandleInfo, CpuProfiler>;
+        ScopedTask start_scoped_task(const std::string& task_name, uint32_t task_color);
+        using ScopedFrame = UniqueHandle<FrameHandleInfo, CpuProfiler>;
+        ScopedFrame start_scoped_frame();
 
     private:
         using hrc = std::chrono::high_resolution_clock;

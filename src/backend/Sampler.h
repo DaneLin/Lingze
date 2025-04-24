@@ -29,6 +29,6 @@ namespace lz
 		        vk::BorderColor border_color = vk::BorderColor());
 
 	private:
-		vk::UniqueSampler sampler_handle_;  // Native Vulkan sampler handle
+		vk::UniqueSampler sampler_handle_; // Native Vulkan sampler handle
 	};
 }

@@ -31,19 +31,22 @@ namespace ImGuiUtils
 	private:
 		void rebuild_task_stats(size_t end_frame, size_t frames_count);
 
-		void render_graph(ImDrawList* draw_list, glm::vec2 graph_pos, glm::vec2 graph_size, size_t frame_index_offset) const;
+		void render_graph(ImDrawList* draw_list, glm::vec2 graph_pos, glm::vec2 graph_size,
+		                  size_t frame_index_offset) const;
 
-		void render_legend(ImDrawList* draw_list, glm::vec2 legend_pos, glm::vec2 legend_size, size_t frame_index_offset);
+		void render_legend(ImDrawList* draw_list, glm::vec2 legend_pos, glm::vec2 legend_size,
+		                   size_t frame_index_offset);
 
 		static void rect(ImDrawList* draw_list, glm::vec2 min_point, glm::vec2 max_point, uint32_t col,
 		                 bool filled = true);
 
 		static void text(ImDrawList* draw_list, glm::vec2 point, uint32_t col, const char* text);
 
-		static void triangle(ImDrawList* draw_list, const std::array<glm::vec2, 3>& points, uint32_t col, bool filled = true);
+		static void triangle(ImDrawList* draw_list, const std::array<glm::vec2, 3>& points, uint32_t col,
+		                     bool filled = true);
 
 		static void render_task_marker(ImDrawList* draw_list, glm::vec2 left_min_point, glm::vec2 left_max_point,
-		                             glm::vec2 right_min_point, glm::vec2 right_max_point, uint32_t col);
+		                               glm::vec2 right_min_point, glm::vec2 right_max_point, uint32_t col);
 
 		struct FrameData
 		{

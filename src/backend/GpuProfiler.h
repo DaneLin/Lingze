@@ -12,7 +12,8 @@ namespace lz
 	public:
 		GpuProfiler(vk::PhysicalDevice physical_device, vk::Device logical_device, uint32_t max_timestamps_count);
 
-		size_t start_task(const std::string& task_name, uint32_t task_color, vk::PipelineStageFlagBits pipeline_stage_flags);
+		size_t start_task(const std::string& task_name, uint32_t task_color,
+		                  vk::PipelineStageFlagBits pipeline_stage_flags);
 
 		void end_task(size_t task_id) const;
 
@@ -44,14 +45,14 @@ namespace lz
 		};
 
 	public:
-		using scoped_task = UniqueHandle<TaskHandleInfo, GpuProfiler>;
+		using ScopedTask = UniqueHandle<TaskHandleInfo, GpuProfiler>;
 
-		scoped_task start_scoped_task(const std::string& task_name, uint32_t task_color,
-		                           vk::PipelineStageFlagBits pipeline_stage_flags);
+		ScopedTask start_scoped_task(const std::string& task_name, uint32_t task_color,
+		                             vk::PipelineStageFlagBits pipeline_stage_flags);
 
-		using scoped_frame = UniqueHandle<FrameHandleInfo, GpuProfiler>;
+		using ScopedFrame = UniqueHandle<FrameHandleInfo, GpuProfiler>;
 
-		scoped_frame start_scoped_frame(vk::CommandBuffer command_buffer);
+		ScopedFrame start_scoped_frame(vk::CommandBuffer command_buffer);
 
 		const std::vector<lz::ProfilerTask>& get_profiler_data();
 

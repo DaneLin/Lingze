@@ -13,7 +13,7 @@ namespace lz
 	{
 		// DepthTest: Creates depth settings with depth testing enabled
 		// Returns: Depth settings configured for standard depth testing
-		static DepthSettings depth_test()
+		static DepthSettings enabled()
 		{
 			DepthSettings settings;
 			settings.depth_func = vk::CompareOp::eLess;
@@ -131,14 +131,14 @@ namespace lz
 		// Enumeration of predefined blend modes
 		enum struct BlendModes : uint8_t
 		{
-			Opaque
+			eOpaque
 		};
 
 		// Enumeration of predefined depth/stencil modes
 		enum struct DepthStencilModes : uint8_t
 		{
-			DepthNone,
-			DepthLess
+			eDepthNone,
+			eDepthLess
 		};
 
 		// GetHandle: Returns the native Vulkan pipeline handle

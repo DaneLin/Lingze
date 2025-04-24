@@ -21,12 +21,12 @@ namespace lz
 
 		// Configure framebuffer creation parameters
 		const auto framebuffer_info = vk::FramebufferCreateInfo()
-		                       .setAttachmentCount(static_cast<uint32_t>(image_view_handles.size()))
-		                       .setPAttachments(image_view_handles.data())
-		                       .setRenderPass(render_pass)
-		                       .setWidth(size.width)
-		                       .setHeight(size.height)
-		                       .setLayers(1);
+		                              .setAttachmentCount(static_cast<uint32_t>(image_view_handles.size()))
+		                              .setPAttachments(image_view_handles.data())
+		                              .setRenderPass(render_pass)
+		                              .setWidth(size.width)
+		                              .setHeight(size.height)
+		                              .setLayers(1);
 
 		// Create the framebuffer
 		this->framebuffer_ = logical_device.createFramebufferUnique(framebuffer_info);

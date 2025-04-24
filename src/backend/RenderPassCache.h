@@ -47,7 +47,7 @@ namespace lz
 		};
 
 		PassInfo begin_pass(vk::CommandBuffer command_buffer, const std::vector<Attachment>& color_attachments,
-		                   Attachment* depth_attachment, lz::RenderPass* render_pass, vk::Extent2D render_area_extent);
+		                    Attachment* depth_attachment, lz::RenderPass* render_pass, vk::Extent2D render_area_extent);
 
 		void end_pass(vk::CommandBuffer command_buffer);
 
@@ -72,6 +72,4 @@ namespace lz
 
 		vk::Device logical_device_;
 	};
-
-	
 }

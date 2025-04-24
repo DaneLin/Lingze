@@ -39,14 +39,14 @@ namespace lz
 
 		glm::mat4 get_transform_matrix() const
 		{
-			return glm::translate(pos) * glm::rotate(hor_angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(vert_angle, glm::vec3(1.0f, 0.0f, 0.0f));
+			return glm::translate(pos) * glm::rotate(hor_angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(
+				vert_angle, glm::vec3(1.0f, 0.0f, 0.0f));
 		}
 
 
 		glm::vec3 pos;
 		float vert_angle;
 		float hor_angle;
-
 	};
 
 	class Scene
@@ -61,9 +61,11 @@ namespace lz
 
 		Scene(Json::Value scene_config, lz::Core* core, GeometryTypes geometry_type);
 
-		using ObjectCallback = std::function<void(glm::mat4 objectToWorld, glm::vec3 albedoColor, glm::vec3 emissiveColor, vk::Buffer vertexBuffer, vk::Buffer indexBuffer, uint32_t verticesCount, uint32_t indicesCount)>;
-		void IterateObjects(ObjectCallback object_callback);
-		
+		using ObjectCallback = std::function<void(glm::mat4 object_to_world, glm::vec3 albedo_color,
+		                                          glm::vec3 emissive_color, vk::Buffer vertex_buffer,
+		                                          vk::Buffer index_buffer, uint32_t vertices_count,
+		                                          uint32_t indices_count)>;
+		void iterate_objects(ObjectCallback object_callback);
 
 	private:
 		std::vector<std::unique_ptr<Mesh>> meshes_;

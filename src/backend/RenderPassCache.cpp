@@ -30,8 +30,9 @@ namespace lz
 	}
 
 	FramebufferCache::PassInfo FramebufferCache::begin_pass(vk::CommandBuffer command_buffer,
-	                                                       const std::vector<Attachment>& color_attachments, Attachment* depth_attachment, lz::RenderPass* render_pass,
-	                                                       vk::Extent2D render_area_extent)
+	                                                        const std::vector<Attachment>& color_attachments,
+	                                                        Attachment* depth_attachment, lz::RenderPass* render_pass,
+	                                                        vk::Extent2D render_area_extent)
 	{
 		PassInfo pass_info;
 
@@ -61,49 +62,49 @@ namespace lz
 
 		const vk::Rect2D rect = vk::Rect2D(vk::Offset2D(), render_area_extent);
 		const auto pass_begin_info = vk::RenderPassBeginInfo()
-			.setRenderPass(render_pass->get_handle())
-			.setFramebuffer(framebuffer->get_handle())
-			.setRenderArea(rect)
-			.setClearValueCount(static_cast<uint32_t>(clear_values.size()))
-			.setPClearValues(clear_values.data());
+		                             .setRenderPass(render_pass->get_handle())
+		                             .setFramebuffer(framebuffer->get_handle())
+		                             .setRenderArea(rect)
+		                             .setClearValueCount(static_cast<uint32_t>(clear_values.size()))
+		                             .setPClearValues(clear_values.data());
 
 		command_buffer.beginRenderPass(pass_begin_info, vk::SubpassContents::eInline);
 
 		auto viewport = vk::Viewport()
-			.setWidth(float(render_area_extent.width))
-			.setHeight(float(render_area_extent.height))
-			.setMinDepth(0.0f)
-			.setMaxDepth(1.0f);
+		                .setWidth(float(render_area_extent.width))
+		                .setHeight(float(render_area_extent.height))
+		                .setMinDepth(0.0f)
+		                .setMaxDepth(1.0f);
 
-		command_buffer.setViewport(0, { viewport });
-		command_buffer.setScissor(0, { vk::Rect2D(vk::Offset2D(), render_area_extent) });
+		command_buffer.setViewport(0, {viewport});
+		command_buffer.setScissor(0, {vk::Rect2D(vk::Offset2D(), render_area_extent)});
 
 		return pass_info;
 	}
 
-	 void FramebufferCache::end_pass(vk::CommandBuffer command_buffer)
+	void FramebufferCache::end_pass(vk::CommandBuffer command_buffer)
 	{
 		command_buffer.endRenderPass();
 	}
 
-	 FramebufferCache::FramebufferCache(vk::Device logical_device) : logical_device_(logical_device)
+	FramebufferCache::FramebufferCache(vk::Device logical_device) : logical_device_(logical_device)
 	{
 	}
 
-	 FramebufferCache::FramebufferKey::FramebufferKey()
+	FramebufferCache::FramebufferKey::FramebufferKey()
 	{
 		std::fill(color_attachment_views.begin(), color_attachment_views.end(), nullptr);
 		depth_attachment_view = nullptr;
 		render_pass = nullptr;
 	}
 
-	 bool FramebufferCache::FramebufferKey::operator<(const FramebufferKey& other) const
+	bool FramebufferCache::FramebufferKey::operator<(const FramebufferKey& other) const
 	{
 		return std::tie(color_attachment_views, depth_attachment_view, extent.width, extent.height) < std::tie(
 			other.color_attachment_views, other.depth_attachment_view, other.extent.width, other.extent.height);
 	}
 
-	 lz::Framebuffer* FramebufferCache::get_framebuffer(FramebufferKey key)
+	lz::Framebuffer* FramebufferCache::get_framebuffer(FramebufferKey key)
 	{
 		auto& framebuffer = framebuffer_cache_[key];
 

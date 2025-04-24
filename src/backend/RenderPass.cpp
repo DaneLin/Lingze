@@ -20,7 +20,7 @@ namespace lz
 	}
 
 	RenderPass::RenderPass(vk::Device logical_device, std::vector<AttachmentDesc> color_attachments,
-		AttachmentDesc depth_attachment)
+	                       AttachmentDesc depth_attachment)
 	{
 		this->color_attachment_descs_ = color_attachments;
 		this->depth_attachment_desc_ = depth_attachment;
@@ -57,7 +57,7 @@ namespace lz
 
 			vk::AttachmentDescription depthDesc;
 			vk::AttachmentReference depthRef;
-				
+
 			// Add depth attachment if format is specified
 			if (depth_attachment_desc_.format != vk::Format::eUndefined)
 			{
@@ -95,12 +95,12 @@ namespace lz
 
 			// Create render pass with the configured attachments and subpass
 			auto render_pass_info = vk::RenderPassCreateInfo()
-			                      .setAttachmentCount(uint32_t(attachmentDescs.size()))
-			                      .setPAttachments(attachmentDescs.data())
-			                      .setSubpassCount(1)
-			                      .setPSubpasses(&subpass)
-			                      .setDependencyCount(0)
-			                      .setPDependencies(nullptr);
+			                        .setAttachmentCount(uint32_t(attachmentDescs.size()))
+			                        .setPAttachments(attachmentDescs.data())
+			                        .setSubpassCount(1)
+			                        .setPSubpasses(&subpass)
+			                        .setDependencyCount(0)
+			                        .setPDependencies(nullptr);
 			//.setDependencyCount(1)
 			//.setPDependencies(&subpassDependency);
 

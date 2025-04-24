@@ -30,7 +30,7 @@ namespace lz
 		// - bytecode: SPIR-V bytecode as a vector of 32-bit words
 		void init(vk::Device device, const std::vector<uint32_t>& bytecode);
 
-		vk::UniqueShaderModule shader_module_;  // Native Vulkan shader module handle
+		vk::UniqueShaderModule shader_module_; // Native Vulkan shader module handle
 		friend class Core;
 	};
 }

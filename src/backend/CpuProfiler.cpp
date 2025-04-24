@@ -52,32 +52,32 @@ namespace lz
 	CpuProfiler::TaskHandleInfo::TaskHandleInfo(CpuProfiler* profiler, const size_t task_id)
 	{
 		this->profiler = profiler;
-		this->taskId = task_id;
+		this->task_id = task_id;
 	}
 
 	void CpuProfiler::TaskHandleInfo::reset() const
 	{
-		profiler->end_task(taskId);
+		profiler->end_task(task_id);
 	}
 
 	CpuProfiler::FrameHandleInfo::FrameHandleInfo(CpuProfiler* profiler, const size_t frame_id)
 	{
 		this->profiler = profiler;
-		this->frameId = frame_id;
+		this->frame_id = frame_id;
 	}
 
 	void CpuProfiler::FrameHandleInfo::reset() const
 	{
-		profiler->end_frame(frameId);
+		profiler->end_frame(frame_id);
 	}
 
-	CpuProfiler::scoped_task CpuProfiler::start_scoped_task(const std::string& task_name, uint32_t task_color)
+	CpuProfiler::ScopedTask CpuProfiler::start_scoped_task(const std::string& task_name, uint32_t task_color)
 	{
-		return scoped_task(TaskHandleInfo(this, start_task(task_name, task_color)), true);
+		return ScopedTask(TaskHandleInfo(this, start_task(task_name, task_color)), true);
 	}
 
-	CpuProfiler::scoped_frame CpuProfiler::start_scoped_frame()
+	CpuProfiler::ScopedFrame CpuProfiler::start_scoped_frame()
 	{
-		return scoped_frame(FrameHandleInfo(this, start_frame()), true);
+		return ScopedFrame(FrameHandleInfo(this, start_frame()), true);
 	}
 }

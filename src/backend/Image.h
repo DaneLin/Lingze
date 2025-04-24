@@ -131,7 +131,7 @@ namespace lz
 		vk::DeviceMemory get_memory();
 
 		static vk::ImageCreateInfo create_info_2d(glm::uvec2 size, uint32_t mips_count, uint32_t array_layers_count,
-		                                        vk::Format format, vk::ImageUsageFlags usage);
+		                                          vk::Format format, vk::ImageUsageFlags usage);
 
 		// CreateInfoVolume: Creates an image create info structure for 3D volume images
 		// Parameters:
@@ -142,7 +142,7 @@ namespace lz
 		// - usage: Usage flags for the image
 		// Returns: Configured image create info structure for a 3D volume image
 		static vk::ImageCreateInfo create_info_volume(glm::uvec3 size, uint32_t mips_count, uint32_t array_layers_count,
-		                                            vk::Format format, vk::ImageUsageFlags usage);
+		                                              vk::Format format, vk::ImageUsageFlags usage);
 
 		// CreateInfoCube: Creates an image create info structure for cubemap images
 		// Parameters:
@@ -152,7 +152,7 @@ namespace lz
 		// - usage: Usage flags for the image
 		// Returns: Configured image create info structure for a cubemap
 		static vk::ImageCreateInfo create_info_cube(glm::uvec2 size, uint32_t mips_count, vk::Format format,
-		                                          vk::ImageUsageFlags usage);
+		                                            vk::ImageUsageFlags usage);
 
 		// Constructor: Creates a new image with specified properties
 		// Parameters:

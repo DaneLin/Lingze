@@ -37,7 +37,8 @@ namespace lz
 		// - mipLevelsCount: Number of mipmap levels to include in the view
 		// - baseArrayLayer: First array layer to include in the view
 		// - arrayLayersCount: Number of array layers to include in the view
-		ImageView(vk::Device logical_device, lz::ImageData* image_data, uint32_t base_mip_level, uint32_t mip_levels_count,
+		ImageView(vk::Device logical_device, lz::ImageData* image_data, uint32_t base_mip_level,
+		          uint32_t mip_levels_count,
 		          uint32_t base_array_layer, uint32_t array_layers_count);
 
 		// Constructor: Creates an image view for cubemap images
@@ -50,18 +51,16 @@ namespace lz
 		          uint32_t mip_levels_count);
 
 	private:
-		vk::UniqueImageView image_view_;  // Native Vulkan image view handle
-		lz::ImageData* image_data_;       // Underlying image data
+		vk::UniqueImageView image_view_; // Native Vulkan image view handle
+		lz::ImageData* image_data_; // Underlying image data
 
-		uint32_t base_mip_level_;          // First mipmap level in the view
-		uint32_t mip_levels_count_;        // Number of mipmap levels in the view
+		uint32_t base_mip_level_; // First mipmap level in the view
+		uint32_t mip_levels_count_; // Number of mipmap levels in the view
 
-		uint32_t base_array_layer_;        // First array layer in the view
-		uint32_t array_layers_count_;      // Number of array layers in the view
+		uint32_t base_array_layer_; // First array layer in the view
+		uint32_t array_layers_count_; // Number of array layers in the view
 
 		friend class lz::Swapchain;
 		friend class lz::RenderTarget;
 	};
-
-	
 }

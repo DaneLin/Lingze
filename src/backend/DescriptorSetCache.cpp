@@ -38,30 +38,30 @@ namespace lz
 	{
 		std::vector<vk::DescriptorPoolSize> pool_sizes;
 		constexpr auto uniform_pool_size = vk::DescriptorPoolSize()
-		                                 .setDescriptorCount(1000)
-		                                 .setType(vk::DescriptorType::eUniformBufferDynamic);
+		                                   .setDescriptorCount(1000)
+		                                   .setType(vk::DescriptorType::eUniformBufferDynamic);
 		pool_sizes.push_back(uniform_pool_size);
 
 		constexpr auto image_sampler_pool_size = vk::DescriptorPoolSize()
-		                                      .setDescriptorCount(1000)
-		                                      .setType(vk::DescriptorType::eCombinedImageSampler);
+		                                         .setDescriptorCount(1000)
+		                                         .setType(vk::DescriptorType::eCombinedImageSampler);
 		pool_sizes.push_back(image_sampler_pool_size);
 
 		constexpr auto storage_pool_size = vk::DescriptorPoolSize()
-		                                 .setDescriptorCount(1000)
-		                                 .setType(vk::DescriptorType::eStorageBuffer);
+		                                   .setDescriptorCount(1000)
+		                                   .setType(vk::DescriptorType::eStorageBuffer);
 		pool_sizes.push_back(storage_pool_size);
 
 		constexpr auto storage_image_pool_size = vk::DescriptorPoolSize()
-		                                      .setDescriptorCount(1000)
-		                                      .setType(vk::DescriptorType::eStorageImage);
+		                                         .setDescriptorCount(1000)
+		                                         .setType(vk::DescriptorType::eStorageImage);
 		pool_sizes.push_back(storage_image_pool_size);
 
 		const auto pool_create_info = vk::DescriptorPoolCreateInfo()
-		                      .setMaxSets(1000)
-		                      .setPoolSizeCount(uint32_t(pool_sizes.size()))
-		                      .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
-		                      .setPPoolSizes(pool_sizes.data());
+		                              .setMaxSets(1000)
+		                              .setPoolSizeCount(uint32_t(pool_sizes.size()))
+		                              .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
+		                              .setPPoolSizes(pool_sizes.data());
 		descriptor_pool_ = logical_device.createDescriptorPoolUnique(pool_create_info);
 	}
 
@@ -82,10 +82,10 @@ namespace lz
 			{
 				auto buffer_info = descriptor_set_layout_key.get_uniform_buffer_info(uniform_buffer_id);
 				auto buffer_layout_binding = vk::DescriptorSetLayoutBinding()
-				                           .setBinding(buffer_info.shader_binding_index)
-				                           .setDescriptorCount(1) //if this is an array of buffers
-				                           .setDescriptorType(vk::DescriptorType::eUniformBufferDynamic)
-				                           .setStageFlags(buffer_info.stage_flags);
+				                             .setBinding(buffer_info.shader_binding_index)
+				                             .setDescriptorCount(1) //if this is an array of buffers
+				                             .setDescriptorType(vk::DescriptorType::eUniformBufferDynamic)
+				                             .setStageFlags(buffer_info.stage_flags);
 				layout_bindings.push_back(buffer_layout_binding);
 			}
 
@@ -97,10 +97,10 @@ namespace lz
 			{
 				auto buffer_info = descriptor_set_layout_key.get_storage_buffer_info(storage_buffer_id);
 				auto buffer_layout_binding = vk::DescriptorSetLayoutBinding()
-				                           .setBinding(buffer_info.shader_binding_index)
-				                           .setDescriptorCount(1) //if this is an array of buffers
-				                           .setDescriptorType(vk::DescriptorType::eStorageBuffer)
-				                           .setStageFlags(buffer_info.stage_flags);
+				                             .setBinding(buffer_info.shader_binding_index)
+				                             .setDescriptorCount(1) //if this is an array of buffers
+				                             .setDescriptorType(vk::DescriptorType::eStorageBuffer)
+				                             .setStageFlags(buffer_info.stage_flags);
 				layout_bindings.push_back(buffer_layout_binding);
 			}
 
@@ -113,10 +113,10 @@ namespace lz
 				auto image_sampler_info = descriptor_set_layout_key.get_image_sampler_info(image_sampler_id);
 
 				auto image_sampler_layout_binding = vk::DescriptorSetLayoutBinding()
-				                                 .setBinding(image_sampler_info.shader_binding_index)
-				                                 .setDescriptorCount(1) //if this is an array of image samplers
-				                                 .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-				                                 .setStageFlags(image_sampler_info.stage_flags);
+				                                    .setBinding(image_sampler_info.shader_binding_index)
+				                                    .setDescriptorCount(1) //if this is an array of image samplers
+				                                    .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+				                                    .setStageFlags(image_sampler_info.stage_flags);
 				layout_bindings.push_back(image_sampler_layout_binding);
 			}
 
@@ -128,16 +128,16 @@ namespace lz
 			{
 				auto image_info = descriptor_set_layout_key.get_storage_image_info(storage_image_id);
 				auto image_layout_binding = vk::DescriptorSetLayoutBinding()
-				                          .setBinding(image_info.shader_binding_index)
-				                          .setDescriptorCount(1) //if this is an array of buffers
-				                          .setDescriptorType(vk::DescriptorType::eStorageImage)
-				                          .setStageFlags(image_info.stage_flags);
+				                            .setBinding(image_info.shader_binding_index)
+				                            .setDescriptorCount(1) //if this is an array of buffers
+				                            .setDescriptorType(vk::DescriptorType::eStorageImage)
+				                            .setStageFlags(image_info.stage_flags);
 				layout_bindings.push_back(image_layout_binding);
 			}
 
 			auto descriptor_layout_info = vk::DescriptorSetLayoutCreateInfo()
-			                            .setBindingCount(uint32_t(layout_bindings.size()))
-			                            .setPBindings(layout_bindings.data());
+			                              .setBindingCount(uint32_t(layout_bindings.size()))
+			                              .setPBindings(layout_bindings.data());
 
 			descriptor_set_layout = logical_device_.createDescriptorSetLayoutUnique(descriptor_layout_info);
 		}
@@ -153,9 +153,9 @@ namespace lz
 	                                                         image_sampler_bindings)
 	{
 		const auto set_bindings = lz::DescriptorSetBindings()
-		                   .set_uniform_buffer_bindings(uniform_buffer_bindings)
-		                   .set_storage_buffer_bindings(storage_buffer_bindings)
-		                   .set_image_sampler_bindings(image_sampler_bindings);
+		                          .set_uniform_buffer_bindings(uniform_buffer_bindings)
+		                          .set_storage_buffer_bindings(storage_buffer_bindings)
+		                          .set_image_sampler_bindings(image_sampler_bindings);
 		return get_descriptor_set(set_layout_key, set_bindings);
 	}
 
@@ -170,9 +170,9 @@ namespace lz
 		if (!descriptor_set)
 		{
 			auto set_alloc_info = vk::DescriptorSetAllocateInfo()
-			                    .setDescriptorPool(this->descriptor_pool_.get())
-			                    .setDescriptorSetCount(1)
-			                    .setPSetLayouts(&key.layout);
+			                      .setDescriptorPool(this->descriptor_pool_.get())
+			                      .setDescriptorSetCount(1)
+			                      .setPSetLayouts(&key.layout);
 
 			descriptor_set = std::move(logical_device_.allocateDescriptorSetsUnique(set_alloc_info)[0]);
 
@@ -194,16 +194,16 @@ namespace lz
 				}
 
 				uniform_buffer_infos[uniform_buffer_index] = vk::DescriptorBufferInfo()
-				                                         .setBuffer(uniform_binding.buffer->get_handle())
-				                                         .setOffset(uniform_binding.offset)
-				                                         .setRange(uniform_binding.size);
+				                                             .setBuffer(uniform_binding.buffer->get_handle())
+				                                             .setOffset(uniform_binding.offset)
+				                                             .setRange(uniform_binding.size);
 
 				auto set_write = vk::WriteDescriptorSet()
-				                .setDescriptorCount(1)
-				                .setDescriptorType(vk::DescriptorType::eUniformBufferDynamic)
-				                .setDstBinding(uniform_binding.shader_binding_id)
-				                .setDstSet(descriptor_set.get())
-				                .setPBufferInfo(&uniform_buffer_infos[uniform_buffer_index]);
+				                 .setDescriptorCount(1)
+				                 .setDescriptorType(vk::DescriptorType::eUniformBufferDynamic)
+				                 .setDstBinding(uniform_binding.shader_binding_id)
+				                 .setDstSet(descriptor_set.get())
+				                 .setPBufferInfo(&uniform_buffer_infos[uniform_buffer_index]);
 
 				set_writes.push_back(set_write);
 			}
@@ -216,23 +216,24 @@ namespace lz
 				auto& image_sampler_binding = set_bindings.image_sampler_bindings[image_sampler_index];
 
 				{
-					auto image_sampler_id = set_layout_key.get_image_sampler_id(image_sampler_binding.shader_binding_id);
+					auto image_sampler_id = set_layout_key.
+						get_image_sampler_id(image_sampler_binding.shader_binding_id);
 					assert(image_sampler_id.is_valid());
 					auto image_sampler_data = set_layout_key.get_image_sampler_info(image_sampler_id);
 				}
 
 				image_sampler_infos[image_sampler_index] = vk::DescriptorImageInfo()
-				                                       .setImageView(image_sampler_binding.image_view->get_handle())
-				                                       .setSampler(image_sampler_binding.sampler->get_handle())
-				                                       .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+				                                           .setImageView(image_sampler_binding.image_view->get_handle())
+				                                           .setSampler(image_sampler_binding.sampler->get_handle())
+				                                           .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
 				//auto imageInfo 
 				auto set_write = vk::WriteDescriptorSet()
-				                .setDescriptorCount(1)
-				                .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-				                .setDstBinding(image_sampler_binding.shader_binding_id)
-				                .setDstSet(descriptor_set.get())
-				                .setPImageInfo(&image_sampler_infos[image_sampler_index]);
+				                 .setDescriptorCount(1)
+				                 .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+				                 .setDstBinding(image_sampler_binding.shader_binding_id)
+				                 .setDstSet(descriptor_set.get())
+				                 .setPImageInfo(&image_sampler_infos[image_sampler_index]);
 
 				set_writes.push_back(set_write);
 			}
@@ -254,16 +255,16 @@ namespace lz
 				}
 
 				storage_buffer_infos[storage_buffer_index] = vk::DescriptorBufferInfo()
-				                                         .setBuffer(storage_binding.buffer->get_handle())
-				                                         .setOffset(storage_binding.offset)
-				                                         .setRange(storage_binding.size);
+				                                             .setBuffer(storage_binding.buffer->get_handle())
+				                                             .setOffset(storage_binding.offset)
+				                                             .setRange(storage_binding.size);
 
 				auto set_write = vk::WriteDescriptorSet()
-				                .setDescriptorCount(1)
-				                .setDescriptorType(vk::DescriptorType::eStorageBuffer)
-				                .setDstBinding(storage_binding.shader_binding_id)
-				                .setDstSet(descriptor_set.get())
-				                .setPBufferInfo(&storage_buffer_infos[storage_buffer_index]);
+				                 .setDescriptorCount(1)
+				                 .setDescriptorType(vk::DescriptorType::eStorageBuffer)
+				                 .setDstBinding(storage_binding.shader_binding_id)
+				                 .setDstSet(descriptor_set.get())
+				                 .setPBufferInfo(&storage_buffer_infos[storage_buffer_index]);
 
 				set_writes.push_back(set_write);
 			}
@@ -283,19 +284,19 @@ namespace lz
 				}
 
 				storage_image_infos[storage_image_index] = vk::DescriptorImageInfo()
-				                                       .setImageView(storage_binding.image_view->get_handle())
-				                                       .setImageLayout(vk::ImageLayout::eGeneral);
+				                                           .setImageView(storage_binding.image_view->get_handle())
+				                                           .setImageLayout(vk::ImageLayout::eGeneral);
 
 				if (set_bindings.image_sampler_bindings.size() > 0)
 					storage_image_infos[storage_image_index].setSampler(
 						set_bindings.image_sampler_bindings[0].sampler->get_handle());
 
 				auto set_write = vk::WriteDescriptorSet()
-				                .setDescriptorCount(1)
-				                .setDescriptorType(vk::DescriptorType::eStorageImage)
-				                .setDstBinding(storage_binding.shader_binding_id)
-				                .setDstSet(descriptor_set.get())
-				                .setPImageInfo(&storage_image_infos[storage_image_index]);
+				                 .setDescriptorCount(1)
+				                 .setDescriptorType(vk::DescriptorType::eStorageImage)
+				                 .setDstBinding(storage_binding.shader_binding_id)
+				                 .setDstSet(descriptor_set.get())
+				                 .setPImageInfo(&storage_image_infos[storage_image_index]);
 
 				set_writes.push_back(set_write);
 			}

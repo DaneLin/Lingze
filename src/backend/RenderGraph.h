@@ -423,38 +423,42 @@ namespace lz
 
 	private:
 		void flush_external_images(vk::CommandBuffer command_buffer, lz::CpuProfiler* cpu_profiler,
-		                         lz::GpuProfiler* gpu_profiler);
+		                           lz::GpuProfiler* gpu_profiler);
 
-		static bool image_view_contains_subresource(lz::ImageView* image_view, lz::ImageData* image_data, uint32_t mip_level,
+		static bool image_view_contains_subresource(lz::ImageView* image_view, lz::ImageData* image_data,
+		                                            uint32_t mip_level,
 		                                            uint32_t array_layer);
 
-		ImageUsageTypes get_task_image_subresource_usage_type(size_t task_index, lz::ImageData* image_data, uint32_t mip_level,
-		                                                 uint32_t array_layer);
+		ImageUsageTypes get_task_image_subresource_usage_type(size_t task_index, lz::ImageData* image_data,
+		                                                      uint32_t mip_level,
+		                                                      uint32_t array_layer);
 
 		BufferUsageTypes get_task_buffer_usage_type(size_t task_index, lz::Buffer* buffer);
 
-		ImageUsageTypes get_last_image_subresource_usage_type(size_t task_index, lz::ImageData* image_data, uint32_t mip_level,
-		                                                 uint32_t array_layer);
+		ImageUsageTypes get_last_image_subresource_usage_type(size_t task_index, lz::ImageData* image_data,
+		                                                      uint32_t mip_level,
+		                                                      uint32_t array_layer);
 
 		BufferUsageTypes get_last_buffer_usage_type(size_t task_index, lz::Buffer* buffer);
 
 		void flush_image_transition_barriers(lz::ImageData* image_data, vk::ImageSubresourceRange range,
-		                                  ImageUsageTypes src_usage_type, ImageUsageTypes dst_usage_type,
-		                                  vk::PipelineStageFlags& src_stage, vk::PipelineStageFlags& dst_stage,
-		                                  std::vector<vk::ImageMemoryBarrier>& image_barriers);
+		                                     ImageUsageTypes src_usage_type, ImageUsageTypes dst_usage_type,
+		                                     vk::PipelineStageFlags& src_stage, vk::PipelineStageFlags& dst_stage,
+		                                     std::vector<vk::ImageMemoryBarrier>& image_barriers);
 
-		void add_image_transition_barriers(lz::ImageView* image_view, ImageUsageTypes dst_usage_type, size_t dst_task_index,
-		                                vk::PipelineStageFlags& src_stage, vk::PipelineStageFlags& dst_stage,
-		                                std::vector<vk::ImageMemoryBarrier>& image_barriers);
+		void add_image_transition_barriers(lz::ImageView* image_view, ImageUsageTypes dst_usage_type,
+		                                   size_t dst_task_index,
+		                                   vk::PipelineStageFlags& src_stage, vk::PipelineStageFlags& dst_stage,
+		                                   std::vector<vk::ImageMemoryBarrier>& image_barriers);
 
 		void flush_buffer_transition_barriers(lz::Buffer* buffer, BufferUsageTypes src_usage_type,
-		                                   BufferUsageTypes dst_usage_type, vk::PipelineStageFlags& src_stage,
-		                                   vk::PipelineStageFlags& dst_stage,
-		                                   std::vector<vk::BufferMemoryBarrier>& buffer_barriers);
+		                                      BufferUsageTypes dst_usage_type, vk::PipelineStageFlags& src_stage,
+		                                      vk::PipelineStageFlags& dst_stage,
+		                                      std::vector<vk::BufferMemoryBarrier>& buffer_barriers);
 
 		void add_buffer_barriers(lz::Buffer* buffer, BufferUsageTypes dstUsageType, size_t dst_task_index,
-		                       vk::PipelineStageFlags& src_stage, vk::PipelineStageFlags& dst_stage,
-		                       std::vector<vk::BufferMemoryBarrier>& buffer_barriers);
+		                         vk::PipelineStageFlags& src_stage, vk::PipelineStageFlags& dst_stage,
+		                         std::vector<vk::BufferMemoryBarrier>& buffer_barriers);
 
 	private:
 		struct ImageProxy

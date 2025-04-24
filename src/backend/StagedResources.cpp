@@ -8,7 +8,7 @@
 namespace lz
 {
 	StagedBuffer::StagedBuffer(vk::PhysicalDevice physical_device, vk::Device logical_device, vk::DeviceSize size,
-		vk::BufferUsageFlags buffer_usage)
+	                           vk::BufferUsageFlags buffer_usage)
 	{
 		this->size_ = size;
 		staging_buffer_ = std::make_unique<lz::Buffer>(physical_device, logical_device, size,
@@ -33,7 +33,7 @@ namespace lz
 		                  .setSrcOffset(0)
 		                  .setDstOffset(0)
 		                  .setSize(size_);
-		command_buffer.copyBuffer(staging_buffer_->get_handle(), device_local_buffer_->get_handle(), { copyRegion });
+		command_buffer.copyBuffer(staging_buffer_->get_handle(), device_local_buffer_->get_handle(), {copyRegion});
 	}
 
 	vk::Buffer StagedBuffer::get_buffer()
@@ -44,23 +44,23 @@ namespace lz
 	void load_buffer_data(lz::Core* core, void* buffer_data, size_t buffer_size, lz::Buffer* dst_buffer)
 	{
 		auto staging_buffer = std::make_unique<lz::Buffer>(core->get_physical_device(), core->get_logical_device(),
-		                                                  buffer_size, vk::BufferUsageFlagBits::eTransferSrc,
-		                                                  vk::MemoryPropertyFlagBits::eHostVisible |
-		                                                  vk::MemoryPropertyFlagBits::eHostCoherent);
+		                                                   buffer_size, vk::BufferUsageFlagBits::eTransferSrc,
+		                                                   vk::MemoryPropertyFlagBits::eHostVisible |
+		                                                   vk::MemoryPropertyFlagBits::eHostCoherent);
 
 		void* buffer_mapped_data = staging_buffer->map();
 		memcpy(buffer_mapped_data, buffer_data, buffer_size);
 		staging_buffer->unmap();
 
 		auto copy_region = vk::BufferCopy()
-		                  .setSrcOffset(0)
-		                  .setDstOffset(0)
-		                  .setSize(buffer_size);
+		                   .setSrcOffset(0)
+		                   .setDstOffset(0)
+		                   .setSize(buffer_size);
 
 		lz::ExecuteOnceQueue transfer_queue(core);
 		const auto transfer_command_buffer = transfer_queue.begin_command_buffer();
 		{
-			transfer_command_buffer.copyBuffer(staging_buffer->get_handle(), dst_buffer->get_handle(), { copy_region });
+			transfer_command_buffer.copyBuffer(staging_buffer->get_handle(), dst_buffer->get_handle(), {copy_region});
 		}
 		transfer_queue.end_command_buffer();
 	}

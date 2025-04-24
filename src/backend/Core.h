@@ -22,7 +22,8 @@ namespace lz
 		// - instanceExtensionsCount: Number of instance extensions
 		// - compatibleWindowDesc: Window descriptor for surface compatibility check
 		// - enableDebugging: Whether to enable Vulkan validation layers
-		Core(const char** instance_extensions, uint32_t instance_extensions_count, const WindowDesc* compatible_window_desc,
+		Core(const char** instance_extensions, uint32_t instance_extensions_count,
+		     const WindowDesc* compatible_window_desc,
 		     bool enable_debugging);
 
 		// Destructor: Cleans up Vulkan resources
@@ -38,7 +39,7 @@ namespace lz
 		// - preferredMode: Preferred presentation mode
 		// Returns: Unique pointer to the created swapchain
 		std::unique_ptr<Swapchain> create_swapchain(WindowDesc window_desc, uint32_t images_count,
-		                                           vk::PresentModeKHR preferred_mode);
+		                                            vk::PresentModeKHR preferred_mode);
 
 		// SetObjectDebugName: Sets a debug name for a Vulkan object
 		// Parameters:
@@ -47,7 +48,8 @@ namespace lz
 		// - objHandle: Handle to the Vulkan object
 		// - name: Debug name to set
 		template <typename Handle, typename Loader>
-		static void set_object_debug_name(vk::Device logical_device, Loader& loader, Handle obj_handle, const std::string name)
+		static void set_object_debug_name(vk::Device logical_device, Loader& loader, Handle obj_handle,
+		                                  const std::string name)
 		{
 			auto nameInfo = vk::DebugUtilsObjectNameInfoEXT()
 			                .setObjectHandle(uint64_t(Handle::CType(obj_handle)))
@@ -120,7 +122,7 @@ namespace lz
 	private:
 		// CreateInstance: Creates a Vulkan instance with specified extensions and layers
 		static vk::UniqueInstance create_instance(const std::vector<const char*>& instance_extensions,
-		                                         const std::vector<const char*>& validation_layers);
+		                                          const std::vector<const char*>& validation_layers);
 
 		// CreateDebugUtilsMessenger: Sets up the debug messenger for validation layers
 		static vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic> create_debug_utils_messenger(
@@ -143,9 +145,10 @@ namespace lz
 		static QueueFamilyIndices find_queue_family_indices(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface);
 
 		// CreateLogicalDevice: Creates a logical device with required features and queues
-		static vk::UniqueDevice create_logical_device(vk::PhysicalDevice physical_device, QueueFamilyIndices family_indices,
-		                                            std::vector<const char*> device_extensions,
-		                                            std::vector<const char*> validation_layers);
+		static vk::UniqueDevice create_logical_device(vk::PhysicalDevice physical_device,
+		                                              QueueFamilyIndices family_indices,
+		                                              std::vector<const char*> device_extensions,
+		                                              std::vector<const char*> validation_layers);
 
 		// GetDeviceQueue: Retrieves a queue from the logical device
 		static vk::Queue get_device_queue(vk::Device logical_device, uint32_t queue_family_index);

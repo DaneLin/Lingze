@@ -75,15 +75,15 @@ namespace lz
 		profiler->end_frame(frame_id);
 	}
 
-	GpuProfiler::scoped_task GpuProfiler::start_scoped_task(const std::string& task_name, const uint32_t task_color,
+	GpuProfiler::ScopedTask GpuProfiler::start_scoped_task(const std::string& task_name, const uint32_t task_color,
 		const vk::PipelineStageFlagBits pipeline_stage_flags)
 	{
-		return scoped_task(TaskHandleInfo(this, start_task(task_name, task_color, pipeline_stage_flags)), true);
+		return ScopedTask(TaskHandleInfo(this, start_task(task_name, task_color, pipeline_stage_flags)), true);
 	}
 
-	GpuProfiler::scoped_frame GpuProfiler::start_scoped_frame(const vk::CommandBuffer command_buffer)
+	GpuProfiler::ScopedFrame GpuProfiler::start_scoped_frame(const vk::CommandBuffer command_buffer)
 	{
-		return scoped_frame(FrameHandleInfo(this, start_frame(command_buffer)), true);
+		return ScopedFrame(FrameHandleInfo(this, start_frame(command_buffer)), true);
 	}
 
 	const std::vector<lz::ProfilerTask>& GpuProfiler::get_profiler_data()

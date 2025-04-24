@@ -63,7 +63,6 @@ namespace lz
 			return (UniformType*)((char*)dst_memory_ + total_offset);
 		}
 
-
 	private:
 		static uint32_t align_size(uint32_t size, uint32_t alignment);
 

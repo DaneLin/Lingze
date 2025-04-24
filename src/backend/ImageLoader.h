@@ -255,8 +255,9 @@ namespace lz
 		return -1;
 	}
 
-	static lz::ImageTexelData create_simple_image_texel_data(const glm::uint8* pixels, const int width, const int height,
-	                                                     const vk::Format format = vk::Format::eR8G8B8A8Unorm)
+	static lz::ImageTexelData create_simple_image_texel_data(const glm::uint8* pixels, const int width,
+	                                                         const int height,
+	                                                         const vk::Format format = vk::Format::eR8G8B8A8Unorm)
 	{
 		lz::ImageTexelData texel_data;
 		texel_data.base_size = glm::uvec3(width, height, 1);
@@ -275,36 +276,37 @@ namespace lz
 
 
 	static void add_transition_barrier(const lz::ImageData* image_data, const lz::ImageUsageTypes src_usage_type,
-	                                 const lz::ImageUsageTypes dst_usage_type, const vk::CommandBuffer command_buffer)
+	                                   const lz::ImageUsageTypes dst_usage_type, const vk::CommandBuffer command_buffer)
 	{
 		const auto src_image_access_pattern = get_src_image_access_pattern(src_usage_type);
 		const auto dst_image_access_pattern = get_dst_image_access_pattern(dst_usage_type);
 
 		const auto range = vk::ImageSubresourceRange()
-		             .setAspectMask(image_data->get_aspect_flags())
-		             .setBaseArrayLayer(0)
-		             .setLayerCount(image_data->get_array_layers_count())
-		             .setBaseMipLevel(0)
-		             .setLevelCount(image_data->get_mips_count());
+		                   .setAspectMask(image_data->get_aspect_flags())
+		                   .setBaseArrayLayer(0)
+		                   .setLayerCount(image_data->get_array_layers_count())
+		                   .setBaseMipLevel(0)
+		                   .setLevelCount(image_data->get_mips_count());
 
 		auto image_barrier = vk::ImageMemoryBarrier()
-		                    .setSrcAccessMask(src_image_access_pattern.access_mask)
-		                    .setOldLayout(src_image_access_pattern.layout)
-		                    .setDstAccessMask(dst_image_access_pattern.access_mask)
-		                    .setNewLayout(dst_image_access_pattern.layout)
-		                    .setSubresourceRange(range)
-		                    .setImage(image_data->get_handle());
+		                     .setSrcAccessMask(src_image_access_pattern.access_mask)
+		                     .setOldLayout(src_image_access_pattern.layout)
+		                     .setDstAccessMask(dst_image_access_pattern.access_mask)
+		                     .setNewLayout(dst_image_access_pattern.layout)
+		                     .setSubresourceRange(range)
+		                     .setImage(image_data->get_handle());
 
 		image_barrier
 			.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 			.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
 
-		command_buffer.pipelineBarrier(src_image_access_pattern.stage, dst_image_access_pattern.stage, vk::DependencyFlags(),
-		                              {}, {}, {image_barrier});
+		command_buffer.pipelineBarrier(src_image_access_pattern.stage, dst_image_access_pattern.stage,
+		                               vk::DependencyFlags(),
+		                               {}, {}, {image_barrier});
 	}
 
 	static void load_texel_data(lz::Core* core, const ImageTexelData* texel_data, const lz::ImageData* dstImageData,
-	                          const lz::ImageUsageTypes dstUsageType = lz::ImageUsageTypes::eGraphicsShaderRead)
+	                            const lz::ImageUsageTypes dstUsageType = lz::ImageUsageTypes::eGraphicsShaderRead)
 	{
 		const auto staging_buffer = std::make_unique<lz::Buffer>(core->get_physical_device(),
 		                                                         core->get_logical_device(),
@@ -326,18 +328,18 @@ namespace lz
 			{
 				const auto& layer = mip.layers[array_layer];
 				auto image_subresource = vk::ImageSubresourceLayers()
-				                        .setAspectMask(vk::ImageAspectFlagBits::eColor)
-				                        .setMipLevel(mip_level)
-				                        .setBaseArrayLayer(array_layer)
-				                        .setLayerCount(1);
+				                         .setAspectMask(vk::ImageAspectFlagBits::eColor)
+				                         .setMipLevel(mip_level)
+				                         .setBaseArrayLayer(array_layer)
+				                         .setLayerCount(1);
 
 				auto copy_region = vk::BufferImageCopy()
-				                  .setBufferOffset(layer.offset)
-				                  .setBufferRowLength(0)
-				                  .setBufferImageHeight(0)
-				                  .setImageSubresource(image_subresource)
-				                  .setImageOffset(vk::Offset3D(0, 0, 0))
-				                  .setImageExtent(vk::Extent3D(mip.size.x, mip.size.y, mip.size.z));
+				                   .setBufferOffset(layer.offset)
+				                   .setBufferRowLength(0)
+				                   .setBufferImageHeight(0)
+				                   .setImageSubresource(image_subresource)
+				                   .setImageOffset(vk::Offset3D(0, 0, 0))
+				                   .setImageExtent(vk::Extent3D(mip.size.x, mip.size.y, mip.size.z));
 
 				copy_regions.push_back(copy_region);
 			}
@@ -349,8 +351,9 @@ namespace lz
 			add_transition_barrier(dstImageData, lz::ImageUsageTypes::eNone, lz::ImageUsageTypes::eTransferDst,
 			                       transfer_command_buffer);
 			transfer_command_buffer.copyBufferToImage(staging_buffer->get_handle(), dstImageData->get_handle(),
-			                                        vk::ImageLayout::eTransferDstOptimal, copy_regions);
-			add_transition_barrier(dstImageData, lz::ImageUsageTypes::eTransferDst, dstUsageType, transfer_command_buffer);
+			                                          vk::ImageLayout::eTransferDstOptimal, copy_regions);
+			add_transition_barrier(dstImageData, lz::ImageUsageTypes::eTransferDst, dstUsageType,
+			                       transfer_command_buffer);
 		}
 		transfer_queue.end_command_buffer();
 	}

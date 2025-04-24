@@ -8,8 +8,6 @@
 
 namespace lz
 {
-
-
 	class PipelineCache
 	{
 	public:
@@ -89,6 +87,4 @@ namespace lz
 
 		vk::Device logical_device_;
 	};
-
-	
 }
