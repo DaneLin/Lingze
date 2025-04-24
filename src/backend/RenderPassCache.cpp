@@ -4,100 +4,125 @@
 
 namespace lz
 {
-	 FramebufferCache::PassInfo FramebufferCache::BeginPass(vk::CommandBuffer commandBuffer,
-		const std::vector<Attachment>& colorAttachments, Attachment* depthAttachment, lz::RenderPass* renderPass,
-		vk::Extent2D renderAreaExtent)
+	RenderPassCache::RenderPassKey::RenderPassKey()
 	{
-		PassInfo passInfo;
+	}
 
-		FramebufferKey framebufferKey;
+	bool RenderPassCache::RenderPassKey::operator<(const RenderPassKey& other) const
+	{
+		return std::tie(color_attachment_descs, depth_attachment_desc) < std::tie(
+			other.color_attachment_descs, other.depth_attachment_desc);
+	}
 
-		std::vector<vk::ClearValue> clearValues;
+	RenderPassCache::RenderPassCache(vk::Device logical_device): logical_device_(logical_device)
+	{
+	}
+
+	lz::RenderPass* RenderPassCache::get_render_pass(const RenderPassKey& key)
+	{
+		auto& render_pass = render_pass_cache_[key];
+		if (!render_pass)
+		{
+			render_pass = std::unique_ptr<lz::RenderPass>(
+				new lz::RenderPass(logical_device_, key.color_attachment_descs, key.depth_attachment_desc));
+		}
+		return render_pass.get();
+	}
+
+	FramebufferCache::PassInfo FramebufferCache::begin_pass(vk::CommandBuffer command_buffer,
+	                                                       const std::vector<Attachment>& color_attachments, Attachment* depth_attachment, lz::RenderPass* render_pass,
+	                                                       vk::Extent2D render_area_extent)
+	{
+		PassInfo pass_info;
+
+		FramebufferKey framebuffer_key;
+
+		std::vector<vk::ClearValue> clear_values;
 
 		size_t attachmentsUsed = 0;
-		for (auto attachment : colorAttachments)
+		for (auto attachment : color_attachments)
 		{
-			clearValues.push_back(attachment.clearValue);
-			framebufferKey.colorAttachmentViews[attachmentsUsed++] = attachment.imageView;
+			clear_values.push_back(attachment.clear_value);
+			framebuffer_key.color_attachment_views[attachmentsUsed++] = attachment.image_view;
 		}
 
-		if (depthAttachment)
+		if (depth_attachment)
 		{
-			framebufferKey.depthAttachmentView = depthAttachment->imageView;
-			clearValues.push_back(depthAttachment->clearValue);
+			framebuffer_key.depth_attachment_view = depth_attachment->image_view;
+			clear_values.push_back(depth_attachment->clear_value);
 		}
 
-		passInfo.renderPass = renderPass;
+		pass_info.render_pass = render_pass;
 
-		framebufferKey.extent = renderAreaExtent;
-		framebufferKey.renderPass = renderPass->GetHandle();
-		lz::Framebuffer* framebuffer = GetFramebuffer(framebufferKey);
-		passInfo.framebuffer = framebuffer;
+		framebuffer_key.extent = render_area_extent;
+		framebuffer_key.render_pass = render_pass->get_handle();
+		lz::Framebuffer* framebuffer = get_framebuffer(framebuffer_key);
+		pass_info.framebuffer = framebuffer;
 
-		vk::Rect2D rect = vk::Rect2D(vk::Offset2D(), renderAreaExtent);
-		auto passBeginInfo = vk::RenderPassBeginInfo()
-			.setRenderPass(renderPass->GetHandle())
-			.setFramebuffer(framebuffer->GetHandle())
+		const vk::Rect2D rect = vk::Rect2D(vk::Offset2D(), render_area_extent);
+		const auto pass_begin_info = vk::RenderPassBeginInfo()
+			.setRenderPass(render_pass->get_handle())
+			.setFramebuffer(framebuffer->get_handle())
 			.setRenderArea(rect)
-			.setClearValueCount(static_cast<uint32_t>(clearValues.size()))
-			.setPClearValues(clearValues.data());
+			.setClearValueCount(static_cast<uint32_t>(clear_values.size()))
+			.setPClearValues(clear_values.data());
 
-		commandBuffer.beginRenderPass(passBeginInfo, vk::SubpassContents::eInline);
+		command_buffer.beginRenderPass(pass_begin_info, vk::SubpassContents::eInline);
 
 		auto viewport = vk::Viewport()
-			.setWidth(float(renderAreaExtent.width))
-			.setHeight(float(renderAreaExtent.height))
+			.setWidth(float(render_area_extent.width))
+			.setHeight(float(render_area_extent.height))
 			.setMinDepth(0.0f)
 			.setMaxDepth(1.0f);
 
-		commandBuffer.setViewport(0, { viewport });
-		commandBuffer.setScissor(0, { vk::Rect2D(vk::Offset2D(), renderAreaExtent) });
+		command_buffer.setViewport(0, { viewport });
+		command_buffer.setScissor(0, { vk::Rect2D(vk::Offset2D(), render_area_extent) });
 
-		return passInfo;
+		return pass_info;
 	}
 
-	 void FramebufferCache::EndPass(vk::CommandBuffer commandBuffer)
+	 void FramebufferCache::end_pass(vk::CommandBuffer command_buffer)
 	{
-		commandBuffer.endRenderPass();
+		command_buffer.endRenderPass();
 	}
 
-	 FramebufferCache::FramebufferCache(vk::Device _logicalDevice) : logicalDevice(_logicalDevice)
+	 FramebufferCache::FramebufferCache(vk::Device logical_device) : logical_device_(logical_device)
 	{
 	}
 
 	 FramebufferCache::FramebufferKey::FramebufferKey()
 	{
-		std::fill(colorAttachmentViews.begin(), colorAttachmentViews.end(), nullptr);
-		depthAttachmentView = nullptr;
-		renderPass = nullptr;
+		std::fill(color_attachment_views.begin(), color_attachment_views.end(), nullptr);
+		depth_attachment_view = nullptr;
+		render_pass = nullptr;
 	}
 
 	 bool FramebufferCache::FramebufferKey::operator<(const FramebufferKey& other) const
 	{
-		return std::tie(colorAttachmentViews, depthAttachmentView, extent.width, extent.height) < std::tie(
-			other.colorAttachmentViews, other.depthAttachmentView, other.extent.width, other.extent.height);
+		return std::tie(color_attachment_views, depth_attachment_view, extent.width, extent.height) < std::tie(
+			other.color_attachment_views, other.depth_attachment_view, other.extent.width, other.extent.height);
 	}
 
-	 lz::Framebuffer* FramebufferCache::GetFramebuffer(FramebufferKey key)
+	 lz::Framebuffer* FramebufferCache::get_framebuffer(FramebufferKey key)
 	{
-		auto& framebuffer = framebufferCache[key];
+		auto& framebuffer = framebuffer_cache_[key];
 
 		if (!framebuffer)
 		{
 			std::vector<const lz::ImageView*> imageViews;
-			for (auto imageView : key.colorAttachmentViews)
+			for (auto image_view : key.color_attachment_views)
 			{
-				if (imageView)
+				if (image_view)
 				{
-					imageViews.push_back(imageView);
+					imageViews.push_back(image_view);
 				}
 			}
-			if (key.depthAttachmentView)
+			if (key.depth_attachment_view)
 			{
-				imageViews.push_back(key.depthAttachmentView);
+				imageViews.push_back(key.depth_attachment_view);
 			}
 
-			framebuffer = std::make_unique<lz::Framebuffer>(logicalDevice, imageViews, key.extent, key.renderPass);
+			framebuffer = std::make_unique<lz::Framebuffer>(logical_device_, imageViews, key.extent, key.render_pass);
 		}
 		return framebuffer.get();
 	}

@@ -13,31 +13,31 @@ namespace lz
 	{
 		// DepthTest: Creates depth settings with depth testing enabled
 		// Returns: Depth settings configured for standard depth testing
-		static DepthSettings DepthTest()
+		static DepthSettings depth_test()
 		{
 			DepthSettings settings;
-			settings.depthFunc = vk::CompareOp::eLess;
-			settings.writeEnable = true;
+			settings.depth_func = vk::CompareOp::eLess;
+			settings.write_enable = true;
 			return settings;
 		}
 
 		// Disabled: Creates depth settings with depth testing disabled
 		// Returns: Depth settings configured with depth testing disabled
-		static DepthSettings Disabled()
+		static DepthSettings disabled()
 		{
 			DepthSettings settings;
-			settings.depthFunc = vk::CompareOp::eAlways;
-			settings.writeEnable = false;
+			settings.depth_func = vk::CompareOp::eAlways;
+			settings.write_enable = false;
 			return settings;
 		}
 
-		vk::CompareOp depthFunc; // Depth comparison function
-		bool writeEnable; // Whether depth writing is enabled
+		vk::CompareOp depth_func; // Depth comparison function
+		bool write_enable; // Whether depth writing is enabled
 
 		// Comparison operator for container ordering
 		bool operator<(const DepthSettings& other) const
 		{
-			return std::tie(depthFunc, writeEnable) < std::tie(other.depthFunc, other.writeEnable);
+			return std::tie(depth_func, write_enable) < std::tie(other.depth_func, other.write_enable);
 		}
 	};
 
@@ -47,79 +47,79 @@ namespace lz
 	{
 		// Opaque: Creates blend settings for opaque rendering (no blending)
 		// Returns: Blend settings configured for opaque rendering
-		static BlendSettings Opaque()
+		static BlendSettings opaque()
 		{
-			BlendSettings blendSettings;
-			blendSettings.blendState = vk::PipelineColorBlendAttachmentState()
-			                           .setColorWriteMask(
-				                           vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
-				                           vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
-			                           .setBlendEnable(false);
-			return blendSettings;
+			BlendSettings blend_settings;
+			blend_settings.blend_state = vk::PipelineColorBlendAttachmentState()
+			                             .setColorWriteMask(
+				                             vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
+				                             vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
+			                             .setBlendEnable(false);
+			return blend_settings;
 		}
 
 		// Add: Creates blend settings for additive blending
 		// Returns: Blend settings configured for additive blending
-		static BlendSettings Add()
+		static BlendSettings add()
 		{
-			BlendSettings blendSettings;
-			blendSettings.blendState = vk::PipelineColorBlendAttachmentState()
-			                           .setBlendEnable(true)
-			                           .setAlphaBlendOp(vk::BlendOp::eAdd)
-			                           .setColorBlendOp(vk::BlendOp::eAdd)
-			                           .setColorWriteMask(
-				                           vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
-				                           vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
-			                           .setSrcColorBlendFactor(vk::BlendFactor::eOne)
-			                           .setDstColorBlendFactor(vk::BlendFactor::eOne);
-			return blendSettings;
+			BlendSettings blend_settings;
+			blend_settings.blend_state = vk::PipelineColorBlendAttachmentState()
+			                             .setBlendEnable(true)
+			                             .setAlphaBlendOp(vk::BlendOp::eAdd)
+			                             .setColorBlendOp(vk::BlendOp::eAdd)
+			                             .setColorWriteMask(
+				                             vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
+				                             vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
+			                             .setSrcColorBlendFactor(vk::BlendFactor::eOne)
+			                             .setDstColorBlendFactor(vk::BlendFactor::eOne);
+			return blend_settings;
 		}
 
 		// Mixed: Creates blend settings for mixed blending
 		// Returns: Blend settings configured for mixed color and alpha blending
-		static BlendSettings Mixed()
+		static BlendSettings mixed()
 		{
-			BlendSettings blendSettings;
-			blendSettings.blendState = vk::PipelineColorBlendAttachmentState()
-			                           .setBlendEnable(true)
-			                           .setAlphaBlendOp(vk::BlendOp::eAdd)
-			                           .setColorBlendOp(vk::BlendOp::eAdd)
-			                           .setColorWriteMask(
-				                           vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
-				                           vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
-			                           .setSrcColorBlendFactor(vk::BlendFactor::eOne)
-			                           .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
-			return blendSettings;
+			BlendSettings blend_settings;
+			blend_settings.blend_state = vk::PipelineColorBlendAttachmentState()
+			                             .setBlendEnable(true)
+			                             .setAlphaBlendOp(vk::BlendOp::eAdd)
+			                             .setColorBlendOp(vk::BlendOp::eAdd)
+			                             .setColorWriteMask(
+				                             vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
+				                             vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
+			                             .setSrcColorBlendFactor(vk::BlendFactor::eOne)
+			                             .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
+			return blend_settings;
 		}
 
 		// AlphaBlend: Creates blend settings for standard alpha blending
 		// Returns: Blend settings configured for standard alpha blending
-		static BlendSettings AlphaBlend()
+		static BlendSettings alpha_blend()
 		{
-			BlendSettings blendSettings;
-			blendSettings.blendState = vk::PipelineColorBlendAttachmentState()
-			                           .setBlendEnable(true)
-			                           .setAlphaBlendOp(vk::BlendOp::eAdd)
-			                           .setColorBlendOp(vk::BlendOp::eAdd)
-			                           .setColorWriteMask(
-				                           vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
-				                           vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
-			                           .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
-			                           .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
-			return blendSettings;
+			BlendSettings blend_settings;
+			blend_settings.blend_state = vk::PipelineColorBlendAttachmentState()
+			                             .setBlendEnable(true)
+			                             .setAlphaBlendOp(vk::BlendOp::eAdd)
+			                             .setColorBlendOp(vk::BlendOp::eAdd)
+			                             .setColorWriteMask(
+				                             vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR |
+				                             vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
+			                             .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+			                             .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
+			return blend_settings;
 		}
 
 		// Comparison operator for container ordering
 		bool operator <(const BlendSettings& other) const
 		{
 			return
-				std::tie(blendState.blendEnable, blendState.alphaBlendOp, blendState.colorBlendOp,
-				         blendState.srcColorBlendFactor, blendState.dstColorBlendFactor) <
-				std::tie(other.blendState.blendEnable, other.blendState.alphaBlendOp, other.blendState.colorBlendOp,
-				         other.blendState.srcColorBlendFactor, other.blendState.dstColorBlendFactor);
+				std::tie(blend_state.blendEnable, blend_state.alphaBlendOp, blend_state.colorBlendOp,
+				         blend_state.srcColorBlendFactor, blend_state.dstColorBlendFactor) <
+				std::tie(other.blend_state.blendEnable, other.blend_state.alphaBlendOp, other.blend_state.colorBlendOp,
+				         other.blend_state.srcColorBlendFactor, other.blend_state.dstColorBlendFactor);
 		}
 
-		vk::PipelineColorBlendAttachmentState blendState; // Native Vulkan blend state
+		vk::PipelineColorBlendAttachmentState blend_state; // Native Vulkan blend state
 	};
 
 	// GraphicsPipeline: Class for managing Vulkan graphics pipelines
@@ -129,23 +129,23 @@ namespace lz
 	{
 	public:
 		// Enumeration of predefined blend modes
-		enum struct BlendModes
+		enum struct BlendModes : uint8_t
 		{
 			Opaque
 		};
 
 		// Enumeration of predefined depth/stencil modes
-		enum struct DepthStencilModes
+		enum struct DepthStencilModes : uint8_t
 		{
 			DepthNone,
 			DepthLess
 		};
 
 		// GetHandle: Returns the native Vulkan pipeline handle
-		vk::Pipeline GetHandle();
+		vk::Pipeline get_handle();
 
 		// GetLayout: Returns the pipeline layout
-		vk::PipelineLayout GetLayout();
+		vk::PipelineLayout get_layout() const;
 
 		// Constructor: Creates a new graphics pipeline with the specified parameters
 		// Parameters:
@@ -159,20 +159,20 @@ namespace lz
 		// - primitiveTopology: Type of primitives to render
 		// - renderPass: Render pass the pipeline is compatible with
 		GraphicsPipeline(
-			vk::Device logicalDevice,
-			vk::ShaderModule vertexShader,
-			vk::ShaderModule fragmentShader,
-			const lz::VertexDeclaration& vertexDecl,
-			vk::PipelineLayout pipelineLayout,
-			DepthSettings depthSettings,
-			const std::vector<BlendSettings>& attachmentBlendSettings,
-			vk::PrimitiveTopology primitiveTopology,
-			vk::RenderPass renderPass
+			vk::Device logical_device,
+			vk::ShaderModule vertex_shader,
+			vk::ShaderModule fragment_shader,
+			const lz::VertexDeclaration& vertex_decl,
+			vk::PipelineLayout pipeline_layout,
+			DepthSettings depth_settings,
+			const std::vector<BlendSettings>& attachment_blend_settings,
+			vk::PrimitiveTopology primitive_topology,
+			vk::RenderPass render_pass
 		);
 
 	private:
-		vk::PipelineLayout pipelineLayout;
-		vk::UniquePipeline pipeline;
+		vk::PipelineLayout pipeline_layout_;
+		vk::UniquePipeline pipeline_;
 		friend class Core;
 	};
 
@@ -180,19 +180,19 @@ namespace lz
 	class ComputePipeline
 	{
 	public:
-		vk::Pipeline GetHandle();
+		vk::Pipeline get_handle();
 
-		vk::PipelineLayout GetLayout();
+		vk::PipelineLayout get_layout() const;
 
 		ComputePipeline(
-			vk::Device logicalDevice,
-			vk::ShaderModule computeShader,
-			vk::PipelineLayout pipelineLayout
+			vk::Device logical_device,
+			vk::ShaderModule compute_shader,
+			vk::PipelineLayout pipeline_layout
 		);
 
 	private:
-		vk::PipelineLayout pipelineLayout;
-		vk::UniquePipeline pipeline;
+		vk::PipelineLayout pipeline_layout_;
+		vk::UniquePipeline pipeline_;
 		friend class Core;
 	};
 }

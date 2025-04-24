@@ -7,158 +7,157 @@
 
 namespace lz
 {
-	PipelineCache::PipelineCache(vk::Device _logicalDevice, DescriptorSetCache* _descriptorSetCache) :
-		logicalDevice(_logicalDevice),
-		descriptorSetCache(_descriptorSetCache)
+	PipelineCache::PipelineCache(vk::Device logical_device, DescriptorSetCache* descriptor_set_cache) :
+		logical_device_(logical_device),
+		descriptor_set_cache_(descriptor_set_cache)
 	{
 	}
 
-	PipelineCache::PipelineInfo PipelineCache::BindGraphicsPipeline(vk::CommandBuffer commandBuffer,
-	                                                                vk::RenderPass renderPass,
-	                                                                lz::DepthSettings depthSettings,
-	                                                                const std::vector<lz::BlendSettings>&
-	                                                                attachmentBlendSettings,
-	                                                                lz::VertexDeclaration vertexDeclaration,
-	                                                                vk::PrimitiveTopology topology,
-	                                                                lz::ShaderProgram* shaderProgram)
+	PipelineCache::PipelineInfo PipelineCache::bind_graphics_pipeline(vk::CommandBuffer command_buffer,
+	                                                                  vk::RenderPass render_pass,
+	                                                                  lz::DepthSettings depth_settings,
+	                                                                  const std::vector<lz::BlendSettings>&
+	                                                                  attachment_blend_settings,
+	                                                                  lz::VertexDeclaration vertex_declaration,
+	                                                                  vk::PrimitiveTopology topology,
+	                                                                  lz::ShaderProgram* shader_program)
 	{
-		GraphicsPipelineKey pipelineKey;
-		pipelineKey.vertexShader = shaderProgram->vertexShader->GetModule()->GetHandle();
-		pipelineKey.fragmentShader = shaderProgram->fragmentShader->GetModule()->GetHandle();
-		pipelineKey.vertexDecl = vertexDeclaration;
-		pipelineKey.depthSettings = depthSettings;
-		pipelineKey.attachmentBlendSettings = attachmentBlendSettings;
-		pipelineKey.topology = topology;
+		GraphicsPipelineKey pipeline_key;
+		pipeline_key.vertex_shader = shader_program->vertex_shader->get_module()->get_handle();
+		pipeline_key.fragment_shader = shader_program->fragment_shader->get_module()->get_handle();
+		pipeline_key.vertex_decl = vertex_declaration;
+		pipeline_key.depth_settings = depth_settings;
+		pipeline_key.attachment_blend_settings = attachment_blend_settings;
+		pipeline_key.topology = topology;
 
-		PipelineInfo pipelineInfo;
+		PipelineInfo pipeline_info;
 
-		lz::Shader* targetShader = shaderProgram->vertexShader;
+		lz::Shader* target_shader = shader_program->vertex_shader;
 
-		PipelineLayoutKey pipelineLayoutKey;
-		for (auto& setLayoutKey : shaderProgram->combinedDescriptorSetLayoutKeys)
+		PipelineLayoutKey pipeline_layout_key;
+		for (auto& set_layout_key : shader_program->combined_descriptor_set_layout_keys)
 		{
-			pipelineLayoutKey.setLayouts.push_back(descriptorSetCache->GetDescriptorSetLayout(setLayoutKey));
+			pipeline_layout_key.set_layouts.push_back(descriptor_set_cache_->get_descriptor_set_layout(set_layout_key));
 		}
 
-		pipelineKey.pipelineLayout = GetPipelineLayout(pipelineLayoutKey);
+		pipeline_key.pipeline_layout = get_pipeline_layout(pipeline_layout_key);
 
-		pipelineKey.renderPass = renderPass;
+		pipeline_key.render_pass = render_pass;
 
-		lz::GraphicsPipeline* pipeline = GetGraphicsPipeline(pipelineKey);
+		lz::GraphicsPipeline* pipeline = get_graphics_pipeline(pipeline_key);
 
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->GetHandle());
+		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->get_handle());
 
-		pipelineInfo.pipelineLayout = pipeline->GetLayout();
-		return pipelineInfo;
+		pipeline_info.pipeline_layout = pipeline->get_layout();
+		return pipeline_info;
 	}
 
-	PipelineCache::PipelineInfo PipelineCache::BindComputePipeline(vk::CommandBuffer commandBuffer,
-	                                                               lz::Shader* computeShader)
+	PipelineCache::PipelineInfo PipelineCache::bind_compute_pipeline(vk::CommandBuffer command_buffer,
+	                                                                 lz::Shader* compute_shader)
 	{
-		ComputePipelineKey pipelineKey;
-		pipelineKey.computeShader = computeShader->GetModule()->GetHandle();
+		ComputePipelineKey pipeline_key;
+		pipeline_key.compute_shader = compute_shader->get_module()->get_handle();
 
-		PipelineInfo pipelineInfo;
-		lz::Shader* targetShader = computeShader;
+		PipelineInfo pipeline_info;
+		lz::Shader* target_shader = compute_shader;
 
-		PipelineLayoutKey pipelineLayoutKey;
-		pipelineLayoutKey.setLayouts.resize(computeShader->GetSetsCount());
-		for (size_t setIndex = 0; setIndex < pipelineLayoutKey.setLayouts.size(); setIndex++)
+		PipelineLayoutKey pipeline_layout_key;
+		pipeline_layout_key.set_layouts.resize(compute_shader->get_sets_count());
+		for (size_t set_index = 0; set_index < pipeline_layout_key.set_layouts.size(); set_index++)
 		{
-			vk::DescriptorSetLayout setLayoutHandle = nullptr;
-			auto computeSetInfo = computeShader->GetSetInfo(setIndex);
-			if (!computeSetInfo->IsEmpty())
-				setLayoutHandle = descriptorSetCache->GetDescriptorSetLayout(*computeSetInfo);
+			vk::DescriptorSetLayout set_layout_handle = nullptr;
+			const auto compute_set_info = compute_shader->get_set_info(set_index);
+			if (!compute_set_info->is_empty())
+				set_layout_handle = descriptor_set_cache_->get_descriptor_set_layout(*compute_set_info);
 
-			pipelineLayoutKey.setLayouts[setIndex] = setLayoutHandle;
+			pipeline_layout_key.set_layouts[set_index] = set_layout_handle;
 		}
-		pipelineKey.pipelineLayout = GetPipelineLayout(pipelineLayoutKey);
+		pipeline_key.pipeline_layout = get_pipeline_layout(pipeline_layout_key);
 
-		lz::ComputePipeline* pipeline = GetComputePipeline(pipelineKey);
+		lz::ComputePipeline* pipeline = get_compute_pipeline(pipeline_key);
 
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->GetHandle());
+		command_buffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->get_handle());
 
-		pipelineInfo.pipelineLayout = pipeline->GetLayout();
-		return pipelineInfo;
+		pipeline_info.pipeline_layout = pipeline->get_layout();
+		return pipeline_info;
 	}
 
-	void PipelineCache::Clear()
+	void PipelineCache::clear()
 	{
-		this->computePipelineCache.clear();
-		this->graphicsPipelineCache.clear();
-		this->pipelineLayoutCache.clear();
+		this->compute_pipeline_cache_.clear();
+		this->graphics_pipeline_cache_.clear();
+		this->pipeline_layout_cache_.clear();
 	}
 
 	bool PipelineCache::PipelineLayoutKey::operator<(const PipelineLayoutKey& other) const
 	{
 		return
-			std::tie(setLayouts) < std::tie(other.setLayouts);
+			std::tie(set_layouts) < std::tie(other.set_layouts);
 	}
 
-	vk::UniquePipelineLayout PipelineCache::CreatePipelineLayout(
+	vk::UniquePipelineLayout PipelineCache::create_pipeline_layout(
 		const std::vector<vk::DescriptorSetLayout>& setLayouts)
 	{
-		auto pipelineLayoutInfo = vk::PipelineLayoutCreateInfo()
-		                          .setPushConstantRangeCount(0)
-		                          .setPPushConstantRanges(nullptr)
-		                          .setSetLayoutCount(uint32_t(setLayouts.size()))
-		                          .setPSetLayouts(setLayouts.data());
+		const auto pipeline_layout_info = vk::PipelineLayoutCreateInfo()
+		                                  .setPushConstantRangeCount(0)
+		                                  .setPPushConstantRanges(nullptr)
+		                                  .setSetLayoutCount(uint32_t(setLayouts.size()))
+		                                  .setPSetLayouts(setLayouts.data());
 
-		return logicalDevice.createPipelineLayoutUnique(pipelineLayoutInfo);
+		return logical_device_.createPipelineLayoutUnique(pipeline_layout_info);
 	}
 
-	vk::PipelineLayout PipelineCache::GetPipelineLayout(const PipelineLayoutKey& key)
+	vk::PipelineLayout PipelineCache::get_pipeline_layout(const PipelineLayoutKey& key)
 	{
-		auto& pipelineLayout = pipelineLayoutCache[key];
-		if (!pipelineLayout)
-			pipelineLayout = CreatePipelineLayout(key.setLayouts);
-		return pipelineLayout.get();
+		auto& pipeline_layout = pipeline_layout_cache_[key];
+		if (!pipeline_layout)
+			pipeline_layout = create_pipeline_layout(key.set_layouts);
+		return pipeline_layout.get();
 	}
 
 	PipelineCache::GraphicsPipelineKey::GraphicsPipelineKey()
 	{
-		vertexShader = nullptr;
-		fragmentShader = nullptr;
-		renderPass = nullptr;
+		vertex_shader = nullptr;
+		fragment_shader = nullptr;
+		render_pass = nullptr;
 	}
 
 	bool PipelineCache::GraphicsPipelineKey::operator<(const GraphicsPipelineKey& other) const
 	{
 		return
-			std::tie(vertexShader, fragmentShader, vertexDecl, pipelineLayout, renderPass, depthSettings,
-			         attachmentBlendSettings, topology) <
-			std::tie(other.vertexShader, other.fragmentShader, other.vertexDecl, other.pipelineLayout,
-			         other.renderPass, other.depthSettings, other.attachmentBlendSettings, topology);
+			std::tie(vertex_shader, fragment_shader, vertex_decl, pipeline_layout, render_pass, depth_settings,
+			         attachment_blend_settings, topology) <
+			std::tie(other.vertex_shader, other.fragment_shader, other.vertex_decl, other.pipeline_layout,
+			         other.render_pass, other.depth_settings, other.attachment_blend_settings, topology);
 	}
 
-	lz::GraphicsPipeline* PipelineCache::GetGraphicsPipeline(const GraphicsPipelineKey& key)
+	lz::GraphicsPipeline* PipelineCache::get_graphics_pipeline(const GraphicsPipelineKey& key)
 	{
-		auto& pipeline = graphicsPipelineCache[key];
+		auto& pipeline = graphics_pipeline_cache_[key];
 		if (!pipeline)
 			pipeline = std::make_unique<lz::GraphicsPipeline>(
-				logicalDevice, key.vertexShader, key.fragmentShader, key.vertexDecl, key.pipelineLayout,
-				key.depthSettings, key.attachmentBlendSettings, key.topology, key.renderPass);
+				logical_device_, key.vertex_shader, key.fragment_shader, key.vertex_decl, key.pipeline_layout,
+				key.depth_settings, key.attachment_blend_settings, key.topology, key.render_pass);
 		return pipeline.get();
 	}
 
 	PipelineCache::ComputePipelineKey::ComputePipelineKey()
 	{
-		computeShader = nullptr;
+		compute_shader = nullptr;
 	}
 
 	bool PipelineCache::ComputePipelineKey::operator<(const ComputePipelineKey& other) const
 	{
 		return
-			std::tie(computeShader, pipelineLayout) <
-			std::tie(other.computeShader, other.pipelineLayout);
+			std::tie(compute_shader, pipeline_layout) <
+			std::tie(other.compute_shader, other.pipeline_layout);
 	}
 
-	lz::ComputePipeline* PipelineCache::GetComputePipeline(const ComputePipelineKey& key)
+	lz::ComputePipeline* PipelineCache::get_compute_pipeline(const ComputePipelineKey& key)
 	{
-		auto& pipeline = computePipelineCache[key];
+		auto& pipeline = compute_pipeline_cache_[key];
 		if (!pipeline)
-			pipeline = std::unique_ptr<lz::ComputePipeline>(
-				new lz::ComputePipeline(logicalDevice, key.computeShader, key.pipelineLayout));
+			pipeline = std::make_unique<lz::ComputePipeline>(logical_device_, key.compute_shader, key.pipeline_layout);
 		return pipeline.get();
 	}
 }

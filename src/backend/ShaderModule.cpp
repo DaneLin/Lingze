@@ -2,21 +2,21 @@
 
 namespace lz
 {
-	vk::ShaderModule ShaderModule::GetHandle()
+	vk::ShaderModule ShaderModule::get_handle()
 	{
-		return shaderModule.get();
+		return shader_module_.get();
 	}
 
 	ShaderModule::ShaderModule(vk::Device device, const std::vector<uint32_t>& bytecode)
 	{
-		Init(device, bytecode);
+		init(device, bytecode);
 	}
 
-	void ShaderModule::Init(vk::Device device, const std::vector<uint32_t>& bytecode)
+	void ShaderModule::init(vk::Device device, const std::vector<uint32_t>& bytecode)
 	{
-		auto shaderModuleCreateInfo = vk::ShaderModuleCreateInfo()
+		const auto shader_module_create_info = vk::ShaderModuleCreateInfo()
 		                              .setCodeSize(bytecode.size() * sizeof(uint32_t))
 		                              .setPCode(bytecode.data());
-		this->shaderModule = device.createShaderModuleUnique(shaderModuleCreateInfo);
+		this->shader_module_ = device.createShaderModuleUnique(shader_module_create_info);
 	}
 }

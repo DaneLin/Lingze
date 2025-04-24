@@ -14,71 +14,71 @@ namespace lz
 		// Default constructor: Creates a handle that isn't attached to any resource
 		UniqueHandle()
 		{
-			isAttached = false;
+			is_attached_ = false;
 		}
 
 		// Deleted copy assignment operator to prevent copying
 		UniqueHandle<HandleInfo, Factory>& operator =(UniqueHandle<HandleInfo, Factory>& other) = delete;
 
 		// Move assignment operator: Transfers ownership from one handle to another
-		UniqueHandle<HandleInfo, Factory>& operator =(UniqueHandle<HandleInfo, Factory>&& other)
+		UniqueHandle<HandleInfo, Factory>& operator =(UniqueHandle<HandleInfo, Factory>&& other) noexcept
 		{
-			if (isAttached)
+			if (is_attached_)
 			{
-				this->info.Reset();
+				this->info_.reset();
 			}
-			this->isAttached = other.isAttached;
-			other.isAttached = false;
-			this->info = other.info;
+			this->is_attached_ = other.is_attached_;
+			other.is_attached_ = false;
+			this->info_ = other.info_;
 			return *this;
 		}
 
 		// Move constructor: Transfers ownership from one handle to another
-		UniqueHandle(UniqueHandle<HandleInfo, Factory>&& other)
+		UniqueHandle(UniqueHandle<HandleInfo, Factory>&& other) noexcept
 		{
-			isAttached = other.isAttached;
-			other.isAttached = false;
-			this->info = other.info;
+			is_attached_ = other.is_attached_;
+			other.is_attached_ = false;
+			this->info_ = other.info_;
 		}
 
 		// Destructor: Automatically cleans up the resource if handle is attached
 		~UniqueHandle()
 		{
-			if (isAttached)
+			if (is_attached_)
 			{
-				info.Reset();
+				info_.reset();
 			}
 		}
 
 		// Detach: Releases ownership of the resource without destroying it
-		void Detach()
+		void detach()
 		{
-			isAttached = false;
+			is_attached_ = false;
 		}
 
 		// Reset: Detaches and resets the handle information
-		void Reset()
+		void reset()
 		{
-			Detach();
-			info.Reset();
+			detach();
+			info_.reset();
 		}
 
 		// IsAttached: Returns whether the handle is attached to a resource
-		bool IsAttached()
+		bool is_attached() const
 		{
-			return isAttached;
+			return is_attached_;
 		}
 
 		// Get: Returns the underlying handle information
-		const HandleInfo& Get() const
+		const HandleInfo& get() const
 		{
-			return info;
+			return info_;
 		}
 
 		// Arrow operator: Provides access to handle info members
 		const HandleInfo* operator->() const
 		{
-			return &info;
+			return &info_;
 		}
 
 	private:
@@ -86,14 +86,14 @@ namespace lz
 		// Parameters:
 		// - info: Handle information
 		// - isAttached: Whether the handle is attached to a resource
-		UniqueHandle(const HandleInfo& info, bool isAttached = true) :
-			info(info),
-			isAttached(isAttached)
+		UniqueHandle(const HandleInfo& info, const bool is_attached = true) :
+			info_(info),
+			is_attached_(is_attached)
 		{
 		}
 
 		friend Factory;
-		bool isAttached; // Whether the handle is attached to a resource
-		HandleInfo info; // The underlying handle information
+		bool is_attached_; // Whether the handle is attached to a resource
+		HandleInfo info_; // The underlying handle information
 	};
 }

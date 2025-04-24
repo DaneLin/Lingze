@@ -21,26 +21,26 @@ namespace lz
 	struct RenderGraphProxyId
 	{
 		RenderGraphProxyId() :
-			id(size_t(-1))
+			id_(size_t(-1))
 		{
 		}
 
 		bool operator ==(const RenderGraphProxyId<Base>& other) const
 		{
-			return this->id == other.id;
+			return this->id_ == other.id_;
 		}
 
-		bool IsValid()
+		bool is_valid() const
 		{
-			return id != size_t(-1);
+			return id_ != size_t(-1);
 		}
 
 	private:
-		explicit RenderGraphProxyId(size_t _id) : id(_id)
+		explicit RenderGraphProxyId(size_t _id) : id_(_id)
 		{
 		}
 
-		size_t id;
+		size_t id_;
 		friend class RenderGraph;
 	};
 
@@ -52,18 +52,18 @@ namespace lz
 			bool operator <(const ImageKey& other) const;
 
 			vk::Format format;
-			vk::ImageUsageFlags usageFlags;
-			uint32_t mipsCount;
-			uint32_t arrayLayersCount;
+			vk::ImageUsageFlags usage_flags;
+			uint32_t mips_count;
+			uint32_t array_layers_count;
 			glm::uvec3 size;
-			std::string debugName;
+			std::string debug_name;
 		};
 
-		ImageCache(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::DispatchLoaderDynamic loader);
+		ImageCache(vk::PhysicalDevice physical_device, vk::Device logical_device, vk::DispatchLoaderDynamic loader);
 
-		void Release();
+		void release();
 
-		lz::ImageData* GetImage(ImageKey imageKey);
+		lz::ImageData* get_image(ImageKey image_key);
 
 	private:
 		struct ImageCacheEntry
@@ -71,13 +71,13 @@ namespace lz
 			ImageCacheEntry();
 
 			std::vector<std::unique_ptr<lz::Image>> images;
-			size_t usedCount;
+			size_t used_count;
 		};
 
-		std::map<ImageKey, ImageCacheEntry> imageCache;
-		vk::PhysicalDevice physicalDevice;
-		vk::Device logicalDevice;
-		vk::DispatchLoaderDynamic loader;
+		std::map<ImageKey, ImageCacheEntry> image_cache_;
+		vk::PhysicalDevice physical_device_;
+		vk::Device logical_device_;
+		vk::DispatchLoaderDynamic loader_;
 	};
 
 	class ImageViewCache
@@ -86,38 +86,38 @@ namespace lz
 		struct ImageViewKey
 		{
 			lz::ImageData* image;
-			ImageSubresourceRange subresourceRange;
-			std::string debugName;
+			ImageSubresourceRange subresource_range;
+			std::string debug_name;
 
 			bool operator <(const ImageViewKey& other) const;
 		};
 
-		ImageViewCache(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice);
+		ImageViewCache(vk::PhysicalDevice physical_device, vk::Device logical_device);
 
-		lz::ImageView* GetImageView(ImageViewKey imageViewKey);
+		lz::ImageView* get_image_view(ImageViewKey image_view_key);
 
 	private:
-		std::map<ImageViewKey, std::unique_ptr<lz::ImageView>> imageViewCache;
-		vk::PhysicalDevice physicalDevice;
-		vk::Device logicalDevice;
+		std::map<ImageViewKey, std::unique_ptr<lz::ImageView>> image_view_cache_;
+		vk::PhysicalDevice physical_device_;
+		vk::Device logical_device_;
 	};
 
 	class BufferCache
 	{
 	public:
-		BufferCache(vk::PhysicalDevice _physicalDevice, vk::Device _logicalDevice);
+		BufferCache(vk::PhysicalDevice physical_device, vk::Device logical_device);
 
 		struct BufferKey
 		{
-			uint32_t elementSize;
-			uint32_t elementsCount;
+			uint32_t element_size;
+			uint32_t elements_count;
 
 			bool operator <(const BufferKey& other) const;
 		};
 
-		void Release();
+		void release();
 
-		lz::Buffer* GetBuffer(BufferKey bufferKey);
+		lz::Buffer* get_buffer(BufferKey buffer_key);
 
 	private:
 		struct BufferCacheEntry
@@ -125,12 +125,12 @@ namespace lz
 			BufferCacheEntry();
 
 			std::vector<std::unique_ptr<lz::Buffer>> buffers;
-			size_t usedCount;
+			size_t used_count;
 		};
 
-		std::map<BufferKey, BufferCacheEntry> bufferCache;
-		vk::PhysicalDevice physicalDevice;
-		vk::Device logicalDevice;
+		std::map<BufferKey, BufferCacheEntry> buffer_cache_;
+		vk::PhysicalDevice physical_device_;
+		vk::Device logical_device_;
 	};
 
 	class RenderGraph
@@ -154,17 +154,17 @@ namespace lz
 		{
 			ImageHandleInfo();
 
-			ImageHandleInfo(RenderGraph* renderGraph, ImageProxyId imageProxyId);
+			ImageHandleInfo(RenderGraph* render_graph, ImageProxyId image_proxy_id);
 
-			void Reset();
+			void reset();
 
-			ImageProxyId Id() const;
+			ImageProxyId id() const;
 
-			void SetDebugName(std::string name) const;
+			void set_debug_name(std::string name) const;
 
 		private:
-			RenderGraph* renderGraph;
-			ImageProxyId imageProxyId;
+			RenderGraph* render_graph_;
+			ImageProxyId image_proxy_id_;
 			friend class RenderGraph;
 		};
 
@@ -172,17 +172,17 @@ namespace lz
 		{
 			ImageViewHandleInfo();
 
-			ImageViewHandleInfo(RenderGraph* renderGraph, ImageViewProxyId imageViewProxyId);
+			ImageViewHandleInfo(RenderGraph* render_graph, ImageViewProxyId image_view_proxy_id);
 
-			void Reset();
+			void reset();
 
-			ImageViewProxyId Id() const;
+			ImageViewProxyId id() const;
 
-			void SetDebugName(std::string name) const;
+			void set_debug_name(std::string name) const;
 
 		private:
-			RenderGraph* renderGraph;
-			ImageViewProxyId imageViewProxyId;
+			RenderGraph* render_graph_;
+			ImageViewProxyId image_view_proxy_id_;
 			friend class RenderGraph;
 		};
 
@@ -190,89 +190,90 @@ namespace lz
 		{
 			BufferHandleInfo();
 
-			BufferHandleInfo(RenderGraph* renderGraph, BufferProxyId bufferProxyId);
+			BufferHandleInfo(RenderGraph* render_graph, BufferProxyId buffer_proxy_id);
 
-			void Reset();
+			void reset();
 
-			BufferProxyId Id() const;
+			BufferProxyId id() const;
 
 		private:
-			RenderGraph* renderGraph;
-			BufferProxyId bufferProxyId;
+			RenderGraph* render_graph_;
+			BufferProxyId buffer_proxy_id_;
 			friend class RenderGraph;
 		};
 
 	public:
-		RenderGraph(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::DispatchLoaderDynamic loader);
+		RenderGraph(vk::PhysicalDevice physical_device, vk::Device logical_device, vk::DispatchLoaderDynamic loader);
 
 		using ImageProxyUnique = UniqueHandle<ImageHandleInfo, RenderGraph>;
 		using ImageViewProxyUnique = UniqueHandle<ImageViewHandleInfo, RenderGraph>;
 		using BufferProxyUnique = UniqueHandle<BufferHandleInfo, RenderGraph>;
 
-		ImageProxyUnique AddImage(vk::Format format, uint32_t mipsCount, uint32_t arrayLayersCount, glm::uvec2 size,
-		                          vk::ImageUsageFlags usageFlags);
+		ImageProxyUnique add_image(vk::Format format, uint32_t mips_count, uint32_t array_layers_count, glm::uvec2 size,
+		                           vk::ImageUsageFlags usage_flags);
 
-		ImageProxyUnique AddImage(vk::Format format, uint32_t mipsCount, uint32_t arrayLayersCount, glm::uvec3 size,
-		                          vk::ImageUsageFlags usageFlags);
+		ImageProxyUnique add_image(vk::Format format, uint32_t mips_count, uint32_t array_layers_count, glm::uvec3 size,
+		                           vk::ImageUsageFlags usage_flags);
 
-		ImageProxyUnique AddExternalImage(lz::ImageData* image);
+		ImageProxyUnique add_external_image(lz::ImageData* image);
 
-		ImageViewProxyUnique AddImageView(ImageProxyId imageProxyId, uint32_t baseMipLevel, uint32_t mipLevelsCount,
-		                                  uint32_t baseArrayLayer, uint32_t arrayLayersCount);
+		ImageViewProxyUnique add_image_view(ImageProxyId image_proxy_id, uint32_t base_mip_level,
+		                                    uint32_t mip_levels_count,
+		                                    uint32_t base_array_layer, uint32_t array_layers_count);
 
-		ImageViewProxyUnique AddExternalImageView(lz::ImageView* imageView,
-		                                          lz::ImageUsageTypes usageType = lz::ImageUsageTypes::Unknown);
+		ImageViewProxyUnique add_external_image_view(lz::ImageView* image_view,
+		                                             lz::ImageUsageTypes usage_type = lz::ImageUsageTypes::eUnknown);
 
 	private:
-		void DeleteImage(ImageProxyId imageId);
+		void delete_image(ImageProxyId image_id);
 
-		void SetImageProxyDebugName(ImageProxyId imageId, std::string debugName);
+		void set_image_proxy_debug_name(ImageProxyId image_id, std::string debug_name);
 
-		void SetImageViewProxyDebugName(ImageViewProxyId imageViewId, std::string debugName);
+		void set_image_view_proxy_debug_name(ImageViewProxyId image_view_id, std::string debug_name);
 
-		void DeleteImageView(ImageViewProxyId imageViewId);
+		void delete_image_view(ImageViewProxyId image_view_id);
 
-		void DeleteBuffer(BufferProxyId bufferId);
+		void delete_buffer(BufferProxyId buffer_id);
 
 	public:
-		glm::uvec2 GetMipSize(ImageProxyId imageProxyId, uint32_t mipLevel);
+		glm::uvec2 get_mip_size(ImageProxyId image_proxy_id, uint32_t mip_level);
 
-		glm::uvec2 GetMipSize(ImageViewProxyId imageViewProxyId, uint32_t mipOffset);
+		glm::uvec2 get_mip_size(ImageViewProxyId image_view_proxy_id, uint32_t mip_offset);
 
 		template <typename BufferType>
-		RenderGraph::BufferProxyUnique AddBuffer(uint32_t count)
+		RenderGraph::BufferProxyUnique add_buffer(const uint32_t count)
 		{
-			BufferProxy bufferProxy;
-			bufferProxy.type = BufferProxy::Types::Transient;
-			bufferProxy.bufferKey.elementSize = sizeof(BufferType);
-			bufferProxy.bufferKey.elementsCount = count;
-			bufferProxy.externalBuffer = nullptr;
-			return BufferProxyUnique(BufferHandleInfo(this, bufferProxies.Add(std::move(bufferProxy))));
+			BufferProxy buffer_proxy;
+			buffer_proxy.type = BufferProxy::Types::eTransient;
+			buffer_proxy.buffer_key.element_size = sizeof(BufferType);
+			buffer_proxy.buffer_key.elements_count = count;
+			buffer_proxy.external_buffer = nullptr;
+			return BufferProxyUnique(BufferHandleInfo(this, buffer_proxies_.add(std::move(buffer_proxy))));
 		}
 
-		BufferProxyUnique AddExternalBuffer(lz::Buffer* buffer);
+		BufferProxyUnique add_external_buffer(lz::Buffer* buffer);
 
 		struct PassContext
 		{
-			lz::ImageView* GetImageView(ImageViewProxyId imageViewProxyId);
+			lz::ImageView* get_image_view(ImageViewProxyId image_view_proxy_id) const;
 
-			lz::Buffer* GetBuffer(BufferProxyId bufferProxy);
+			lz::Buffer* get_buffer(BufferProxyId buffer_proxy) const;
 
-			vk::CommandBuffer GetCommandBuffer();
+			vk::CommandBuffer get_command_buffer() const;
 
 		private:
-			std::vector<lz::ImageView*> resolvedImageViews;
-			std::vector<lz::Buffer*> resolvedBuffers;
-			vk::CommandBuffer commandBuffer;
+			std::vector<lz::ImageView*> resolved_image_views_;
+			std::vector<lz::Buffer*> resolved_buffers_;
+			vk::CommandBuffer command_buffer_;
 			friend class RenderGraph;
 		};
 
 		struct RenderPassContext : public PassContext
 		{
-			lz::RenderPass* GetRenderPass();
+			lz::RenderPass* get_render_pass() const;
 
 		private:
-			lz::RenderPass* renderPass;
+			lz::RenderPass* render_pass_;
 			friend class RenderGraph;
 		};
 
@@ -282,138 +283,129 @@ namespace lz
 
 			struct Attachment
 			{
-				ImageViewProxyId imageViewProxyId;
-				vk::AttachmentLoadOp loadOp;
-				vk::ClearValue clearValue;
+				ImageViewProxyId image_view_proxy_id;
+				vk::AttachmentLoadOp load_op;
+				vk::ClearValue clear_value;
 			};
 
-			RenderPassDesc& SetColorAttachments(
-				const std::vector<ImageViewProxyId>& colorAttachmentViewProxies,
-				vk::AttachmentLoadOp loadop = vk::AttachmentLoadOp::eDontCare,
-				vk::ClearValue clearValue = vk::ClearColorValue(std::array<float, 4>{1.0f, 0.5f, 0.0f, 1.0f}));
+			RenderPassDesc& set_color_attachments(
+				const std::vector<ImageViewProxyId>& color_attachment_view_proxies,
+				vk::AttachmentLoadOp load_op = vk::AttachmentLoadOp::eDontCare,
+				vk::ClearValue clear_value = vk::ClearColorValue(std::array<float, 4>{1.0f, 0.5f, 0.0f, 1.0f}));
 
-			RenderPassDesc& SetColorAttachments(std::vector<Attachment>&& _colorAttachments);
+			RenderPassDesc& set_color_attachments(std::vector<Attachment>&& color_attachments);
 
-			RenderPassDesc& SetDepthAttachment(
-				ImageViewProxyId _depthAttachmentViewProxyId,
-				vk::AttachmentLoadOp _loadOp = vk::AttachmentLoadOp::eDontCare,
+			RenderPassDesc& set_depth_attachment(
+				ImageViewProxyId depth_attachment_view_proxy_id,
+				vk::AttachmentLoadOp load_op = vk::AttachmentLoadOp::eDontCare,
 				vk::ClearValue _clearValue = vk::ClearDepthStencilValue(1.0f, 0));
 
-			RenderPassDesc& SetDepthAttachment(Attachment _depthAttachment);
+			RenderPassDesc& set_depth_attachment(Attachment depth_attachment);
 
-			RenderPassDesc& SetVertexBuffers(std::vector<BufferProxyId>&& _vertexBufferProxies);
+			RenderPassDesc& set_vertex_buffers(std::vector<BufferProxyId>&& vertex_buffer_proxies);
 
-			RenderPassDesc& SetInputImages(std::vector<ImageViewProxyId>&& _inputImageViewProxies);
+			RenderPassDesc& set_input_images(std::vector<ImageViewProxyId>&& input_image_view_proxies);
 
-			RenderPassDesc& SetStorageBuffers(std::vector<BufferProxyId>&& _inoutStorageBufferProxies);
+			RenderPassDesc& set_storage_buffers(std::vector<BufferProxyId>&& inout_storage_buffer_proxies);
 
-			RenderPassDesc& SetStorageImages(std::vector<ImageViewProxyId>&& _inoutStorageImageProxies);
+			RenderPassDesc& set_storage_images(std::vector<ImageViewProxyId>&& inout_storage_image_proxies);
 
-			RenderPassDesc& SetRenderAreaExtent(vk::Extent2D _renderAreaExtent);
+			RenderPassDesc& set_render_area_extent(vk::Extent2D render_area_extent);
 
-			RenderPassDesc& SetRecordFunc(std::function<void(RenderPassContext)> _recordFunc);
+			RenderPassDesc& set_record_func(std::function<void(RenderPassContext)> record_func);
 
-			RenderPassDesc& SetProfilerInfo(uint32_t taskColor, std::string taskName);
+			RenderPassDesc& set_profiler_info(uint32_t task_color, std::string task_name);
 
-			std::vector<Attachment> colorAttachments;
-			Attachment depthAttachment;
+			std::vector<Attachment> color_attachments;
+			Attachment depth_attachment;
 
-			std::vector<ImageViewProxyId> inputImageViewProxies;
-			std::vector<BufferProxyId> vertexBufferProxies;
-			std::vector<BufferProxyId> inoutStorageBufferProxies;
-			std::vector<ImageViewProxyId> inoutStorageImageProxies;
+			std::vector<ImageViewProxyId> input_image_view_proxies;
+			std::vector<BufferProxyId> vertex_buffer_proxies;
+			std::vector<BufferProxyId> inout_storage_buffer_proxies;
+			std::vector<ImageViewProxyId> inout_storage_image_proxies;
 
-			vk::Extent2D renderAreaExtent;
-			std::function<void(RenderPassContext)> recordFunc;
+			vk::Extent2D render_area_extent;
+			std::function<void(RenderPassContext)> record_func;
 
-			std::string profilerTaskName;
-			uint32_t profilerTaskColor;
+			std::string profiler_task_name;
+			uint32_t profiler_task_color;
 		};
 
-		void AddRenderPass(
-			std::vector<ImageViewProxyId> colorAttachmentImageProxies,
-			ImageViewProxyId depthAttachmentImageProxy,
-			std::vector<ImageViewProxyId> inputImageViewProxies,
-			vk::Extent2D renderAreaExtent,
-			vk::AttachmentLoadOp loadOp,
-			std::function<void(RenderPassContext)> recordFunc);
+		void add_render_pass(
+			std::vector<ImageViewProxyId> color_attachment_image_proxies,
+			ImageViewProxyId depth_attachment_image_proxy,
+			std::vector<ImageViewProxyId> input_image_view_proxies,
+			vk::Extent2D render_area_extent,
+			vk::AttachmentLoadOp load_op,
+			std::function<void(RenderPassContext)> record_func);
 
-		void AddPass(RenderPassDesc& renderPassDesc);
+		void add_pass(RenderPassDesc& render_pass_desc);
 
-		void Clear();
+		void clear();
 
 		struct ComputePassDesc
 		{
 			ComputePassDesc();
 
-			ComputePassDesc& SetInputImages(std::vector<ImageViewProxyId>&& _inputImageViewProxies);
+			ComputePassDesc& set_input_images(std::vector<ImageViewProxyId>&& input_image_view_proxies);
+			ComputePassDesc& set_storage_buffers(std::vector<BufferProxyId>&& inout_storage_buffer_proxies);
+			ComputePassDesc& set_storage_images(std::vector<ImageViewProxyId>&& inout_storage_image_proxies);
+			ComputePassDesc& set_record_func(std::function<void(PassContext)> record_func);
+			ComputePassDesc& set_profiler_info(uint32_t task_color, std::string task_name);
 
-			ComputePassDesc& SetStorageBuffers(std::vector<BufferProxyId>&& _inoutStorageBufferProxies);
+			std::vector<BufferProxyId> inout_storage_buffer_proxies;
+			std::vector<ImageViewProxyId> input_image_view_proxies;
+			std::vector<ImageViewProxyId> inout_storage_image_proxies;
 
-			ComputePassDesc& SetStorageImages(std::vector<ImageViewProxyId>&& _inoutStorageImageProxies);
+			std::function<void(PassContext)> record_func;
 
-			ComputePassDesc& SetRecordFunc(std::function<void(PassContext)> _recordFunc);
-
-			ComputePassDesc& SetProfilerInfo(uint32_t taskColor, std::string taskName);
-
-			std::vector<BufferProxyId> inoutStorageBufferProxies;
-			std::vector<ImageViewProxyId> inputImageViewProxies;
-			std::vector<ImageViewProxyId> inoutStorageImageProxies;
-
-			std::function<void(PassContext)> recordFunc;
-
-			std::string profilerTaskName;
-			uint32_t profilerTaskColor;
+			std::string profiler_task_name;
+			uint32_t profiler_task_color;
 		};
 
-		void AddComputePass(
-			std::vector<BufferProxyId> inoutBufferProxies,
-			std::vector<ImageViewProxyId> inputImageViewProxies,
-			std::function<void(PassContext)> recordFunc);
+		void add_compute_pass(
+			std::vector<BufferProxyId> inout_buffer_proxies,
+			std::vector<ImageViewProxyId> input_image_view_proxies,
+			std::function<void(PassContext)> record_func);
 
-		void AddPass(ComputePassDesc& computePassDesc);
+		void add_pass(ComputePassDesc& compute_pass_desc);
 
 
 		struct TransferPassDesc
 		{
 			TransferPassDesc();
 
-			TransferPassDesc& SetSrcImages(std::vector<ImageViewProxyId>&& _srcImageViewProxies);
+			TransferPassDesc& set_src_images(std::vector<ImageViewProxyId>&& src_image_view_proxies);
+			TransferPassDesc& set_dst_images(std::vector<ImageViewProxyId>&& dst_image_view_proxies);
+			TransferPassDesc& set_src_buffers(std::vector<BufferProxyId>&& src_buffer_proxies);
+			TransferPassDesc& set_dst_buffers(std::vector<BufferProxyId>&& dst_buffer_proxies);
+			TransferPassDesc& set_record_func(std::function<void(PassContext)> record_func);
+			TransferPassDesc& set_profiler_info(uint32_t task_color, std::string task_name);
 
-			TransferPassDesc& SetDstImages(std::vector<ImageViewProxyId>&& _dstImageViewProxies);
+			std::vector<BufferProxyId> src_buffer_proxies;
+			std::vector<ImageViewProxyId> src_image_view_proxies;
 
-			TransferPassDesc& SetSrcBuffers(std::vector<BufferProxyId>&& _srcBufferProxies);
+			std::vector<BufferProxyId> dst_buffer_proxies;
+			std::vector<ImageViewProxyId> dst_image_view_proxies;
 
-			TransferPassDesc& SetDstBuffers(std::vector<BufferProxyId>&& _dstBufferProxies);
+			std::function<void(PassContext)> record_func;
 
-			TransferPassDesc& SetRecordFunc(std::function<void(PassContext)> _recordFunc);
-
-			TransferPassDesc& SetProfilerInfo(uint32_t taskColor, std::string taskName);
-
-			std::vector<BufferProxyId> srcBufferProxies;
-			std::vector<ImageViewProxyId> srcImageViewProxies;
-
-			std::vector<BufferProxyId> dstBufferProxies;
-			std::vector<ImageViewProxyId> dstImageViewProxies;
-
-			std::function<void(PassContext)> recordFunc;
-
-			std::string profilerTaskName;
-			uint32_t profilerTaskColor;
+			std::string profiler_task_name;
+			uint32_t profiler_task_color;
 		};
 
-		void AddPass(TransferPassDesc& transferPassDesc);
+		void add_pass(TransferPassDesc& transfer_pass_desc);
 
 		struct ImagePresentPassDesc
 		{
-			ImagePresentPassDesc& SetImage(ImageViewProxyId _presentImageViewProxyId);
+			ImagePresentPassDesc& set_image(ImageViewProxyId present_image_view_proxy_id);
 
-			ImageViewProxyId presentImageViewProxyId;
+			ImageViewProxyId present_image_view_proxy_id;
 		};
 
-		void AddPass(ImagePresentPassDesc&& imagePresentDesc);
+		void add_pass(ImagePresentPassDesc&& image_present_desc);
 
-		void AddImagePresent(ImageViewProxyId presentImageViewProxyId);
+		void add_image_present(ImageViewProxyId present_image_view_proxy_id);
 
 		struct FrameSyncBeginPassDesc
 		{
@@ -423,169 +415,158 @@ namespace lz
 		{
 		};
 
-		void AddPass(FrameSyncBeginPassDesc&& frameSyncBeginDesc);
+		void add_pass(FrameSyncBeginPassDesc&& frame_sync_begin_desc);
 
-		void AddPass(FrameSyncEndPassDesc&& frameSyncEndDesc);
+		void add_pass(FrameSyncEndPassDesc&& frame_sync_end_desc);
 
-		void Execute(vk::CommandBuffer commandBuffer, lz::CpuProfiler* cpuProfiler, lz::GpuProfiler* gpuProfiler);
+		void execute(vk::CommandBuffer command_buffer, lz::CpuProfiler* cpu_profiler, lz::GpuProfiler* gpu_profiler);
 
 	private:
-		void FlushExternalImages(vk::CommandBuffer commandBuffer, lz::CpuProfiler* cpuProfiler,
-		                         lz::GpuProfiler* gpuProfiler);
+		void flush_external_images(vk::CommandBuffer command_buffer, lz::CpuProfiler* cpu_profiler,
+		                         lz::GpuProfiler* gpu_profiler);
 
-		bool ImageViewContainsSubresource(lz::ImageView* imageView, lz::ImageData* imageData, uint32_t mipLevel,
-		                                  uint32_t arrayLayer);
+		static bool image_view_contains_subresource(lz::ImageView* image_view, lz::ImageData* image_data, uint32_t mip_level,
+		                                            uint32_t array_layer);
 
-		ImageUsageTypes GetTaskImageSubresourceUsageType(size_t taskIndex, lz::ImageData* imageData, uint32_t mipLevel,
-		                                                 uint32_t arrayLayer);
+		ImageUsageTypes get_task_image_subresource_usage_type(size_t task_index, lz::ImageData* image_data, uint32_t mip_level,
+		                                                 uint32_t array_layer);
 
-		BufferUsageTypes GetTaskBufferUsageType(size_t taskIndex, lz::Buffer* buffer);
+		BufferUsageTypes get_task_buffer_usage_type(size_t task_index, lz::Buffer* buffer);
 
-		ImageUsageTypes GetLastImageSubresourceUsageType(size_t taskIndex, lz::ImageData* imageData, uint32_t mipLevel,
-		                                                 uint32_t arrayLayer);
+		ImageUsageTypes get_last_image_subresource_usage_type(size_t task_index, lz::ImageData* image_data, uint32_t mip_level,
+		                                                 uint32_t array_layer);
 
-		BufferUsageTypes GetLastBufferUsageType(size_t taskIndex, lz::Buffer* buffer);
+		BufferUsageTypes get_last_buffer_usage_type(size_t task_index, lz::Buffer* buffer);
 
-		void FlushImageTransitionBarriers(lz::ImageData* imageData, vk::ImageSubresourceRange range,
-		                                  ImageUsageTypes srcUsageType, ImageUsageTypes dstUsageType,
-		                                  vk::PipelineStageFlags& srcStage, vk::PipelineStageFlags& dstStage,
-		                                  std::vector<vk::ImageMemoryBarrier>& imageBarriers);
+		void flush_image_transition_barriers(lz::ImageData* image_data, vk::ImageSubresourceRange range,
+		                                  ImageUsageTypes src_usage_type, ImageUsageTypes dst_usage_type,
+		                                  vk::PipelineStageFlags& src_stage, vk::PipelineStageFlags& dst_stage,
+		                                  std::vector<vk::ImageMemoryBarrier>& image_barriers);
 
-		void AddImageTransitionBarriers(lz::ImageView* imageView, ImageUsageTypes dstUsageType, size_t dstTaskIndex,
-		                                vk::PipelineStageFlags& srcStage, vk::PipelineStageFlags& dstStage,
-		                                std::vector<vk::ImageMemoryBarrier>& imageBarriers);
+		void add_image_transition_barriers(lz::ImageView* image_view, ImageUsageTypes dst_usage_type, size_t dst_task_index,
+		                                vk::PipelineStageFlags& src_stage, vk::PipelineStageFlags& dst_stage,
+		                                std::vector<vk::ImageMemoryBarrier>& image_barriers);
 
-		void FlushBufferTransitionBarriers(lz::Buffer* buffer, BufferUsageTypes srcUsageType,
-		                                   BufferUsageTypes dstUsageType, vk::PipelineStageFlags& srcStage,
-		                                   vk::PipelineStageFlags& dstStage,
-		                                   std::vector<vk::BufferMemoryBarrier>& bufferBarriers);
+		void flush_buffer_transition_barriers(lz::Buffer* buffer, BufferUsageTypes src_usage_type,
+		                                   BufferUsageTypes dst_usage_type, vk::PipelineStageFlags& src_stage,
+		                                   vk::PipelineStageFlags& dst_stage,
+		                                   std::vector<vk::BufferMemoryBarrier>& buffer_barriers);
 
-		void AddBufferBarriers(lz::Buffer* buffer, BufferUsageTypes dstUsageType, size_t dstTaskIndex,
-		                       vk::PipelineStageFlags& srcStage, vk::PipelineStageFlags& dstStage,
-		                       std::vector<vk::BufferMemoryBarrier>& bufferBarriers);
+		void add_buffer_barriers(lz::Buffer* buffer, BufferUsageTypes dstUsageType, size_t dst_task_index,
+		                       vk::PipelineStageFlags& src_stage, vk::PipelineStageFlags& dst_stage,
+		                       std::vector<vk::BufferMemoryBarrier>& buffer_barriers);
 
 	private:
 		struct ImageProxy
 		{
-			enum struct Types
+			enum struct Types : uint8_t
 			{
-				Transient,
-				External
+				eTransient,
+				eExternal
 			};
 
-			ImageCache::ImageKey imageKey;
-			lz::ImageData* externalImage;
+			ImageCache::ImageKey image_key;
+			lz::ImageData* external_image;
 
-			lz::ImageData* resolvedImage;
+			lz::ImageData* resolved_image;
 
 			Types type;
 		};
 
 		struct ImageViewProxy
 		{
-			enum struct Types
+			enum struct Types : uint8_t
 			{
-				Transient,
-				External
+				eTransient,
+				eExternal
 			};
 
-			bool Contains(const ImageViewProxy& other);
+			bool contains(const ImageViewProxy& other);
 
-			ImageProxyId imageProxyId;
-			ImageSubresourceRange subresourceRange;
+			ImageProxyId image_proxy_id;
+			ImageSubresourceRange subresource_range;
 
-			lz::ImageView* externalView;
-			lz::ImageUsageTypes externalUsageType;
+			lz::ImageView* external_view;
+			lz::ImageUsageTypes external_usage_type;
 
-			lz::ImageView* resolvedImageView;
-			std::string debugName;
+			lz::ImageView* resolved_image_view;
+			std::string debug_name;
 
 			Types type;
 		};
 
 		struct BufferProxy
 		{
-			enum struct Types
+			enum struct Types : uint8_t
 			{
-				Transient,
-				External
+				eTransient,
+				eExternal
 			};
 
-			BufferCache::BufferKey bufferKey;
-			lz::Buffer* externalBuffer;
-			lz::Buffer* resolvedBuffer;
+			BufferCache::BufferKey buffer_key;
+			lz::Buffer* external_buffer;
+			lz::Buffer* resolved_buffer;
 
 			Types type;
 		};
 
 		struct Task
 		{
-			enum struct Types
+			enum struct Types : uint8_t
 			{
-				RenderPass,
-				ComputePass,
-				TransferPass,
-				ImagePresent,
-				FrameSyncBegin,
-				FrameSyncEnd
+				eRenderPass,
+				eComputePass,
+				eTransferPass,
+				eImagePresent,
+				eFrameSyncBegin,
+				eFrameSyncEnd
 			};
 
 			Types type;
 			size_t index;
 		};
 
-		ImageCache imageCache;
-		ImageProxyPool imageProxies;
+		ImageCache image_cache_;
+		ImageProxyPool image_proxies_;
 
-		void ResolveImages();
+		void resolve_images();
 
-		lz::ImageData* GetResolvedImage(size_t taskIndex, ImageProxyId imageProxy);
+		lz::ImageData* get_resolved_image(size_t task_index, ImageProxyId image_proxy);
 
-		ImageViewCache imageViewCache;
-		ImageViewProxyPool imageViewProxies;
-
-		void ResolveImageViews();
-
-		lz::ImageView* GetResolvedImageView(size_t taskIndex, ImageViewProxyId imageViewProxyId);
+		ImageViewCache image_view_cache_;
+		ImageViewProxyPool image_view_proxies_;
+		void resolve_image_views();
+		lz::ImageView* get_resolved_image_view(size_t task_index, ImageViewProxyId image_view_proxy_id);
 
 
-		BufferCache bufferCache;
-		BufferProxyPool bufferProxies;
+		BufferCache buffer_cache_;
+		BufferProxyPool buffer_proxies_;
+		void resolve_buffers();
+		lz::Buffer* get_resolved_buffer(size_t task_index, BufferProxyId buffer_proxy_id);
 
-		void ResolveBuffers();
+		std::vector<Task> tasks_;
+		void add_task(Task task);
+		lz::ProfilerTask create_profiler_task(const RenderPassDesc& render_pass_desc);
+		lz::ProfilerTask create_profiler_task(const ComputePassDesc& compute_pass_desc);
+		lz::ProfilerTask create_profiler_task(const TransferPassDesc& transfer_pass_desc);
+		lz::ProfilerTask create_profiler_task(const ImagePresentPassDesc& image_present_pass_desc);
+		lz::ProfilerTask create_profiler_task(const FrameSyncBeginPassDesc& frame_sync_begin_pass_desc);
+		lz::ProfilerTask create_profiler_task(const FrameSyncEndPassDesc& frame_sync_end_pass_desc);
 
-		lz::Buffer* GetResolvedBuffer(size_t taskIndex, BufferProxyId bufferProxyId);
+		RenderPassCache render_pass_cache_;
+		FramebufferCache framebuffer_cache_;
 
-		std::vector<Task> tasks;
-
-		void AddTask(Task task);
-
-		lz::ProfilerTask CreateProfilerTask(const RenderPassDesc& renderPassDesc);
-
-		lz::ProfilerTask CreateProfilerTask(const ComputePassDesc& computePassDesc);
-
-		lz::ProfilerTask CreateProfilerTask(const TransferPassDesc& transferPassDesc);
-
-		lz::ProfilerTask CreateProfilerTask(const ImagePresentPassDesc& imagePresentPassDesc);
-
-		lz::ProfilerTask CreateProfilerTask(const FrameSyncBeginPassDesc& frameSyncBeginPassDesc);
-
-		lz::ProfilerTask CreateProfilerTask(const FrameSyncEndPassDesc& frameSyncEndPassDesc);
-
-		RenderPassCache renderPassCache;
-		FramebufferCache framebufferCache;
-
-		std::vector<RenderPassDesc> renderPassDescs;
-		std::vector<ComputePassDesc> computePassDescs;
-		std::vector<TransferPassDesc> transferPassDescs;
-		std::vector<ImagePresentPassDesc> imagePresentDescs;
-		std::vector<FrameSyncBeginPassDesc> frameSyncBeginDescs;
-		std::vector<FrameSyncEndPassDesc> frameSyncEndDescs;
+		std::vector<RenderPassDesc> render_pass_descs_;
+		std::vector<ComputePassDesc> compute_pass_descs_;
+		std::vector<TransferPassDesc> transfer_pass_descs_;
+		std::vector<ImagePresentPassDesc> image_present_descs_;
+		std::vector<FrameSyncBeginPassDesc> frame_sync_begin_descs_;
+		std::vector<FrameSyncEndPassDesc> frame_sync_end_descs_;
 
 
-		vk::Device logicalDevice;
-		vk::PhysicalDevice physicalDevice;
-		vk::DispatchLoaderDynamic loader;
-		size_t imageAllocations = 0;
+		vk::Device logical_device_;
+		vk::PhysicalDevice physical_device_;
+		vk::DispatchLoaderDynamic loader_;
+		size_t image_allocations_ = 0;
 	};
 }

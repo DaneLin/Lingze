@@ -37,14 +37,14 @@ namespace lz
 		vk::Buffer get_handle();
 
 		// GetMemory: Returns the device memory handle for the buffer
-		vk::DeviceMemory GetMemory();
+		vk::DeviceMemory get_memory();
 
 		// Map: Maps the buffer memory to CPU-accessible memory
 		// Returns: Pointer to the mapped memory
-		void* Map();
+		void* map();
 
 		// Unmap: Unmaps the buffer memory from CPU access
-		void Unmap();
+		void unmap();
 
 
 		// Constructor: Creates a new buffer with specified properties
@@ -54,14 +54,14 @@ namespace lz
 		// - size: Size of the buffer in bytes
 		// - usageFlags: Buffer usage flags (e.g. vertex buffer, uniform buffer)
 		// - memoryVisibility: Memory property flags (e.g. host visible, device local)
-		Buffer(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::DeviceSize size,
-			vk::BufferUsageFlags usageFlags, vk::MemoryPropertyFlags memoryVisibility);
+		Buffer(vk::PhysicalDevice physical_device, vk::Device logical_device, vk::DeviceSize size,
+			vk::BufferUsageFlags usage_flags, vk::MemoryPropertyFlags memory_visibility);
 
 	private:
-		vk::UniqueBuffer bufferHandle;       // Native Vulkan buffer handle
-		vk::UniqueDeviceMemory bufferMemory; // Device memory allocation for this buffer
-		vk::Device logicalDevice;            // Logical device for buffer operations
-		vk::DeviceSize size;                 // Size of the buffer in bytes
+		vk::UniqueBuffer buffer_handle_;       // Native Vulkan buffer handle
+		vk::UniqueDeviceMemory buffer_memory_; // Device memory allocation for this buffer
+		vk::Device logical_device_;            // Logical device for buffer operations
+		vk::DeviceSize size_;                 // Size of the buffer in bytes
 		friend class Core;
 	};
 }

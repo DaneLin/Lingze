@@ -15,19 +15,19 @@ namespace lz
 	{
 	public:
 		// GetHandle: Returns the native Vulkan image view handle
-		vk::ImageView GetHandle() const;
+		vk::ImageView get_handle() const;
 
 		// GetImageData: Returns a pointer to the underlying image data
-		lz::ImageData* GetImageData();
+		lz::ImageData* get_image_data();
 
 		// GetImageData: Const version of GetImageData
-		const lz::ImageData* GetImageData() const;
+		const lz::ImageData* get_image_data() const;
 
 		// Get methods for view properties
-		uint32_t GetBaseMipLevel();
-		uint32_t GetMipLevelsCount();
-		uint32_t GetBaseArrayLayer();
-		uint32_t GetArrayLayersCount();
+		uint32_t get_base_mip_level() const;
+		uint32_t get_mip_levels_count() const;
+		uint32_t get_base_array_layer() const;
+		uint32_t get_array_layers_count() const;
 
 		// Constructor: Creates an image view for standard images (1D, 2D, 3D)
 		// Parameters:
@@ -37,8 +37,8 @@ namespace lz
 		// - mipLevelsCount: Number of mipmap levels to include in the view
 		// - baseArrayLayer: First array layer to include in the view
 		// - arrayLayersCount: Number of array layers to include in the view
-		ImageView(vk::Device logicalDevice, lz::ImageData* imageData, uint32_t baseMipLevel, uint32_t mipLevelsCount,
-		          uint32_t baseArrayLayer, uint32_t arrayLayersCount);
+		ImageView(vk::Device logical_device, lz::ImageData* image_data, uint32_t base_mip_level, uint32_t mip_levels_count,
+		          uint32_t base_array_layer, uint32_t array_layers_count);
 
 		// Constructor: Creates an image view for cubemap images
 		// Parameters:
@@ -46,18 +46,18 @@ namespace lz
 		// - cubemapImageData: Underlying cubemap image data (must have 6 array layers)
 		// - baseMipLevel: First mipmap level to include in the view
 		// - mipLevelsCount: Number of mipmap levels to include in the view
-		ImageView(vk::Device logicalDevice, lz::ImageData* cubemapImageData, uint32_t baseMipLevel,
-		          uint32_t mipLevelsCount);
+		ImageView(vk::Device logical_device, lz::ImageData* cubemap_image_data, uint32_t base_mip_level,
+		          uint32_t mip_levels_count);
 
 	private:
-		vk::UniqueImageView imageView;  // Native Vulkan image view handle
-		lz::ImageData* imageData;       // Underlying image data
+		vk::UniqueImageView image_view_;  // Native Vulkan image view handle
+		lz::ImageData* image_data_;       // Underlying image data
 
-		uint32_t baseMipLevel;          // First mipmap level in the view
-		uint32_t mipLevelsCount;        // Number of mipmap levels in the view
+		uint32_t base_mip_level_;          // First mipmap level in the view
+		uint32_t mip_levels_count_;        // Number of mipmap levels in the view
 
-		uint32_t baseArrayLayer;        // First array layer in the view
-		uint32_t arrayLayersCount;      // Number of array layers in the view
+		uint32_t base_array_layer_;        // First array layer in the view
+		uint32_t array_layers_count_;      // Number of array layers in the view
 
 		friend class lz::Swapchain;
 		friend class lz::RenderTarget;

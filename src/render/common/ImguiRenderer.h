@@ -14,32 +14,32 @@ namespace lz
 	class ImGuiRenderer
     {
     public:
-        ImGuiRenderer(lz::Core* _core, GLFWwindow* window);
+        ImGuiRenderer(lz::Core* core, GLFWwindow* window);
 
         ~ImGuiRenderer();
 
-        void SetupStyle();
+        void setup_style();
 
-        void RecreateSwapchainResources(vk::Extent2D viewportExtent, size_t inFlightFramesCount);
+        void recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count);
 
-        void RenderFrame(const lz::InFlightQueue::FrameInfo& frameInfo, GLFWwindow* window, ImDrawData* drawData);
+        void render_frame(const lz::InFlightQueue::FrameInfo& frame_info, GLFWwindow* window, ImDrawData* draw_data);
 
-        void ProcessInput(GLFWwindow* window);
+        void process_input(GLFWwindow* window);
 
-        void ReloadShaders();
+        void reload_shaders();
 
     private:
-        void InitKeymap();
+        void init_keymap();
 
-        void InitCallbacks(GLFWwindow* window);
+        void init_callbacks(GLFWwindow* window);
 
-        static void KeyCallback(GLFWwindow* window, int key, int, int action, int mods);
+        static void key_callback(GLFWwindow* window, int key, int, int action, int mods);
 
-        static void CharCallback(GLFWwindow* window, unsigned int c);
+        static void char_callback(GLFWwindow* window, unsigned int c);
 
-        static void MouseButtonCallback(GLFWwindow* window, int button, int action, int /*mods*/);
+        static void mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/);
 
-        static void ScrollCallback(GLFWwindow* window, double xOffset, double yOffset);
+        static void scroll_callback(GLFWwindow* window, double x_offset, double y_offset);
 
         /*static const char* GetClipboardText()
         {
@@ -51,14 +51,14 @@ namespace lz
           glfwSetClipboardString(g_Window, text);
         }*/
 
-        void UploadBuffers(lz::Buffer* vertexBuffer, lz::Buffer* indexBuffer, ImDrawData* drawData);
+        void upload_buffers(lz::Buffer* vertex_buffer, lz::Buffer* index_buffer, ImDrawData* draw_data);
 
         struct InputState
         {
-            float mouseWheel = 0.0f;
-            double lastUpdateTime = 0.0;
-            bool mouseButtonsPressed[3] = { 0 };
-        }inputState;
+            float mouse_wheel = 0.0f;
+            double last_update_time = 0.0;
+            bool mouse_buttons_pressed[3] = { 0 };
+        }input_state_;
 #pragma pack(push, 1)
         struct ImGuiVertex
         {
@@ -69,41 +69,41 @@ namespace lz
 #pragma pack(pop)
         struct FrameResources
         {
-            FrameResources(lz::Core* core, size_t maxVerticesCount, size_t maxIndicesCount);
+            FrameResources(lz::Core* core, size_t max_vertices_count, size_t max_indices_count);
 
-            std::unique_ptr<lz::Buffer> imGuiIndexBuffer;
-            std::unique_ptr<lz::Buffer> imGuiVertexBuffer;
+            std::unique_ptr<lz::Buffer> imgui_index_buffer;
+            std::unique_ptr<lz::Buffer> imgui_vertex_buffer;
         };
-        std::vector<std::unique_ptr<FrameResources> > frameResources;
+        std::vector<std::unique_ptr<FrameResources> > frame_resources_;
 
-        void LoadImguiFont();
+        void load_imgui_font();
 
-        const static uint32_t ShaderDataSetIndex = 0;
-        const static uint32_t DrawCallDataSetIndex = 1;
+        static constexpr uint32_t shader_data_set_index = 0;
+        static constexpr uint32_t draw_call_data_set_index = 1;
 
-        static lz::VertexDeclaration GetImGuiVertexDeclaration();
+        static lz::VertexDeclaration get_imgui_vertex_declaration();
 
         struct ImGuiShader
         {
 #pragma pack(push, 1)
             struct ImGuiShaderData
             {
-                glm::mat4 projMatrix;
+                glm::mat4 proj_matrix;
             };
 #pragma pack(pop)
 
             std::unique_ptr<lz::Shader> vertex;
             std::unique_ptr<lz::Shader> fragment;
             std::unique_ptr<lz::ShaderProgram> program;
-        } imGuiShader;
+        } imgui_shader_;
 
-        vk::Extent2D viewportExtent;
+        vk::Extent2D viewport_extent_;
 
-        std::unique_ptr<lz::ImageView> fontImageView;
-        std::unique_ptr<lz::Image> fontImage;
+        std::unique_ptr<lz::ImageView> font_image_view_;
+        std::unique_ptr<lz::Image> font_image_;
 
-        std::unique_ptr<lz::Sampler> imageSpaceSampler;
-        ImGuiContext* imguiContext;
-        lz::Core* core;
+        std::unique_ptr<lz::Sampler> image_space_sampler_;
+        ImGuiContext* imgui_context_;
+        lz::Core* core_;
     };
 }

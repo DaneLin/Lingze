@@ -17,48 +17,49 @@
 
 namespace lz
 {
-	ImGuiRenderer::ImGuiRenderer(lz::Core* _core, GLFWwindow* window)
+	ImGuiRenderer::ImGuiRenderer(lz::Core* core, GLFWwindow* window)
 	{
-		this->core = _core;
+		this->core_ = core;
 
-		imguiContext = ImGui::CreateContext();
-		ImGuiIO& imGuiIO = ImGui::GetIO();
-		imGuiIO.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
-		imGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+		imgui_context_ = ImGui::CreateContext();
+		ImGuiIO& imgui_io = ImGui::GetIO();
+		imgui_io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
+		imgui_io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
 		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-		imGuiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-		imGuiIO.ConfigFlags |= ImGuiConfigFlags_IsSRGB;
-		imGuiIO.ConfigWindowsResizeFromEdges = true;
-		imGuiIO.ConfigDockingTabBarOnSingleWindows = true;
+		imgui_io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
+		imgui_io.ConfigFlags |= ImGuiConfigFlags_IsSRGB;
+		imgui_io.ConfigWindowsResizeFromEdges = true;
+		imgui_io.ConfigDockingTabBarOnSingleWindows = true;
 		//imGuiIO.ConfigFlags |= ImGuiConfigFlags_;
 		//imGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		// TODO: Set optional io.ConfigFlags values, e.g. 'io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard' to enable keyboard controls.
 		// TODO: Fill optional fields of the io structure later.
 		// TODO: Load TTF/OTF fonts if you don't want to use the default font.
 
-		SetupStyle();
+		setup_style();
 		ImFontConfig config;
 		config.OversampleH = 4;
 		config.OversampleV = 4;
 		//imGuiIO.Fonts->AddFontFromFileTTF("../data/Fonts/DroidSansMono.ttf", 18.0f, &config);
 		//imGuiIO.Fonts->AddFontFromFileTTF("../data/Fonts/Ruda-Bold.ttf", 15.0f, &config);
 
-		LoadImguiFont();
+		load_imgui_font();
 
-		imageSpaceSampler.reset(new lz::Sampler(core->GetLogicalDevice(), vk::SamplerAddressMode::eClampToEdge, vk::Filter::eLinear, vk::SamplerMipmapMode::eNearest));
-		ReloadShaders();
+		image_space_sampler_.reset(new lz::Sampler(core_->get_logical_device(), vk::SamplerAddressMode::eClampToEdge,
+		                                           vk::Filter::eLinear, vk::SamplerMipmapMode::eNearest));
+		reload_shaders();
 
-		glfwSetWindowUserPointer(window, &(this->inputState));
-		InitKeymap();
-		InitCallbacks(window);
+		glfwSetWindowUserPointer(window, &(this->input_state_));
+		init_keymap();
+		init_callbacks(window);
 	}
 
 	ImGuiRenderer::~ImGuiRenderer()
 	{
-		ImGui::DestroyContext(imguiContext);
+		ImGui::DestroyContext(imgui_context_);
 	}
 
-	void ImGuiRenderer::SetupStyle()
+	void ImGuiRenderer::setup_style()
 	{
 		ImGui::GetStyle().FrameRounding = 4.0f;
 		ImGui::GetStyle().GrabRounding = 4.0f;
@@ -94,11 +95,7 @@ namespace lz
 		colors[ImGuiCol_Separator] = ImVec4(0.20f, 0.25f, 0.29f, 1.00f);
 
 
-
 		colors[ImGuiCol_WindowBg] = ImVec4(0.11f, 0.15f, 0.17f, 0.20f);
-
-
-
 
 
 		auto* style = &ImGui::GetStyle();
@@ -211,147 +208,128 @@ namespace lz
             style->Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(1.00f, 0.98f, 0.95f, 0.73f);*/
 	}
 
-	void ImGuiRenderer::RecreateSwapchainResources(vk::Extent2D viewportExtent, size_t inFlightFramesCount)
+	void ImGuiRenderer::recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count)
 	{
-		this->viewportExtent = viewportExtent;
-		frameResources.clear();
+		this->viewport_extent_ = viewport_extent;
+		frame_resources_.clear();
 
-		frameResources.resize(inFlightFramesCount);
+		frame_resources_.resize(in_flight_frames_count);
 
-		for (size_t frameIndex = 0; frameIndex < inFlightFramesCount; frameIndex++)
+		for (size_t frameIndex = 0; frameIndex < in_flight_frames_count; frameIndex++)
 		{
-			frameResources[frameIndex].reset(new FrameResources(core, 150000, 150000));
+			frame_resources_[frameIndex].reset(new FrameResources(core_, 150000, 150000));
 		}
 	}
 
-	void ImGuiRenderer::UploadBuffers(lz::Buffer* vertexBuffer, lz::Buffer* indexBuffer, ImDrawData* drawData)
+	void ImGuiRenderer::upload_buffers(lz::Buffer* vertex_buffer, lz::Buffer* index_buffer, ImDrawData* draw_data)
 	{
-		ImDrawVert* vertBufMemory = (ImDrawVert*)vertexBuffer->Map();
-		ImDrawIdx* indexBufMemory = (ImDrawIdx*)indexBuffer->Map();
+		ImDrawVert* vert_buf_memory = (ImDrawVert*)vertex_buffer->map();
+		ImDrawIdx* index_buf_memory = (ImDrawIdx*)index_buffer->map();
 
-		for (int cmdListIndex = 0; cmdListIndex < drawData->CmdListsCount; cmdListIndex++)
+		for (int cmd_list_index = 0; cmd_list_index < draw_data->CmdListsCount; cmd_list_index++)
 		{
-			const ImDrawList* cmdList = drawData->CmdLists[cmdListIndex];
+			const ImDrawList* cmd_list = draw_data->CmdLists[cmd_list_index];
 
-			memcpy(vertBufMemory, cmdList->VtxBuffer.Data, cmdList->VtxBuffer.Size * sizeof(ImDrawVert));
-			memcpy(indexBufMemory, cmdList->IdxBuffer.Data, cmdList->IdxBuffer.Size * sizeof(ImDrawIdx));
+			memcpy(vert_buf_memory, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
+			memcpy(index_buf_memory, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
 
-			vertBufMemory += cmdList->VtxBuffer.Size;
-			indexBufMemory += cmdList->IdxBuffer.Size;
+			vert_buf_memory += cmd_list->VtxBuffer.Size;
+			index_buf_memory += cmd_list->IdxBuffer.Size;
 		}
-		indexBuffer->Unmap();
-		vertexBuffer->Unmap();
+		index_buffer->unmap();
+		vertex_buffer->unmap();
 	}
 
-	lz::VertexDeclaration ImGuiRenderer::GetImGuiVertexDeclaration()
+	lz::VertexDeclaration ImGuiRenderer::get_imgui_vertex_declaration()
 	{
-		lz::VertexDeclaration vertexDecl;
-		vertexDecl.AddVertexInputBinding(0, sizeof(ImDrawVert));
-		vertexDecl.AddVertexAttribute(0, offsetof(ImDrawVert, pos), lz::VertexDeclaration::AttribTypes::vec2, 0);
-		vertexDecl.AddVertexAttribute(0, offsetof(ImDrawVert, uv), lz::VertexDeclaration::AttribTypes::vec2, 1);
-		vertexDecl.AddVertexAttribute(0, offsetof(ImDrawVert, col), lz::VertexDeclaration::AttribTypes::color32, 2);
+		lz::VertexDeclaration vertex_decl;
+		vertex_decl.add_vertex_input_binding(0, sizeof(ImDrawVert));
+		vertex_decl.add_vertex_attribute(0, offsetof(ImDrawVert, pos), lz::VertexDeclaration::AttribTypes::eVec2, 0);
+		vertex_decl.add_vertex_attribute(0, offsetof(ImDrawVert, uv), lz::VertexDeclaration::AttribTypes::eVec2, 1);
+		vertex_decl.add_vertex_attribute(0, offsetof(ImDrawVert, col), lz::VertexDeclaration::AttribTypes::eColor32, 2);
 
-		return vertexDecl;
+		return vertex_decl;
 	}
 
-	void ImGuiRenderer::RenderFrame(const lz::InFlightQueue::FrameInfo& frameInfo, GLFWwindow* window, ImDrawData* drawData)
+	void ImGuiRenderer::render_frame(const lz::InFlightQueue::FrameInfo& frame_info, GLFWwindow* window,
+	                                 ImDrawData* draw_data)
 	{
-		auto frameResources = this->frameResources[frameInfo.frameIndex].get();
-		assert(frameResources);
+		auto frame_resources_ = this->frame_resources_[frame_info.frame_index].get();
+		assert(frame_resources_);
 
-		UploadBuffers(frameResources->imGuiVertexBuffer.get(), frameResources->imGuiIndexBuffer.get(), drawData);
-		auto vertexBuffer = frameResources->imGuiVertexBuffer->get_handle();
-		auto indexBuffer = frameResources->imGuiIndexBuffer->get_handle();
-		core->GetRenderGraph()->AddPass(
+		upload_buffers(frame_resources_->imgui_vertex_buffer.get(), frame_resources_->imgui_index_buffer.get(),
+		               draw_data);
+		auto vertex_buffer = frame_resources_->imgui_vertex_buffer->get_handle();
+		auto index_buffer = frame_resources_->imgui_index_buffer->get_handle();
+		core_->get_render_graph()->add_pass(
 			lz::RenderGraph::RenderPassDesc()
-			.SetColorAttachments({ frameInfo.swapchainImageViewProxyId }, vk::AttachmentLoadOp::eLoad)
-			.SetRenderAreaExtent(viewportExtent)
-			.SetProfilerInfo(lz::Colors::peterRiver, "ImGuiPass")
-			.SetRecordFunc([this, frameInfo, drawData, vertexBuffer, indexBuffer](lz::RenderGraph::RenderPassContext passContext)
+			.set_color_attachments({frame_info.swapchain_image_view_proxy_id}, vk::AttachmentLoadOp::eLoad)
+			.set_render_area_extent(viewport_extent_)
+			.set_profiler_info(lz::Colors::peter_river, "ImGuiPass")
+			.set_record_func(
+				[this, frame_info, draw_data, vertex_buffer, index_buffer](
+				lz::RenderGraph::RenderPassContext pass_context)
 				{
-					auto pipeineInfo = this->core->GetPipelineCache()->BindGraphicsPipeline(
-						passContext.GetCommandBuffer(),
-						passContext.GetRenderPass()->GetHandle(),
-						lz::DepthSettings::Disabled(),
-						{ lz::BlendSettings::AlphaBlend() },
-						GetImGuiVertexDeclaration(),
+					const auto pipeline_info = this->core_->get_pipeline_cache()->bind_graphics_pipeline(
+						pass_context.get_command_buffer(),
+						pass_context.get_render_pass()->get_handle(),
+						lz::DepthSettings::disabled(),
+						{lz::BlendSettings::alpha_blend()},
+						get_imgui_vertex_declaration(),
 						vk::PrimitiveTopology::eTriangleList,
-						imGuiShader.program.get());
+						imgui_shader_.program.get());
 					{
-						/*glm::vec2 tileSize(0.1f, 0.1f);
-						glm::vec2 tilePadding(0.02f, 0.02f);
-
-						glm::vec2 currMin = tilePadding;
-						for (auto debugProxyId : debugProxies)
+						const lz::DescriptorSetLayoutKey* shader_data_set_info = imgui_shader_.program->get_set_info(
+							shader_data_set_index);
+						auto shader_data = frame_info.memory_pool->begin_set(shader_data_set_info);
 						{
-						  const lz::DescriptorSetLayoutKey *vertexDataSetInfo = debugRendererShader.vertex->GetSetInfo(VertexDataSetIndex);
-						  auto vertexData = memoryPool->BeginSet(vertexDataSetInfo);
-						  {
-							auto quadDataBuffer = memoryPool->GetUniformBufferData<DebugRendererShader::QuadData>("QuadData");
-							quadDataBuffer->minmax = glm::vec4(currMin.x, currMin.y, currMin.x + tileSize.x, currMin.y + tileSize.y);
-						  }
-						  memoryPool->EndSet();
-						  auto vertexDataSet = this->core->GetDescriptorSetCache()->GetDescriptorSet(*vertexDataSetInfo, vertexData.uniformBufferBindings, {}, {});
-
-						  const lz::DescriptorSetLayoutKey *fragmentDataSetInfo = debugRendererShader.fragment->GetSetInfo(FragmentDataSetIndex);
-						  std::vector<lz::ImageSamplerBinding> imageSamplerBindings;
-						  imageSamplerBindings.push_back(fragmentDataSetInfo->MakeImageSamplerBinding("srcSampler", passContext.GetImageView(debugProxyId), imageSpaceSampler.get()));
-
-						  auto fragmentDataSet = this->core->GetDescriptorSetCache()->GetDescriptorSet(*fragmentDataSetInfo, {}, {}, { imageSamplerBindings });
-
-						  //passContext.GetCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeineInfo.pipelineLayout, VertexDataSetIndex, { vertexDataSet, fragmentDataSet }, { vertexDataOffset });
-						  passContext.GetCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeineInfo.pipelineLayout, VertexDataSetIndex, { vertexDataSet }, { vertexData.dynamicOffset });
-						  passContext.GetCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeineInfo.pipelineLayout, FragmentDataSetIndex, { fragmentDataSet }, {});
-
-						  passContext.GetCommandBuffer().draw(4, 1, 0, 0);
-
-						  currMin.x += tileSize.x + tilePadding.x;
-						  if (currMin.x + tileSize.x > 1.0f)
-						  {
-							currMin.x = tilePadding.x;
-							currMin.y += tileSize.y + tilePadding.y;
-						  }
-						}*/
-						const lz::DescriptorSetLayoutKey* shaderDataSetInfo = imGuiShader.program->GetSetInfo(ShaderDataSetIndex);
-						auto shaderData = frameInfo.memoryPool->BeginSet(shaderDataSetInfo);
-						{
-							auto shaderDataBuffer = frameInfo.memoryPool->GetUniformBufferData<ImGuiShader::ImGuiShaderData>("ImGuiShaderData");
-							shaderDataBuffer->projMatrix = glm::ortho(0.0f, float(viewportExtent.width), 0.0f, float(viewportExtent.height));
+							auto shader_data_buffer = frame_info.memory_pool->get_uniform_buffer_data<
+								ImGuiShader::ImGuiShaderData>("ImGuiShaderData");
+							shader_data_buffer->proj_matrix = glm::ortho(0.0f, float(viewport_extent_.width), 0.0f,
+							                                           float(viewport_extent_.height));
 						}
-						frameInfo.memoryPool->EndSet();
+						frame_info.memory_pool->end_set();
 
-						auto shaderDataSet = this->core->GetDescriptorSetCache()->GetDescriptorSet(*shaderDataSetInfo, shaderData.uniformBufferBindings, {}, {});
+						auto shader_data_set = this->core_->get_descriptor_set_cache()->get_descriptor_set(
+							*shader_data_set_info, shader_data.uniform_buffer_bindings, {}, {});
 
-						const lz::DescriptorSetLayoutKey* drawCallSetInfo = imGuiShader.program->GetSetInfo(DrawCallDataSetIndex);
+						const lz::DescriptorSetLayoutKey* draw_call_set_info = imgui_shader_.program->get_set_info(
+							draw_call_data_set_index);
 
-						uint32_t listIndexOffset = 0;
-						uint32_t listVertexOffset = 0;
-						for (int cmdListIndex = 0; cmdListIndex < drawData->CmdListsCount; cmdListIndex++)
+						uint32_t list_index_offset = 0;
+						uint32_t list_vertex_offset = 0;
+						for (int cmd_list_index = 0; cmd_list_index < draw_data->CmdListsCount; cmd_list_index++)
 						{
-							const ImDrawList* cmdList = drawData->CmdLists[cmdListIndex];
-							const ImDrawVert* vertexBufferData = cmdList->VtxBuffer.Data;  // vertex buffer generated by Dear ImGui
-							const ImDrawIdx* indexBufferData = cmdList->IdxBuffer.Data;   // index buffer generated by Dear ImGui
+							const ImDrawList* cmd_list = draw_data->CmdLists[cmd_list_index];
+							const ImDrawVert* vertex_buffer_data = cmd_list->VtxBuffer.Data;
+							// vertex buffer generated by Dear ImGui
+							const ImDrawIdx* index_buffer_data = cmd_list->IdxBuffer.Data;
+							// index buffer generated by Dear ImGui
 
-							for (int cmdIndex = 0; cmdIndex < cmdList->CmdBuffer.Size; cmdIndex++)
+							for (int cmd_index = 0; cmd_index < cmd_list->CmdBuffer.Size; cmd_index++)
 							{
-								const ImDrawCmd* drawCmd = &cmdList->CmdBuffer[cmdIndex];
-								if (drawCmd->UserCallback)
+								const ImDrawCmd* draw_cmd = &cmd_list->CmdBuffer[cmd_index];
+								if (draw_cmd->UserCallback)
 								{
-									drawCmd->UserCallback(cmdList, drawCmd);
+									draw_cmd->UserCallback(cmd_list, draw_cmd);
 								}
 								else
 								{
 									// The texture for the draw call is specified by pcmd->TextureId.
 									// The vast majority of draw calls will use the Dear ImGui texture atlas, which value you have set yourself during initialization.
 
-									lz::ImageView* texImageView = (lz::ImageView*)drawCmd->TextureId;
-									lz::ImageSamplerBinding texBinding = drawCallSetInfo->MakeImageSamplerBinding("tex", texImageView, imageSpaceSampler.get());
+									lz::ImageView* tex_image_view = (lz::ImageView*)draw_cmd->TextureId;
+									lz::ImageSamplerBinding tex_binding = draw_call_set_info->make_image_sampler_binding(
+										"tex", tex_image_view, image_space_sampler_.get());
 
-									auto drawCallSet = this->core->GetDescriptorSetCache()->GetDescriptorSet(*drawCallSetInfo, {}, {}, { texBinding });
+									auto draw_call_set = this->core_->get_descriptor_set_cache()->get_descriptor_set(
+										*draw_call_set_info, {}, {}, {tex_binding});
 
-									passContext.GetCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeineInfo.pipelineLayout, ShaderDataSetIndex,
-										{ shaderDataSet, drawCallSet },
-										{ shaderData.dynamicOffset });
+									pass_context.get_command_buffer().bindDescriptorSets(
+										vk::PipelineBindPoint::eGraphics, pipeline_info.pipeline_layout,
+										shader_data_set_index,
+										{shader_data_set, draw_call_set},
+										{shader_data.dynamic_offset});
 
 
 									// We are using scissoring to clip some objects. All low-level graphics API should supports it.
@@ -369,158 +347,180 @@ namespace lz
 									// By default the indices ImDrawIdx are 16-bits, you can change them to 32-bits in imconfig.h if your engine doesn't support 16-bits indices.
 									//MyEngineDrawIndexedTriangles(pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer, vtx_buffer);
 
-									passContext.GetCommandBuffer().bindVertexBuffers(0, { vertexBuffer }, { 0 });
-									passContext.GetCommandBuffer().bindIndexBuffer(indexBuffer, 0, sizeof(ImDrawIdx) == 2 ? vk::IndexType::eUint16 : vk::IndexType::eUint32);
-									passContext.GetCommandBuffer().drawIndexed(drawCmd->ElemCount, 1, listIndexOffset + drawCmd->IdxOffset, listVertexOffset + drawCmd->VtxOffset, 0);
+									pass_context.get_command_buffer().bindVertexBuffers(0, {vertex_buffer}, {0});
+									pass_context.get_command_buffer().bindIndexBuffer(
+										index_buffer, 0,
+										sizeof(ImDrawIdx) == 2 ? vk::IndexType::eUint16 : vk::IndexType::eUint32);
+									pass_context.get_command_buffer().drawIndexed(
+										draw_cmd->ElemCount, 1, list_index_offset + draw_cmd->IdxOffset,
+										list_vertex_offset + draw_cmd->VtxOffset, 0);
 								}
 							}
-							listIndexOffset += cmdList->IdxBuffer.Size;
-							listVertexOffset += cmdList->VtxBuffer.Size;
+							list_index_offset += cmd_list->IdxBuffer.Size;
+							list_vertex_offset += cmd_list->VtxBuffer.Size;
 						}
 					}
 				}));
 	}
 
-	void ImGuiRenderer::ProcessInput(GLFWwindow* window)
+	void ImGuiRenderer::process_input(GLFWwindow* window)
 	{
-		bool isWindowFocused = glfwGetWindowAttrib(window, GLFW_FOCUSED);
+		bool is_window_focused = glfwGetWindowAttrib(window, GLFW_FOCUSED);
 
-		auto& imguiIO = ImGui::GetIO();
+		auto& imgui_io = ImGui::GetIO();
 
-		glm::f64vec2 mousePos;
-		glfwGetCursorPos(window, &mousePos.x, &mousePos.y);
+		glm::f64vec2 mouse_pos;
+		glfwGetCursorPos(window, &mouse_pos.x, &mouse_pos.y);
 
-		imguiIO.MousePos = ImVec2(float(mousePos.x), float(mousePos.y));             // set the mouse position
+		imgui_io.MousePos = ImVec2(float(mouse_pos.x), float(mouse_pos.y)); // set the mouse position
 
-		//imguiIO.MouseWheel = inputState.mouseWheel;
+		//imgui_io.MouseWheel = inputState.mouseWheel;
 		//inputState.mouseWheel = 0.0f;
 
 		// Setup time step
-		double currTime = glfwGetTime();
-		imguiIO.DeltaTime = inputState.lastUpdateTime > 0.0 ? (float)(currTime - inputState.lastUpdateTime) : (float)(1.0f / 60.0f);
-		inputState.lastUpdateTime = currTime;
+		const double curr_time = glfwGetTime();
+		imgui_io.DeltaTime = input_state_.last_update_time > 0.0
+			                    ? (float)(curr_time - input_state_.last_update_time)
+			                    : (float)(1.0f / 60.0f);
+		input_state_.last_update_time = curr_time;
 
-		imguiIO.KeyCtrl = imguiIO.KeysDown[GLFW_KEY_LEFT_CONTROL] || imguiIO.KeysDown[GLFW_KEY_RIGHT_CONTROL];
-		imguiIO.KeyShift = imguiIO.KeysDown[GLFW_KEY_LEFT_SHIFT] || imguiIO.KeysDown[GLFW_KEY_RIGHT_SHIFT];
-		imguiIO.KeyAlt = imguiIO.KeysDown[GLFW_KEY_LEFT_ALT] || imguiIO.KeysDown[GLFW_KEY_RIGHT_ALT];
-		imguiIO.KeySuper = imguiIO.KeysDown[GLFW_KEY_LEFT_SUPER] || imguiIO.KeysDown[GLFW_KEY_RIGHT_SUPER];
+		imgui_io.KeyCtrl = imgui_io.KeysDown[GLFW_KEY_LEFT_CONTROL] || imgui_io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
+		imgui_io.KeyShift = imgui_io.KeysDown[GLFW_KEY_LEFT_SHIFT] || imgui_io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
+		imgui_io.KeyAlt = imgui_io.KeysDown[GLFW_KEY_LEFT_ALT] || imgui_io.KeysDown[GLFW_KEY_RIGHT_ALT];
+		imgui_io.KeySuper = imgui_io.KeysDown[GLFW_KEY_LEFT_SUPER] || imgui_io.KeysDown[GLFW_KEY_RIGHT_SUPER];
 		/*for (int i = 0; i < 3; i++)
             {
-              imguiIO.MouseDown[i] = inputState.mouseButtonsPressed[i] || glfwGetMouseButton(window, i) != 0;    // If a mouse press event came, always pass it as "mouse held this frame", so we don't miss click-release events that are shorter than 1 frame.
+              imgui_io.MouseDown[i] = inputState.mouseButtonsPressed[i] || glfwGetMouseButton(window, i) != 0;    // If a mouse press event came, always pass it as "mouse held this frame", so we don't miss click-release events that are shorter than 1 frame.
               inputState.mouseButtonsPressed[i] = false;
             }*/
 
 		// Hide OS mouse cursor if ImGui is drawing it
-		glfwSetInputMode(window, GLFW_CURSOR, imguiIO.MouseDrawCursor ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_NORMAL);
+		glfwSetInputMode(window, GLFW_CURSOR, imgui_io.MouseDrawCursor ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_NORMAL);
 	}
 
-	void ImGuiRenderer::ReloadShaders()
+	void ImGuiRenderer::reload_shaders()
 	{
-		imGuiShader.vertex.reset(new lz::Shader(core->GetLogicalDevice(), std::string(SHADER_SPIRV_DIR) + "/ImGui/ImGui.vert.spv"));
-		imGuiShader.fragment.reset(new lz::Shader(core->GetLogicalDevice(), std::string(SHADER_SPIRV_DIR) + "/ImGui/ImGui.frag.spv"));
-		imGuiShader.program.reset(new lz::ShaderProgram(imGuiShader.vertex.get(), imGuiShader.fragment.get()));
+		imgui_shader_.vertex.reset(new lz::Shader(core_->get_logical_device(),
+		                                          std::string(SHADER_SPIRV_DIR) + "/ImGui/ImGui.vert.spv"));
+		imgui_shader_.fragment.reset(new lz::Shader(core_->get_logical_device(),
+		                                            std::string(SHADER_SPIRV_DIR) + "/ImGui/ImGui.frag.spv"));
+		imgui_shader_.program.reset(new lz::ShaderProgram(imgui_shader_.vertex.get(), imgui_shader_.fragment.get()));
 	}
 
-	void ImGuiRenderer::InitKeymap()
+	void ImGuiRenderer::init_keymap()
 	{
-		ImGuiIO& imguiIO = ImGui::GetIO();
-		imguiIO.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;
-		imguiIO.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
-		imguiIO.KeyMap[ImGuiKey_RightArrow] = GLFW_KEY_RIGHT;
-		imguiIO.KeyMap[ImGuiKey_UpArrow] = GLFW_KEY_UP;
-		imguiIO.KeyMap[ImGuiKey_DownArrow] = GLFW_KEY_DOWN;
-		imguiIO.KeyMap[ImGuiKey_PageUp] = GLFW_KEY_PAGE_UP;
-		imguiIO.KeyMap[ImGuiKey_PageDown] = GLFW_KEY_PAGE_DOWN;
-		imguiIO.KeyMap[ImGuiKey_Home] = GLFW_KEY_HOME;
-		imguiIO.KeyMap[ImGuiKey_End] = GLFW_KEY_END;
-		imguiIO.KeyMap[ImGuiKey_Delete] = GLFW_KEY_DELETE;
-		imguiIO.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
-		imguiIO.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
-		imguiIO.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
-		imguiIO.KeyMap[ImGuiKey_Space] = GLFW_KEY_SPACE;
-		imguiIO.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
-		imguiIO.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
-		imguiIO.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
-		imguiIO.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
-		imguiIO.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
-		imguiIO.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
+		ImGuiIO& imgui_io = ImGui::GetIO();
+		imgui_io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;
+		imgui_io.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
+		imgui_io.KeyMap[ImGuiKey_RightArrow] = GLFW_KEY_RIGHT;
+		imgui_io.KeyMap[ImGuiKey_UpArrow] = GLFW_KEY_UP;
+		imgui_io.KeyMap[ImGuiKey_DownArrow] = GLFW_KEY_DOWN;
+		imgui_io.KeyMap[ImGuiKey_PageUp] = GLFW_KEY_PAGE_UP;
+		imgui_io.KeyMap[ImGuiKey_PageDown] = GLFW_KEY_PAGE_DOWN;
+		imgui_io.KeyMap[ImGuiKey_Home] = GLFW_KEY_HOME;
+		imgui_io.KeyMap[ImGuiKey_End] = GLFW_KEY_END;
+		imgui_io.KeyMap[ImGuiKey_Delete] = GLFW_KEY_DELETE;
+		imgui_io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
+		imgui_io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
+		imgui_io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
+		imgui_io.KeyMap[ImGuiKey_Space] = GLFW_KEY_SPACE;
+		imgui_io.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
+		imgui_io.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
+		imgui_io.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
+		imgui_io.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
+		imgui_io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
+		imgui_io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
 	}
 
-	void ImGuiRenderer::InitCallbacks(GLFWwindow* window)
+	void ImGuiRenderer::init_callbacks(GLFWwindow* window)
 	{
-		ImGuiIO& imguiIO = ImGui::GetIO();
-		/*imguiIO.SetClipboardTextFn = [this]() {};
-            imguiIO.GetClipboardTextFn = GetClipboardText;*/
+		ImGuiIO& imgui_io = ImGui::GetIO();
+		/*imgui_io.SetClipboardTextFn = [this]() {};
+            imgui_io.GetClipboardTextFn = GetClipboardText;*/
 		/*#ifdef _WIN32
-                imguiIO.ImeWindowHandle = glfwGetWin32Window(window);
+                imgui_io.ImeWindowHandle = glfwGetWin32Window(window);
             #endif*/
-		glfwSetMouseButtonCallback(window, MouseButtonCallback);
-		glfwSetScrollCallback(window, ScrollCallback);
-		glfwSetKeyCallback(window, KeyCallback);
-		glfwSetCharCallback(window, CharCallback);
+		glfwSetMouseButtonCallback(window, mouse_button_callback);
+		glfwSetScrollCallback(window, scroll_callback);
+		glfwSetKeyCallback(window, key_callback);
+		glfwSetCharCallback(window, char_callback);
 	}
 
-	void ImGuiRenderer::KeyCallback(GLFWwindow* window, int key, int, int action, int mods)
+	void ImGuiRenderer::key_callback(GLFWwindow* window, int key, int, int action, int mods)
 	{
-		InputState* inputState = (InputState*)glfwGetWindowUserPointer(window);
+		InputState* input_state = (InputState*)glfwGetWindowUserPointer(window);
 
-		ImGuiIO& imguiIO = ImGui::GetIO();
-		imguiIO.KeysDown[key] = (action != GLFW_RELEASE);
+		ImGuiIO& imgui_io = ImGui::GetIO();
+		imgui_io.KeysDown[key] = (action != GLFW_RELEASE);
 
 		(void)mods; // Modifiers are not reliable across systems
-
 	}
 
-	void ImGuiRenderer::CharCallback(GLFWwindow* window, unsigned int c)
+	void ImGuiRenderer::char_callback(GLFWwindow* window, unsigned int c)
 	{
-		InputState* inputState = (InputState*)glfwGetWindowUserPointer(window);
+		InputState* input_state = (InputState*)glfwGetWindowUserPointer(window);
 
-		ImGuiIO& imguiIO = ImGui::GetIO();
+		ImGuiIO& imgui_io = ImGui::GetIO();
 		if (c > 0 && c < 0x10000)
-			imguiIO.AddInputCharacter((unsigned short)c);
+			imgui_io.AddInputCharacter((unsigned short)c);
 	}
 
-	void ImGuiRenderer::MouseButtonCallback(GLFWwindow* window, int button, int action, int)
+	void ImGuiRenderer::mouse_button_callback(GLFWwindow* window, int button, int action, int)
 	{
-		InputState* inputState = (InputState*)glfwGetWindowUserPointer(window);
+		InputState* input_state = (InputState*)glfwGetWindowUserPointer(window);
 
-		ImGuiIO& imguiIO = ImGui::GetIO();
+		ImGuiIO& imgui_io = ImGui::GetIO();
 		if (button < 512)
 		{
-			imguiIO.MouseDown[button] = (action != GLFW_RELEASE);
+			imgui_io.MouseDown[button] = (action != GLFW_RELEASE);
 		}
 	}
 
-	void ImGuiRenderer::ScrollCallback(GLFWwindow* window, double xOffset, double yOffset)
+	void ImGuiRenderer::scroll_callback(GLFWwindow* window, double x_offset, double y_offset)
 	{
-		InputState* inputState = (InputState*)glfwGetWindowUserPointer(window);
+		InputState* input_state = (InputState*)glfwGetWindowUserPointer(window);
 
-		ImGuiIO& imguiIO = ImGui::GetIO();
-		imguiIO.MouseWheel += float(yOffset);
-		imguiIO.MouseWheelH += float(xOffset);
+		ImGuiIO& imgui_io = ImGui::GetIO();
+		imgui_io.MouseWheel += float(y_offset);
+		imgui_io.MouseWheelH += float(x_offset);
 	}
 
-	ImGuiRenderer::FrameResources::FrameResources(lz::Core* core, size_t maxVerticesCount, size_t maxIndicesCount)
+	ImGuiRenderer::FrameResources::FrameResources(lz::Core* core_, size_t max_vertices_count, size_t max_indices_count)
 	{
-		imGuiIndexBuffer = std::unique_ptr<lz::Buffer>(new lz::Buffer(core->GetPhysicalDevice(), core->GetLogicalDevice(), sizeof(glm::uint32_t) * maxIndicesCount, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
-		imGuiVertexBuffer = std::unique_ptr<lz::Buffer>(new lz::Buffer(core->GetPhysicalDevice(), core->GetLogicalDevice(), sizeof(ImGuiVertex) * maxVerticesCount, vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
+		imgui_index_buffer = std::make_unique<lz::Buffer>(core_->get_physical_device(),
+		                                                  core_->get_logical_device(),
+		                                                  sizeof(glm::uint32_t) * max_indices_count,
+		                                                  vk::BufferUsageFlagBits::eIndexBuffer,
+		                                                  vk::MemoryPropertyFlagBits::eHostVisible |
+		                                                  vk::MemoryPropertyFlagBits::eHostCoherent);
+		imgui_vertex_buffer = std::make_unique<lz::Buffer>(
+			core_->get_physical_device(), core_->get_logical_device(), sizeof(ImGuiVertex) * max_vertices_count,
+			vk::BufferUsageFlagBits::eVertexBuffer,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 	}
 
-	void ImGuiRenderer::LoadImguiFont()
+	void ImGuiRenderer::load_imgui_font()
 	{
-		ImGuiIO& imGuiIO = ImGui::GetIO();
+		ImGuiIO& imgui_io = ImGui::GetIO();
 
 		int width, height;
 		unsigned char* pixels = nullptr;
-		imGuiIO.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+		imgui_io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-		auto texelData = lz::CreateSimpleImageTexelData(pixels, width, height);
-		auto fontCreateDesc = lz::Image::CreateInfo2d(texelData.baseSize, uint32_t(texelData.mips.size()), 1, texelData.format, vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+		auto texel_data = lz::create_simple_image_texel_data(pixels, width, height);
+		auto font_create_desc = lz::Image::create_info_2d(texel_data.base_size, uint32_t(texel_data.mips.size()), 1,
+		                                                texel_data.format,
+		                                                vk::ImageUsageFlagBits::eSampled |
+		                                                vk::ImageUsageFlagBits::eTransferDst);
 
-		this->fontImage = std::unique_ptr<lz::Image>(new lz::Image(core->GetPhysicalDevice(), core->GetLogicalDevice(), fontCreateDesc));
-		lz::LoadTexelData(core, &texelData, fontImage->GetImageData());
-		this->fontImageView = std::unique_ptr<lz::ImageView>(new lz::ImageView(core->GetLogicalDevice(), fontImage->GetImageData(), 0, fontImage->GetImageData()->GetMipsCount(), 0, 1));
+		this->font_image_ = std::make_unique<lz::Image>(core_->get_physical_device(), core_->get_logical_device(),
+		                                                font_create_desc);
+		lz::load_texel_data(core_, &texel_data, font_image_->get_image_data());
+		this->font_image_view_ = std::make_unique<lz::ImageView>(
+			core_->get_logical_device(), font_image_->get_image_data(), 0,
+			font_image_->get_image_data()->get_mips_count(),
+			0, 1);
 
-		imGuiIO.Fonts->TexID = (void*)fontImageView.get();
+		imgui_io.Fonts->TexID = (void*)font_image_view_.get();
 	}
 }

@@ -4,126 +4,126 @@
 
 namespace lz
 {
-	bool ImageSubresourceRange::Contains(const ImageSubresourceRange& other)
+	bool ImageSubresourceRange::contains(const ImageSubresourceRange& other) const
 	{
-		return baseMipLevel <= other.baseMipLevel && baseArrayLayer <= other.baseArrayLayer && mipsCount >= other.
-			mipsCount && arrayLayersCount >= other.arrayLayersCount;
+		return base_mip_level <= other.base_mip_level && base_array_layer <= other.base_array_layer && mips_count >= other.
+			mips_count && array_layers_count >= other.array_layers_count;
 	}
 
 	bool ImageSubresourceRange::operator<(const ImageSubresourceRange& other) const
 	{
-		return std::tie(baseMipLevel, mipsCount, baseArrayLayer, arrayLayersCount) < std::tie(
-			other.baseMipLevel, other.mipsCount, other.baseArrayLayer, other.arrayLayersCount);
+		return std::tie(base_mip_level, mips_count, base_array_layer, array_layers_count) < std::tie(
+			other.base_mip_level, other.mips_count, other.base_array_layer, other.array_layers_count);
 	}
 
-	vk::Image ImageData::GetHandle() const
+	vk::Image ImageData::get_handle() const
 	{
-		return imageHandle;
+		return image_handle_;
 	}
 
-	vk::Format ImageData::GetFormat() const
+	vk::Format ImageData::get_format() const
 	{
-		return format;
+		return format_;
 	}
 
-	vk::ImageType ImageData::GetType() const
+	vk::ImageType ImageData::get_type() const
 	{
-		return imageType;
+		return image_type_;
 	}
 
-	glm::uvec3 ImageData::GetMipSize(uint32_t mipLevel)
+	glm::uvec3 ImageData::get_mip_size(const uint32_t mip_level) const
 	{
-		return mipInfos[mipLevel].size;
+		return mip_infos_[mip_level].size;
 	}
 
-	vk::ImageAspectFlags ImageData::GetAspectFlags() const
+	vk::ImageAspectFlags ImageData::get_aspect_flags() const
 	{
-		return aspectFlags;
+		return aspect_flags_;
 	}
 
-	uint32_t ImageData::GetArrayLayersCount()
+	uint32_t ImageData::get_array_layers_count() const
 	{
-		return arrayLayersCount;
+		return array_layers_count_;
 	}
 
-	uint32_t ImageData::GetMipsCount()
+	uint32_t ImageData::get_mips_count() const
 	{
-		return mipsCount;
+		return mips_count_;
 	}
 
 	bool ImageData::operator<(const ImageData& other) const
 	{
-		return std::tie(imageHandle) < std::tie(other.imageHandle);
+		return std::tie(image_handle_) < std::tie(other.image_handle_);
 	}
 
-	ImageData::ImageData(vk::Image imageHandle, vk::ImageType imageType, glm::uvec3 size, uint32_t mipsCount,
-	                     uint32_t arrayLayersCount, vk::Format format, vk::ImageLayout layout)
+	ImageData::ImageData(vk::Image image_handle, vk::ImageType image_type, const glm::uvec3 size, const uint32_t mipsCount,
+	                     const uint32_t array_layers_count, const vk::Format format, const vk::ImageLayout layout)
 	{
-		this->imageHandle = imageHandle;
-		this->format = format;
-		this->mipsCount = mipsCount;
-		this->arrayLayersCount = arrayLayersCount;
-		this->imageType = imageType;
+		this->image_handle_ = image_handle;
+		this->format_ = format;
+		this->mips_count_ = mipsCount;
+		this->array_layers_count_ = array_layers_count;
+		this->image_type_ = image_type;
 
-		glm::vec3 currSize = size;
+		glm::vec3 curr_size = size;
 
-		for (size_t mipLevel = 0; mipLevel < mipsCount; ++mipLevel)
+		for (size_t mip_level = 0; mip_level < mipsCount; ++mip_level)
 		{
-			MipInfo mipInfo;
-			mipInfo.size = currSize;
-			currSize.x /= 2;
-			if (imageType == vk::ImageType::e2D || imageType == vk::ImageType::e3D)
+			MipInfo mip_info;
+			mip_info.size = curr_size;
+			curr_size.x /= 2;
+			if (image_type == vk::ImageType::e2D || image_type == vk::ImageType::e3D)
 			{
-				currSize.y /= 2;
+				curr_size.y /= 2;
 			}
-			if (imageType == vk::ImageType::e3D)
+			if (image_type == vk::ImageType::e3D)
 			{
-				currSize.z /= 2;
+				curr_size.z /= 2;
 			}
 
-			mipInfo.layerInfos.resize(arrayLayersCount);
+			mip_info.layer_infos.resize(array_layers_count);
 
-			for (size_t layerIndex = 0; layerIndex < arrayLayersCount; ++layerIndex)
+			for (size_t layer_index = 0; layer_index < array_layers_count; ++layer_index)
 			{
-				mipInfo.layerInfos[layerIndex].currLayout = layout;
+				mip_info.layer_infos[layer_index].curr_layout = layout;
 			}
-			mipInfos.push_back(mipInfo);
+			mip_infos_.push_back(mip_info);
 		}
-		if (lz::IsDepthFormat(format))
+		if (lz::is_depth_format(format))
 		{
-			this->aspectFlags = vk::ImageAspectFlagBits::eDepth;
+			this->aspect_flags_ = vk::ImageAspectFlagBits::eDepth;
 		}
 		else
 		{
-			this->aspectFlags = vk::ImageAspectFlagBits::eColor;
+			this->aspect_flags_ = vk::ImageAspectFlagBits::eColor;
 		}
 	}
 
-	void ImageData::SetDebugName(std::string debugName)
+	void ImageData::set_debug_name(const std::string& debug_name)
 	{
-		this->debugName = debugName;
+		this->debug_name_ = debug_name;
 	}
 
 
-	lz::ImageData* Image::GetImageData()
+	lz::ImageData* Image::get_image_data() const
 	{
-		return imageData.get();
+		return image_data_.get();
 	}
 
-	vk::DeviceMemory Image::GetMemory()
+	vk::DeviceMemory Image::get_memory()
 	{
-		return imageMemory.get();
+		return image_memory_.get();
 	}
 
-	vk::ImageCreateInfo Image::CreateInfo2d(glm::uvec2 size, uint32_t mipsCount, uint32_t arrayLayersCount,
-	                                        vk::Format format, vk::ImageUsageFlags usage)
+	vk::ImageCreateInfo Image::create_info_2d(const glm::uvec2 size, const uint32_t mips_count, const uint32_t array_layers_count,
+	                                        const vk::Format format, const vk::ImageUsageFlags usage)
 	{
-		auto layout = vk::ImageLayout::eUndefined;
-		auto imageInfo = vk::ImageCreateInfo()
+		constexpr auto layout = vk::ImageLayout::eUndefined;
+		const auto image_info = vk::ImageCreateInfo()
 		                 .setImageType(vk::ImageType::e2D)
 		                 .setExtent(vk::Extent3D(size.x, size.y, 1))
-		                 .setMipLevels(mipsCount)
-		                 .setArrayLayers(arrayLayersCount)
+		                 .setMipLevels(mips_count)
+		                 .setArrayLayers(array_layers_count)
 		                 .setFormat(format)
 		                 .setInitialLayout(layout)
 		                 .setUsage(usage)
@@ -131,18 +131,18 @@ namespace lz
 		                 .setSamples(vk::SampleCountFlagBits::e1)
 		                 .setFlags(vk::ImageCreateFlags());
 
-		return imageInfo;
+		return image_info;
 	}
 
-	vk::ImageCreateInfo Image::CreateInfoVolume(glm::uvec3 size, uint32_t mipsCount, uint32_t arrayLayersCount,
-	                                            vk::Format format, vk::ImageUsageFlags usage)
+	vk::ImageCreateInfo Image::create_info_volume(const glm::uvec3 size, const uint32_t mips_count, const uint32_t array_layers_count,
+	                                            const vk::Format format, const vk::ImageUsageFlags usage)
 	{
-		auto layout = vk::ImageLayout::eUndefined;
-		auto imageInfo = vk::ImageCreateInfo()
+		constexpr auto layout = vk::ImageLayout::eUndefined;
+		const auto image_info = vk::ImageCreateInfo()
 		                 .setImageType(vk::ImageType::e3D)
 		                 .setExtent(vk::Extent3D(size.x, size.y, size.z))
-		                 .setMipLevels(mipsCount)
-		                 .setArrayLayers(arrayLayersCount)
+		                 .setMipLevels(mips_count)
+		                 .setArrayLayers(array_layers_count)
 		                 .setFormat(format)
 		                 .setInitialLayout(layout) //images must be created in undefined layout
 		                 .setUsage(usage)
@@ -150,17 +150,17 @@ namespace lz
 		                 .setSamples(vk::SampleCountFlagBits::e1)
 		                 .setFlags(vk::ImageCreateFlags())
 		                 .setTiling(vk::ImageTiling::eOptimal);
-		return imageInfo;
+		return image_info;
 	}
 
-	vk::ImageCreateInfo Image::CreateInfoCube(glm::uvec2 size, uint32_t mipsCount, vk::Format format,
-	                                          vk::ImageUsageFlags usage)
+	vk::ImageCreateInfo Image::create_info_cube(const glm::uvec2 size, const uint32_t mips_count, const vk::Format format,
+	                                          const vk::ImageUsageFlags usage)
 	{
-		auto layout = vk::ImageLayout::eUndefined;
-		auto imageInfo = vk::ImageCreateInfo()
+		constexpr auto layout = vk::ImageLayout::eUndefined;
+		const auto image_info = vk::ImageCreateInfo()
 		                 .setImageType(vk::ImageType::e2D)
 		                 .setExtent(vk::Extent3D(size.x, size.y, 1))
-		                 .setMipLevels(mipsCount)
+		                 .setMipLevels(mips_count)
 		                 .setArrayLayers(6) // Cubemap has 6 faces
 		                 .setFormat(format)
 		                 .setInitialLayout(layout)
@@ -169,33 +169,33 @@ namespace lz
 		                 .setSamples(vk::SampleCountFlagBits::e1)
 		                 .setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
 
-		return imageInfo;
+		return image_info;
 	}
 
-	Image::Image(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::ImageCreateInfo imageInfo,
-	             vk::MemoryPropertyFlags memFlags)
+	Image::Image(const vk::PhysicalDevice physical_device, const vk::Device logical_device, const vk::ImageCreateInfo& image_info,
+	             const vk::MemoryPropertyFlags mem_flags)
 	{
 		// Create the image resource
-		imageHandle = logicalDevice.createImageUnique(imageInfo);
-		glm::uvec3 size = {imageInfo.extent.width, imageInfo.extent.height, imageInfo.extent.depth};
+		image_handle_ = logical_device.createImageUnique(image_info);
+		glm::uvec3 size = {image_info.extent.width, image_info.extent.height, image_info.extent.depth};
 
 		// Create image data object to track image properties and layout
-		imageData.reset(new lz::ImageData(imageHandle.get(), imageInfo.imageType, size, imageInfo.mipLevels,
-		                                  imageInfo.arrayLayers, imageInfo.format, imageInfo.initialLayout));
+		image_data_.reset(new lz::ImageData(image_handle_.get(), image_info.imageType, size, image_info.mipLevels,
+		                                  image_info.arrayLayers, image_info.format, image_info.initialLayout));
 
 		// Get memory requirements for the image
-		vk::MemoryRequirements imageMemRequirements = logicalDevice.getImageMemoryRequirements(imageHandle.get());
+		vk::MemoryRequirements imageMemRequirements = logical_device.getImageMemoryRequirements(image_handle_.get());
 
 		// Allocate memory for the image
 		auto allocInfo = vk::MemoryAllocateInfo()
 		                 .setAllocationSize(imageMemRequirements.size)
 		                 .setMemoryTypeIndex(
-			                 lz::find_memory_type_index(physicalDevice, imageMemRequirements.memoryTypeBits,
-			                                            memFlags));
+			                 lz::find_memory_type_index(physical_device, imageMemRequirements.memoryTypeBits,
+			                                            mem_flags));
 
-		imageMemory = logicalDevice.allocateMemoryUnique(allocInfo);
+		image_memory_ = logical_device.allocateMemoryUnique(allocInfo);
 
 		// Bind the image to the allocated memory
-		logicalDevice.bindImageMemory(imageHandle.get(), imageMemory.get(), 0);
+		logical_device.bindImageMemory(image_handle_.get(), image_memory_.get(), 0);
 	}
 }

@@ -2,35 +2,35 @@
 
 namespace lz
 {
-	vk::RenderPass RenderPass::GetHandle()
+	vk::RenderPass RenderPass::get_handle()
 	{
-		return renderPass.get();
+		return render_pass_.get();
 	}
 
-	size_t RenderPass::GetColorAttachmentsCount()
+	size_t RenderPass::get_color_attachments_count() const
 	{
-		return colorAttachmentDescs.size();
+		return color_attachment_descs_.size();
 	}
 
 	bool RenderPass::AttachmentDesc::operator<(const AttachmentDesc& other) const
 	{
 		return
-			std::tie(format, loadOp, clearValue) <
-			std::tie(other.format, other.loadOp, other.clearValue);
+			std::tie(format, load_op, clear_value) <
+			std::tie(other.format, other.load_op, other.clear_value);
 	}
 
-	RenderPass::RenderPass(vk::Device logicalDevice, std::vector<AttachmentDesc> colorAttachments,
-		AttachmentDesc depthAttachment)
+	RenderPass::RenderPass(vk::Device logical_device, std::vector<AttachmentDesc> color_attachments,
+		AttachmentDesc depth_attachment)
 	{
-		this->colorAttachmentDescs = colorAttachments;
-		this->depthAttachmentDesc = depthAttachment;
+		this->color_attachment_descs_ = color_attachments;
+		this->depth_attachment_desc_ = depth_attachment;
 
 		std::vector<vk::AttachmentReference> colorAttachmentRefs;
 
 		uint32_t currAttachmentIndex = 0;
 
 		std::vector<vk::AttachmentDescription> attachmentDescs;
-		for (auto colorAttachmentDesc : colorAttachmentDescs)
+		for (auto colorAttachmentDesc : color_attachment_descs_)
 		{
 			// Create reference to color attachment
 			colorAttachmentRefs.push_back(vk::AttachmentReference()
@@ -41,7 +41,7 @@ namespace lz
 			auto attachmentDesc = vk::AttachmentDescription()
 			                      .setFormat(colorAttachmentDesc.format)
 			                      .setSamples(vk::SampleCountFlagBits::e1)
-			                      .setLoadOp(colorAttachmentDesc.loadOp)
+			                      .setLoadOp(colorAttachmentDesc.load_op)
 			                      .setStoreOp(vk::AttachmentStoreOp::eStore)
 			                      .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 			                      .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
@@ -59,10 +59,10 @@ namespace lz
 			vk::AttachmentReference depthRef;
 				
 			// Add depth attachment if format is specified
-			if (depthAttachmentDesc.format != vk::Format::eUndefined)
+			if (depth_attachment_desc_.format != vk::Format::eUndefined)
 			{
-				/*auto srcAccessPattern = GetImageAccessPattern(depthAttachmentDesc.srcUsageType, true);
-					auto dstAccessPattern = GetImageAccessPattern(depthAttachmentDesc.dstUsageType, false);*/
+				/*auto srcAccessPattern = GetImageAccessPattern(depth_attachment_desc_.srcUsageType, true);
+					auto dstAccessPattern = GetImageAccessPattern(depth_attachment_desc_.dstUsageType, false);*/
 
 				// Create reference to depth attachment
 				depthRef
@@ -71,9 +71,9 @@ namespace lz
 
 				// Create description for depth attachment
 				auto attachmentDesc = vk::AttachmentDescription()
-				                      .setFormat(depthAttachmentDesc.format)
+				                      .setFormat(depth_attachment_desc_.format)
 				                      .setSamples(vk::SampleCountFlagBits::e1)
-				                      .setLoadOp(depthAttachmentDesc.loadOp)
+				                      .setLoadOp(depth_attachment_desc_.load_op)
 				                      .setStoreOp(vk::AttachmentStoreOp::eStore)
 				                      .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 				                      .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
@@ -94,7 +94,7 @@ namespace lz
 			}
 
 			// Create render pass with the configured attachments and subpass
-			auto renderPassInfo = vk::RenderPassCreateInfo()
+			auto render_pass_info = vk::RenderPassCreateInfo()
 			                      .setAttachmentCount(uint32_t(attachmentDescs.size()))
 			                      .setPAttachments(attachmentDescs.data())
 			                      .setSubpassCount(1)
@@ -104,7 +104,7 @@ namespace lz
 			//.setDependencyCount(1)
 			//.setPDependencies(&subpassDependency);
 
-			this->renderPass = logicalDevice.createRenderPassUnique(renderPassInfo);
+			this->render_pass_ = logical_device.createRenderPassUnique(render_pass_info);
 		}
 	}
 }

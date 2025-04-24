@@ -92,8 +92,8 @@ int main()
         uint32_t glfwExtensionCount = sizeof(glfwExtensions) / sizeof(glfwExtensions[0]);
 
         lz::WindowDesc windowDesc = {};
-        windowDesc.hInstance = GetModuleHandle(NULL);
-        windowDesc.hWnd = glfwGetWin32Window(window);
+        windowDesc.h_instance = GetModuleHandle(NULL);
+        windowDesc.h_wnd = glfwGetWin32Window(window);
 
         // 创建Vulkan核心
         bool enableDebugging = true;
@@ -114,7 +114,7 @@ int main()
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
             
-            imguiRenderer.ProcessInput(window);
+            imguiRenderer.process_input(window);
 
             // 检查是否需要重建交换链 (窗口大小改变或初始化)
             if (!inFlightQueue || g_framebufferResized)
@@ -125,31 +125,31 @@ int main()
                     
                     if (inFlightQueue) {
                         // 如果已存在交换链，只需重建交换链
-                        inFlightQueue->RecreateSwapchain();
-                        imguiRenderer.RecreateSwapchainResources(inFlightQueue->GetImageSize(), inFlightQueue->GetInFlightFramesCount());
+                        inFlightQueue->recreate_swapchain();
+                        imguiRenderer.recreate_swapchain_resources(inFlightQueue->get_image_size(), inFlightQueue->get_in_flight_frames_count());
                     } else {
                         // 如果还没有创建交换链，则创建整个队列
-                        core->ClearCaches();
+                        core->clear_caches();
                         inFlightQueue = std::unique_ptr<lz::InFlightQueue>(new lz::InFlightQueue(core.get(), windowDesc, 2, vk::PresentModeKHR::eMailbox));
-                        imguiRenderer.RecreateSwapchainResources(inFlightQueue->GetImageSize(), inFlightQueue->GetInFlightFramesCount());
+                        imguiRenderer.recreate_swapchain_resources(inFlightQueue->get_image_size(), inFlightQueue->get_in_flight_frames_count());
                     }
                 } else {
                     std::cout << "Recreating in flight queue" << std::endl;
-                    core->ClearCaches();
+                    core->clear_caches();
                     inFlightQueue = std::unique_ptr<lz::InFlightQueue>(new lz::InFlightQueue(core.get(), windowDesc, 2, vk::PresentModeKHR::eMailbox));
-                    imguiRenderer.RecreateSwapchainResources(inFlightQueue->GetImageSize(), inFlightQueue->GetInFlightFramesCount());
+                    imguiRenderer.recreate_swapchain_resources(inFlightQueue->get_image_size(), inFlightQueue->get_in_flight_frames_count());
                 }
             }
             
 
             auto& imguiIO = ImGui::GetIO();
             imguiIO.DeltaTime = 1.0f / 60.0f;              // set the time elapsed since the previous frame (in seconds)
-            imguiIO.DisplaySize.x = float(inFlightQueue->GetImageSize().width);             // set the current display width
-            imguiIO.DisplaySize.y = float(inFlightQueue->GetImageSize().height);             // set the current display height here
+            imguiIO.DisplaySize.x = float(inFlightQueue->get_image_size().width);             // set the current display width
+            imguiIO.DisplaySize.y = float(inFlightQueue->get_image_size().height);             // set the current display height here
 
             try
             {
-                auto frameInfo = inFlightQueue->BeginFrame();
+                auto frameInfo = inFlightQueue->begin_frame();
                 {
                     ImGuiScopedFrame scopedFrame;
 
@@ -165,14 +165,14 @@ int main()
 
 
                     ImGui::Render();
-                    imguiRenderer.RenderFrame(frameInfo, window, ImGui::GetDrawData());
+                    imguiRenderer.render_frame(frameInfo, window, ImGui::GetDrawData());
                 }
-                inFlightQueue->EndFrame();
+                inFlightQueue->end_frame();
             }
             catch (vk::OutOfDateKHRError err)
             {
                 // 交换链过时，需要重新创建
-                core->WaitIdle();
+                core->wait_idle();
                 inFlightQueue.reset();
                 g_framebufferResized = true; // 确保重新创建交换链
             }
@@ -180,7 +180,7 @@ int main()
         }
         
         // 在销毁资源前等待设备空闲
-        core->WaitIdle();
+        core->wait_idle();
     }
     catch (const std::exception& e) {
         std::cerr << "error: " << e.what() << std::endl;

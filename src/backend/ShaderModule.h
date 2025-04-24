@@ -15,7 +15,7 @@ namespace lz
 	{
 	public:
 		// GetHandle: Returns the native Vulkan shader module handle
-		vk::ShaderModule GetHandle();
+		vk::ShaderModule get_handle();
 
 		// Constructor: Creates a new shader module from SPIR-V bytecode
 		// Parameters:
@@ -28,9 +28,9 @@ namespace lz
 		// Parameters:
 		// - device: Logical device for creating the shader module
 		// - bytecode: SPIR-V bytecode as a vector of 32-bit words
-		void Init(vk::Device device, const std::vector<uint32_t>& bytecode);
+		void init(vk::Device device, const std::vector<uint32_t>& bytecode);
 
-		vk::UniqueShaderModule shaderModule;  // Native Vulkan shader module handle
+		vk::UniqueShaderModule shader_module_;  // Native Vulkan shader module handle
 		friend class Core;
 	};
 }

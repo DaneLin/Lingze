@@ -13,81 +13,81 @@ namespace lz
 	class PipelineCache
 	{
 	public:
-		PipelineCache(vk::Device _logicalDevice, DescriptorSetCache* _descriptorSetCache);
+		PipelineCache(vk::Device logical_device, DescriptorSetCache* descriptor_set_cache);
 
 		struct PipelineInfo
 		{
-			vk::PipelineLayout pipelineLayout;
-			std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+			vk::PipelineLayout pipeline_layout;
+			std::vector<vk::DescriptorSetLayout> descriptor_set_layouts;
 		};
 
-		PipelineInfo BindGraphicsPipeline(
-			vk::CommandBuffer commandBuffer,
-			vk::RenderPass renderPass,
-			lz::DepthSettings depthSettings,
-			const std::vector<lz::BlendSettings>& attachmentBlendSettings,
-			lz::VertexDeclaration vertexDeclaration,
+		PipelineInfo bind_graphics_pipeline(
+			vk::CommandBuffer command_buffer,
+			vk::RenderPass render_pass,
+			lz::DepthSettings depth_settings,
+			const std::vector<lz::BlendSettings>& attachment_blend_settings,
+			lz::VertexDeclaration vertex_declaration,
 			vk::PrimitiveTopology topology,
-			lz::ShaderProgram* shaderProgram);
+			lz::ShaderProgram* shader_program);
 
 
-		PipelineInfo BindComputePipeline(
-			vk::CommandBuffer commandBuffer,
-			lz::Shader* computeShader);
+		PipelineInfo bind_compute_pipeline(
+			vk::CommandBuffer command_buffer,
+			lz::Shader* compute_shader);
 
-		void Clear();
+		void clear();
 
 	private:
 		struct PipelineLayoutKey
 		{
-			std::vector<vk::DescriptorSetLayout> setLayouts;
+			std::vector<vk::DescriptorSetLayout> set_layouts;
 
 			bool operator <(const PipelineLayoutKey& other) const;
 		};
 
-		vk::UniquePipelineLayout CreatePipelineLayout(
-			const std::vector<vk::DescriptorSetLayout>& setLayouts/*, push constant ranges*/);
+		vk::UniquePipelineLayout create_pipeline_layout(
+			const std::vector<vk::DescriptorSetLayout>& set_layouts/*, push constant ranges*/);
 
-		vk::PipelineLayout GetPipelineLayout(const PipelineLayoutKey& key);
+		vk::PipelineLayout get_pipeline_layout(const PipelineLayoutKey& key);
 
 		struct GraphicsPipelineKey
 		{
 			GraphicsPipelineKey();
 
-			vk::ShaderModule vertexShader;
-			vk::ShaderModule fragmentShader;
-			lz::VertexDeclaration vertexDecl;
-			vk::PipelineLayout pipelineLayout;
+			vk::ShaderModule vertex_shader;
+			vk::ShaderModule fragment_shader;
+			lz::VertexDeclaration vertex_decl;
+			vk::PipelineLayout pipeline_layout;
 			vk::Extent2D extent;
-			vk::RenderPass renderPass;
-			lz::DepthSettings depthSettings;
-			std::vector<lz::BlendSettings> attachmentBlendSettings;
+			vk::RenderPass render_pass;
+			lz::DepthSettings depth_settings;
+			std::vector<lz::BlendSettings> attachment_blend_settings;
 			vk::PrimitiveTopology topology;
 
 			bool operator <(const GraphicsPipelineKey& other) const;
 		};
 
-		lz::GraphicsPipeline* GetGraphicsPipeline(const GraphicsPipelineKey& key);
+		lz::GraphicsPipeline* get_graphics_pipeline(const GraphicsPipelineKey& key);
 
 
 		struct ComputePipelineKey
 		{
 			ComputePipelineKey();
 
-			vk::ShaderModule computeShader;
-			vk::PipelineLayout pipelineLayout;
+			vk::ShaderModule compute_shader;
+			vk::PipelineLayout pipeline_layout;
 
 			bool operator <(const ComputePipelineKey& other) const;
 		};
 
-		lz::ComputePipeline* GetComputePipeline(const ComputePipelineKey& key);
+		lz::ComputePipeline* get_compute_pipeline(const ComputePipelineKey& key);
 
-		std::map<GraphicsPipelineKey, std::unique_ptr<lz::GraphicsPipeline>> graphicsPipelineCache;
-		std::map<ComputePipelineKey, std::unique_ptr<lz::ComputePipeline>> computePipelineCache;
-		std::map<PipelineLayoutKey, vk::UniquePipelineLayout> pipelineLayoutCache;
-		lz::DescriptorSetCache* descriptorSetCache;
+		std::map<GraphicsPipelineKey, std::unique_ptr<lz::GraphicsPipeline>> graphics_pipeline_cache_;
+		std::map<ComputePipelineKey, std::unique_ptr<lz::ComputePipeline>> compute_pipeline_cache_;
+		std::map<PipelineLayoutKey, vk::UniquePipelineLayout> pipeline_layout_cache_;
+		lz::DescriptorSetCache* descriptor_set_cache_;
 
-		vk::Device logicalDevice;
+		vk::Device logical_device_;
 	};
 
 	

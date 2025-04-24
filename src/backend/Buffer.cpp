@@ -4,51 +4,50 @@ namespace lz
 {
 	vk::Buffer Buffer::get_handle()
 	{
-		return bufferHandle.get();
+		return buffer_handle_.get();
 	}
 
-	vk::DeviceMemory Buffer::GetMemory()
+	vk::DeviceMemory Buffer::get_memory()
 	{
-		return bufferMemory.get();
+		return buffer_memory_.get();
 	}
 
-	void* Buffer::Map()
+	void* Buffer::map()
 	{
-		return logicalDevice.mapMemory(GetMemory(), 0, size);
+		return logical_device_.mapMemory(get_memory(), 0, size_);
 	}
 
-	void Buffer::Unmap()
+	void Buffer::unmap()
 	{
-		logicalDevice.unmapMemory(GetMemory());
+		logical_device_.unmapMemory(get_memory());
 	}
 
-	Buffer::Buffer(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::DeviceSize size,
-	               vk::BufferUsageFlags usageFlags, vk::MemoryPropertyFlags memoryVisibility)
+	Buffer::Buffer(const vk::PhysicalDevice physical_device, const vk::Device logical_device, const vk::DeviceSize size,
+	               const vk::BufferUsageFlags usage_flags, const vk::MemoryPropertyFlags memory_visibility)
+		: size_(size),
+		  logical_device_(logical_device)
 	{
-		this->logicalDevice = logicalDevice;
-		this->size = size;
-
 		// Create the buffer resource
-		auto bufferInfo = vk::BufferCreateInfo()
+		const auto buffer_info = vk::BufferCreateInfo()
 		                  .setSize(size)
-		                  .setUsage(usageFlags)
+		                  .setUsage(usage_flags)
 		                  .setSharingMode(vk::SharingMode::eExclusive);
-		bufferHandle = logicalDevice.createBufferUnique(bufferInfo);
+		buffer_handle_ = logical_device.createBufferUnique(buffer_info);
 
 		// Get memory requirements for the buffer
-		vk::MemoryRequirements bufferMemRequirements = logicalDevice.
-			getBufferMemoryRequirements(bufferHandle.get());
+		const vk::MemoryRequirements buffer_mem_requirements = logical_device.
+			getBufferMemoryRequirements(buffer_handle_.get());
 
 		// Allocate memory for the buffer
-		auto allocInfo = vk::MemoryAllocateInfo()
-		                 .setAllocationSize(bufferMemRequirements.size)
-		                 .setMemoryTypeIndex(find_memory_type_index(physicalDevice,
-		                                                            bufferMemRequirements.memoryTypeBits,
-		                                                            memoryVisibility));
+		const auto alloc_info = vk::MemoryAllocateInfo()
+		                 .setAllocationSize(buffer_mem_requirements.size)
+		                 .setMemoryTypeIndex(find_memory_type_index(physical_device,
+		                                                            buffer_mem_requirements.memoryTypeBits,
+		                                                            memory_visibility));
 
-		bufferMemory = logicalDevice.allocateMemoryUnique(allocInfo);
+		buffer_memory_ = logical_device.allocateMemoryUnique(alloc_info);
 
 		// Bind the buffer to the allocated memory
-		logicalDevice.bindBufferMemory(bufferHandle.get(), bufferMemory.get(), 0);
+		logical_device.bindBufferMemory(buffer_handle_.get(), buffer_memory_.get(), 0);
 	}
 }

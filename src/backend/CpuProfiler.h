@@ -14,46 +14,46 @@ namespace lz
     public:
         CpuProfiler();
 
-        size_t StartTask(std::string taskName, uint32_t taskColor);
+        size_t start_task(const std::string& task_name, uint32_t task_color);
 
-        ProfilerTask EndTask(size_t taskId);
+        ProfilerTask end_task(size_t task_id);
 
-        size_t StartFrame();
+        size_t start_frame();
 
-        void EndFrame(size_t frameId);
+        void end_frame(size_t frame_id);
 
-        const std::vector<ProfilerTask>& GetProfilerTasks();
+        const std::vector<ProfilerTask>& get_profiler_tasks();
 
     private:
-        double GetCurrFrameTimeSeconds();
+        double get_curr_frame_time_seconds() const;
 
         struct TaskHandleInfo
         {
-            TaskHandleInfo(CpuProfiler* _profiler, size_t _taskId);
+            TaskHandleInfo(CpuProfiler* profiler, size_t task_id);
 
-            void Reset();
+            void reset() const;
             CpuProfiler* profiler;
             size_t taskId;
         };
         struct FrameHandleInfo
         {
-            FrameHandleInfo(CpuProfiler* _profiler, size_t _frameId);
+            FrameHandleInfo(CpuProfiler* profiler, size_t frame_id);
 
-            void Reset();
+            void reset() const;
             CpuProfiler* profiler;
             size_t frameId;
         };
     public:
-        using ScopedTask = UniqueHandle<TaskHandleInfo, CpuProfiler>;
-        ScopedTask StartScopedTask(std::string taskName, uint32_t taskColor);
-        using ScopedFrame = UniqueHandle<FrameHandleInfo, CpuProfiler>;
-        ScopedFrame StartScopedFrame();
+        using scoped_task = UniqueHandle<TaskHandleInfo, CpuProfiler>;
+        scoped_task start_scoped_task(const std::string& task_name, uint32_t task_color);
+        using scoped_frame = UniqueHandle<FrameHandleInfo, CpuProfiler>;
+        scoped_frame start_scoped_frame();
 
     private:
         using hrc = std::chrono::high_resolution_clock;
-        size_t frameIndex;
-        std::vector<lz::ProfilerTask> profilerTasks;
-        hrc::time_point frameStartTime;
+        size_t frame_index_;
+        std::vector<lz::ProfilerTask> profiler_tasks_;
+        hrc::time_point frame_start_time_;
         friend struct UniqueHandle<TaskHandleInfo, CpuProfiler>;
     };
 }

@@ -8,21 +8,21 @@ namespace lz
     class StagedBuffer
     {
     public:
-        StagedBuffer(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::DeviceSize size, vk::BufferUsageFlags bufferUsage);
+        StagedBuffer(vk::PhysicalDevice physical_device, vk::Device logical_device, vk::DeviceSize size, vk::BufferUsageFlags buffer_usage);
 
-        void* Map();
+        void* map();
 
-        void Unmap(vk::CommandBuffer commandBuffer);
+        void unmap(vk::CommandBuffer command_buffer);
 
-        vk::Buffer GetBuffer();
+        vk::Buffer get_buffer();
 
     private:
-        std::unique_ptr<lz::Buffer> stagingBuffer;
-        std::unique_ptr<lz::Buffer> deviceLocalBuffer;
-        vk::DeviceSize size;
+        std::unique_ptr<lz::Buffer> staging_buffer_;
+        std::unique_ptr<lz::Buffer> device_local_buffer_;
+        vk::DeviceSize size_;
     };
 
-    static void LoadBufferData(lz::Core* core, void* bufferData, size_t bufferSize, lz::Buffer* dstBuffer);
+    static void load_buffer_data(lz::Core* core, void* buffer_data, size_t buffer_size, lz::Buffer* dst_buffer);
 
 
     /*class StagedImage

@@ -22,17 +22,17 @@ namespace lz
 	{
 	public:
 		// GetHandle: Returns the native Vulkan render pass handle
-		vk::RenderPass GetHandle();
+		vk::RenderPass get_handle();
 
 		// GetColorAttachmentsCount: Returns the number of color attachments
-		size_t GetColorAttachmentsCount();
+		size_t get_color_attachments_count() const;
 
 		// AttachmentDesc: Structure describing a render pass attachment
 		struct AttachmentDesc
 		{
-			vk::Format format;         // Format of the attachment
-			vk::AttachmentLoadOp loadOp; // How the contents of the attachment are initialized
-			vk::ClearValue clearValue;   // Clear value used when loadOp is Clear
+			vk::Format format; // Format of the attachment
+			vk::AttachmentLoadOp load_op; // How the contents of the attachment are initialized
+			vk::ClearValue clear_value; // Clear value used when loadOp is Clear
 
 			// Comparison operator for container ordering
 			bool operator <(const AttachmentDesc& other) const;
@@ -43,12 +43,12 @@ namespace lz
 		// - logicalDevice: Logical device for creating the render pass
 		// - colorAttachments: Description of color attachments
 		// - depthAttachment: Description of depth attachment (use undefined format for no depth attachment)
-		RenderPass(vk::Device logicalDevice, std::vector<AttachmentDesc> colorAttachments,
-		           AttachmentDesc depthAttachment);
+		RenderPass(vk::Device logical_device, std::vector<AttachmentDesc> color_attachments,
+		           AttachmentDesc depth_attachment);
 
 	private:
-		vk::UniqueRenderPass renderPass;  // Native Vulkan render pass handle
-		std::vector<AttachmentDesc> colorAttachmentDescs;  // Description of color attachments
-		AttachmentDesc depthAttachmentDesc;  // Description of depth attachment
+		vk::UniqueRenderPass render_pass_; // Native Vulkan render pass handle
+		std::vector<AttachmentDesc> color_attachment_descs_; // Description of color attachments
+		AttachmentDesc depth_attachment_desc_; // Description of depth attachment
 	};
 }

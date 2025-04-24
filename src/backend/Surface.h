@@ -7,8 +7,8 @@ namespace lz
 	// - Used to create a Vulkan surface for rendering to a window
 	struct WindowDesc
 	{
-		HINSTANCE hInstance;  // Win32 application instance handle
-		HWND hWnd;            // Win32 window handle
+		HINSTANCE h_instance;  // Win32 application instance handle
+		HWND h_wnd;            // Win32 window handle
 	};
 
 	// CreateWin32Surface: Creates a Vulkan surface for rendering to a Win32 window
@@ -16,12 +16,12 @@ namespace lz
 	//   - instance: Vulkan instance
 	//   - desc: Window descriptor containing the Win32 handles
 	// Returns: A unique handle to the created Vulkan surface
-	static vk::UniqueSurfaceKHR CreateWin32Surface(vk::Instance instance, WindowDesc desc)
+	static vk::UniqueSurfaceKHR create_win32_surface(const vk::Instance instance, const WindowDesc desc)
 	{
-		const auto& surfaceCreateInfo = vk::Win32SurfaceCreateInfoKHR()
-			.setHwnd(desc.hWnd)
-			.setHinstance(desc.hInstance);
+		const auto& surface_create_info = vk::Win32SurfaceCreateInfoKHR()
+			.setHwnd(desc.h_wnd)
+			.setHinstance(desc.h_instance);
 
-		return instance.createWin32SurfaceKHRUnique(surfaceCreateInfo);
+		return instance.createWin32SurfaceKHRUnique(surface_create_info);
 	}
 }

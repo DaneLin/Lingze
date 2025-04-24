@@ -13,57 +13,57 @@
 
 namespace ImGuiUtils
 {
-	glm::vec2 Vec2(ImVec2 vec);
+	glm::vec2 vec2(ImVec2 vec);
 
 	class ProfilerGraph
 	{
 	public:
-		int frameWidth;
-		int frameSpacing;
-		bool useColoredLegendText;
+		int frame_width;
+		int frame_spacing;
+		bool use_colored_legend_text;
 
-		ProfilerGraph(size_t framesCount);
+		ProfilerGraph(size_t frames_count);
 
-		void LoadFrameData(const lz::ProfilerTask* tasks, size_t count);
+		void load_frame_data(const lz::ProfilerTask* tasks, size_t count);
 
-		void RenderTimings(int graphWidth, int legendWidth, int height, int frameIndexOffset);
+		void render_timings(int graph_width, int legend_width, int height, int frame_index_offset);
 
 	private:
-		void RebuildTaskStats(size_t endFrame, size_t framesCount);
+		void rebuild_task_stats(size_t end_frame, size_t frames_count);
 
-		void RenderGraph(ImDrawList* drawList, glm::vec2 graphPos, glm::vec2 graphSize, size_t frameIndexOffset);
+		void render_graph(ImDrawList* draw_list, glm::vec2 graph_pos, glm::vec2 graph_size, size_t frame_index_offset) const;
 
-		void RenderLegend(ImDrawList* drawList, glm::vec2 legendPos, glm::vec2 legendSize, size_t frameIndexOffset);
+		void render_legend(ImDrawList* draw_list, glm::vec2 legend_pos, glm::vec2 legend_size, size_t frame_index_offset);
 
-		static void Rect(ImDrawList* drawList, glm::vec2 minPoint, glm::vec2 maxPoint, uint32_t col,
+		static void rect(ImDrawList* draw_list, glm::vec2 min_point, glm::vec2 max_point, uint32_t col,
 		                 bool filled = true);
 
-		static void Text(ImDrawList* drawList, glm::vec2 point, uint32_t col, const char* text);
+		static void text(ImDrawList* draw_list, glm::vec2 point, uint32_t col, const char* text);
 
-		static void Triangle(ImDrawList* drawList, std::array<glm::vec2, 3> points, uint32_t col, bool filled = true);
+		static void triangle(ImDrawList* draw_list, const std::array<glm::vec2, 3>& points, uint32_t col, bool filled = true);
 
-		static void RenderTaskMarker(ImDrawList* drawList, glm::vec2 leftMinPoint, glm::vec2 leftMaxPoint,
-		                             glm::vec2 rightMinPoint, glm::vec2 rightMaxPoint, uint32_t col);
+		static void render_task_marker(ImDrawList* draw_list, glm::vec2 left_min_point, glm::vec2 left_max_point,
+		                             glm::vec2 right_min_point, glm::vec2 right_max_point, uint32_t col);
 
 		struct FrameData
 		{
 			std::vector<lz::ProfilerTask> tasks;
-			std::vector<size_t> taskStatsIndex;
+			std::vector<size_t> task_stats_index;
 		};
 
 		struct TaskStats
 		{
-			double maxTime;
-			size_t priorityOrder;
-			size_t onScreenIndex;
+			double max_time;
+			size_t priority_order;
+			size_t on_screen_index;
 		};
 
-		std::vector<TaskStats> taskStats;
-		std::map<std::string, size_t> taskNameToStatsIndex;
+		std::vector<TaskStats> task_stats_;
+		std::map<std::string, size_t> task_name_to_stats_index_;
 
 
-		std::vector<FrameData> frames;
-		size_t currFrameIndex = 0;
+		std::vector<FrameData> frames_;
+		size_t curr_frame_index_ = 0;
 	};
 
 	class ProfilersWindow
@@ -71,18 +71,18 @@ namespace ImGuiUtils
 	public:
 		ProfilersWindow();
 
-		void Render();
+		void render();
 
-		bool stopProfiling;
-		int frameOffset;
-		ProfilerGraph cpuGraph;
-		ProfilerGraph gpuGraph;
-		int frameWidth;
-		int frameSpacing;
-		bool useColoredLegendText;
-		using TimePoint = std::chrono::time_point<std::chrono::system_clock>;
-		TimePoint prevFpsFrameTime;
-		size_t fpsFramesCount;
-		float avgFrameTime;
+		bool stop_profiling;
+		int frame_offset;
+		ProfilerGraph cpu_graph;
+		ProfilerGraph gpu_graph;
+		int frame_width;
+		int frame_spacing;
+		bool use_colored_legend_text;
+		using time_point = std::chrono::time_point<std::chrono::system_clock>;
+		time_point prev_fps_frame_time;
+		size_t fps_frames_count;
+		float avg_frame_time;
 	};
 }

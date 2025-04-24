@@ -14,39 +14,21 @@ namespace lz
 	public:
 		struct RenderPassKey
 		{
-			RenderPassKey()
-			{
-			}
+			RenderPassKey();
 
-			std::vector<lz::RenderPass::AttachmentDesc> colorAttachmentDescs;
-			lz::RenderPass::AttachmentDesc depthAttachmentDesc;
+			std::vector<lz::RenderPass::AttachmentDesc> color_attachment_descs;
+			lz::RenderPass::AttachmentDesc depth_attachment_desc;
 
-			bool operator<(const RenderPassKey& other) const
-			{
-				return std::tie(colorAttachmentDescs, depthAttachmentDesc) < std::tie(
-					other.colorAttachmentDescs, other.depthAttachmentDesc);
-			}
+			bool operator<(const RenderPassKey& other) const;
 		};
 
-		RenderPassCache(vk::Device logicalDevice)
-			: logicalDevice(logicalDevice)
-		{
-		}
+		RenderPassCache(vk::Device logical_device);
 
-		lz::RenderPass* GetRenderPass(const RenderPassKey& key)
-		{
-			auto& renderPass = renderPassCache[key];
-			if (!renderPass)
-			{
-				renderPass = std::unique_ptr<lz::RenderPass>(
-					new lz::RenderPass(logicalDevice, key.colorAttachmentDescs, key.depthAttachmentDesc));
-			}
-			return renderPass.get();
-		}
+		lz::RenderPass* get_render_pass(const RenderPassKey& key);
 
 	private:
-		std::map<RenderPassKey, std::unique_ptr<lz::RenderPass>> renderPassCache;
-		vk::Device logicalDevice;
+		std::map<RenderPassKey, std::unique_ptr<lz::RenderPass>> render_pass_cache_;
+		vk::Device logical_device_;
 	};
 
 	class FramebufferCache
@@ -55,21 +37,21 @@ namespace lz
 		struct PassInfo
 		{
 			lz::Framebuffer* framebuffer;
-			lz::RenderPass* renderPass;
+			lz::RenderPass* render_pass;
 		};
 
 		struct Attachment
 		{
-			lz::ImageView* imageView;
-			vk::ClearValue clearValue;
+			lz::ImageView* image_view;
+			vk::ClearValue clear_value;
 		};
 
-		PassInfo BeginPass(vk::CommandBuffer commandBuffer, const std::vector<Attachment>& colorAttachments,
-		                   Attachment* depthAttachment, lz::RenderPass* renderPass, vk::Extent2D renderAreaExtent);
+		PassInfo begin_pass(vk::CommandBuffer command_buffer, const std::vector<Attachment>& color_attachments,
+		                   Attachment* depth_attachment, lz::RenderPass* render_pass, vk::Extent2D render_area_extent);
 
-		void EndPass(vk::CommandBuffer commandBuffer);
+		void end_pass(vk::CommandBuffer command_buffer);
 
-		FramebufferCache(vk::Device _logicalDevice);
+		FramebufferCache(vk::Device logical_device);
 
 	private:
 		struct FramebufferKey
@@ -78,17 +60,17 @@ namespace lz
 
 			bool operator <(const FramebufferKey& other) const;
 
-			std::array<const lz::ImageView*, 8> colorAttachmentViews;
-			const lz::ImageView* depthAttachmentView;
+			std::array<const lz::ImageView*, 8> color_attachment_views;
+			const lz::ImageView* depth_attachment_view;
 			vk::Extent2D extent;
-			vk::RenderPass renderPass;
+			vk::RenderPass render_pass;
 		};
 
-		lz::Framebuffer* GetFramebuffer(FramebufferKey key);
+		lz::Framebuffer* get_framebuffer(FramebufferKey key);
 
-		std::map<FramebufferKey, std::unique_ptr<lz::Framebuffer>> framebufferCache;
+		std::map<FramebufferKey, std::unique_ptr<lz::Framebuffer>> framebuffer_cache_;
 
-		vk::Device logicalDevice;
+		vk::Device logical_device_;
 	};
 
 	

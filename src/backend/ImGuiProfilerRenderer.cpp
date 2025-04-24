@@ -5,202 +5,202 @@
 
 namespace ImGuiUtils
 {
-	glm::vec2 Vec2(ImVec2 vec)
+	glm::vec2 vec2(ImVec2 vec)
 	{
 		return glm::vec2(vec.x, vec.y);
 	}
 
-	ProfilerGraph::ProfilerGraph(size_t framesCount)
+	ProfilerGraph::ProfilerGraph(const size_t frames_count)
 	{
-		frames.resize(framesCount);
-		for (auto& frame : frames)
+		frames_.resize(frames_count);
+		for (auto& frame : frames_)
 			frame.tasks.reserve(100);
-		frameWidth = 3;
-		frameSpacing = 1;
-		useColoredLegendText = false;
+		frame_width = 3;
+		frame_spacing = 1;
+		use_colored_legend_text = false;
 	}
 
-	void ProfilerGraph::LoadFrameData(const lz::ProfilerTask* tasks, size_t count)
+	void ProfilerGraph::load_frame_data(const lz::ProfilerTask* tasks, const size_t count)
 	{
-		auto& currFrame = frames[currFrameIndex];
-		currFrame.tasks.resize(0);
-		for (size_t taskIndex = 0; taskIndex < count; taskIndex++)
+		auto& curr_frame = frames_[curr_frame_index_];
+		curr_frame.tasks.resize(0);
+		for (size_t task_index = 0; task_index < count; task_index++)
 		{
-			if (taskIndex == 0)
-				currFrame.tasks.push_back(tasks[taskIndex]);
+			if (task_index == 0)
+				curr_frame.tasks.push_back(tasks[task_index]);
 			else
 			{
-				if (tasks[taskIndex - 1].color != tasks[taskIndex].color || tasks[taskIndex - 1].name != tasks[
-					taskIndex].name)
+				if (tasks[task_index - 1].color != tasks[task_index].color || tasks[task_index - 1].name != tasks[
+					task_index].name)
 				{
-					currFrame.tasks.push_back(tasks[taskIndex]);
+					curr_frame.tasks.push_back(tasks[task_index]);
 				}
 				else
 				{
-					currFrame.tasks.back().endTime = tasks[taskIndex].endTime;
+					curr_frame.tasks.back().end_time = tasks[task_index].end_time;
 				}
 			}
 		}
-		currFrame.taskStatsIndex.resize(currFrame.tasks.size());
+		curr_frame.task_stats_index.resize(curr_frame.tasks.size());
 
-		for (size_t taskIndex = 0; taskIndex < currFrame.tasks.size(); taskIndex++)
+		for (size_t task_index = 0; task_index < curr_frame.tasks.size(); task_index++)
 		{
-			auto& task = currFrame.tasks[taskIndex];
-			auto it = taskNameToStatsIndex.find(task.name);
-			if (it == taskNameToStatsIndex.end())
+			auto& task = curr_frame.tasks[task_index];
+			auto it = task_name_to_stats_index_.find(task.name);
+			if (it == task_name_to_stats_index_.end())
 			{
-				taskNameToStatsIndex[task.name] = taskStats.size();
+				task_name_to_stats_index_[task.name] = task_stats_.size();
 				TaskStats taskStat;
-				taskStat.maxTime = -1.0;
-				taskStats.push_back(taskStat);
+				taskStat.max_time = -1.0;
+				task_stats_.push_back(taskStat);
 			}
-			currFrame.taskStatsIndex[taskIndex] = taskNameToStatsIndex[task.name];
+			curr_frame.task_stats_index[task_index] = task_name_to_stats_index_[task.name];
 		}
-		currFrameIndex = (currFrameIndex + 1) % frames.size();
+		curr_frame_index_ = (curr_frame_index_ + 1) % frames_.size();
 
-		RebuildTaskStats(currFrameIndex, 300/*frames.size()*/);
+		rebuild_task_stats(curr_frame_index_, 300/*frames_.size()*/);
 	}
 
-	void ProfilerGraph::RenderTimings(int graphWidth, int legendWidth, int height, int frameIndexOffset)
+	void ProfilerGraph::render_timings(const int graph_width, const int legend_width, const int height, const int frame_index_offset)
 	{
-		ImDrawList* drawList = ImGui::GetWindowDrawList();
-		const glm::vec2 widgetPos = Vec2(ImGui::GetCursorScreenPos());
-		RenderGraph(drawList, widgetPos, glm::vec2(graphWidth, height), frameIndexOffset);
-		RenderLegend(drawList, widgetPos + glm::vec2(graphWidth, 0.0f), glm::vec2(legendWidth, height),
-		             frameIndexOffset);
-		ImGui::Dummy(ImVec2(float(graphWidth + legendWidth), float(height)));
+		ImDrawList* draw_list = ImGui::GetWindowDrawList();
+		const glm::vec2 widget_pos = vec2(ImGui::GetCursorScreenPos());
+		render_graph(draw_list, widget_pos, glm::vec2(graph_width, height), frame_index_offset);
+		render_legend(draw_list, widget_pos + glm::vec2(graph_width, 0.0f), glm::vec2(legend_width, height),
+		             frame_index_offset);
+		ImGui::Dummy(ImVec2(float(graph_width + legend_width), float(height)));
 	}
 
-	void ProfilerGraph::RebuildTaskStats(size_t endFrame, size_t framesCount)
+	void ProfilerGraph::rebuild_task_stats(const size_t end_frame, const size_t frames_count)
 	{
-		for (auto& taskStat : taskStats)
+		for (auto& task_stat : task_stats_)
 		{
-			taskStat.maxTime = -1.0f;
-			taskStat.priorityOrder = size_t(-1);
-			taskStat.onScreenIndex = size_t(-1);
+			task_stat.max_time = -1.0f;
+			task_stat.priority_order = size_t(-1);
+			task_stat.on_screen_index = size_t(-1);
 		}
 
-		for (size_t frameNumber = 0; frameNumber < framesCount; frameNumber++)
+		for (size_t frame_number = 0; frame_number < frames_count; frame_number++)
 		{
-			size_t frameIndex = (endFrame - 1 - frameNumber + frames.size()) % frames.size();
-			auto& frame = frames[frameIndex];
-			for (size_t taskIndex = 0; taskIndex < frame.tasks.size(); taskIndex++)
+			const size_t frameIndex = (end_frame - 1 - frame_number + frames_.size()) % frames_.size();
+			auto& frame = frames_[frameIndex];
+			for (size_t task_index = 0; task_index < frame.tasks.size(); task_index++)
 			{
-				auto& task = frame.tasks[taskIndex];
-				auto& stats = taskStats[frame.taskStatsIndex[taskIndex]];
-				stats.maxTime = std::max(stats.maxTime, task.endTime - task.startTime);
+				const auto& task = frame.tasks[task_index];
+				auto& stats = task_stats_[frame.task_stats_index[task_index]];
+				stats.max_time = std::max(stats.max_time, task.end_time - task.start_time);
 			}
 		}
-		std::vector<size_t> statPriorities;
-		statPriorities.resize(taskStats.size());
-		for (size_t statIndex = 0; statIndex < taskStats.size(); statIndex++)
-			statPriorities[statIndex] = statIndex;
+		std::vector<size_t> stat_priorities;
+		stat_priorities.resize(task_stats_.size());
+		for (size_t stat_index = 0; stat_index < task_stats_.size(); stat_index++)
+			stat_priorities[stat_index] = stat_index;
 
-		std::sort(statPriorities.begin(), statPriorities.end(), [this](size_t left, size_t right)
+		std::sort(stat_priorities.begin(), stat_priorities.end(), [this](const size_t left, const size_t right)
 		{
-			return taskStats[left].maxTime > taskStats[right].maxTime;
+			return task_stats_[left].max_time > task_stats_[right].max_time;
 		});
-		for (size_t statNumber = 0; statNumber < taskStats.size(); statNumber++)
+		for (size_t stat_number = 0; stat_number < task_stats_.size(); stat_number++)
 		{
-			size_t statIndex = statPriorities[statNumber];
-			taskStats[statIndex].priorityOrder = statNumber;
+			const size_t stat_index = stat_priorities[stat_number];
+			task_stats_[stat_index].priority_order = stat_number;
 		}
 	}
 
-	void ProfilerGraph::RenderGraph(ImDrawList* drawList, glm::vec2 graphPos, glm::vec2 graphSize,
-	                                size_t frameIndexOffset)
+	void ProfilerGraph::render_graph(ImDrawList* draw_list,  glm::vec2 graph_pos,  glm::vec2 graph_size,
+	                                 size_t frame_index_offset) const
 	{
-		Rect(drawList, graphPos, graphPos + graphSize, 0xffffffff, false);
-		float maxFrameTime = 1.0f / 30.0f;
-		float heightThreshold = 1.0f;
+		rect(draw_list, graph_pos, graph_pos + graph_size, 0xffffffff, false);
+		constexpr float max_frame_time = 1.0f / 30.0f;
 
-		for (size_t frameNumber = 0; frameNumber < frames.size(); frameNumber++)
+		for (size_t frame_number = 0; frame_number < frames_.size(); frame_number++)
 		{
-			size_t frameIndex = (currFrameIndex - frameIndexOffset - 1 - frameNumber + 2 * frames.size()) % frames.
+			const size_t frame_index = (curr_frame_index_ - frame_index_offset - 1 - frame_number + 2 * frames_.size()) % frames_.
 				size();
 
-			glm::vec2 framePos = graphPos + glm::vec2(
-				graphSize.x - 1 - frameWidth - (frameWidth + frameSpacing) * frameNumber, graphSize.y - 1);
-			if (framePos.x < graphPos.x + 1)
+			glm::vec2 frame_pos = graph_pos + glm::vec2(
+				graph_size.x - 1 - frame_width - (frame_width + frame_spacing) * frame_number, graph_size.y - 1);
+			if (frame_pos.x < graph_pos.x + 1)
 				break;
-			glm::vec2 taskPos = framePos + glm::vec2(0.0f, 0.0f);
-			auto& frame = frames[frameIndex];
-			for (auto task : frame.tasks)
+			glm::vec2 task_pos = frame_pos + glm::vec2(0.0f, 0.0f);
+			auto& frame = frames_[frame_index];
+			for (const auto task : frame.tasks)
 			{
-				float taskStartHeight = (float(task.startTime) / maxFrameTime) * graphSize.y;
-				float taskEndHeight = (float(task.endTime) / maxFrameTime) * graphSize.y;
+				constexpr float height_threshold = 1.0f;
+				const float task_start_height = (float(task.start_time) / max_frame_time) * graph_size.y;
+				const float task_end_height = (float(task.end_time) / max_frame_time) * graph_size.y;
 				//taskMaxCosts[task.name] = std::max(taskMaxCosts[task.name], task.endTime - task.startTime);
-				if (abs(taskEndHeight - taskStartHeight) > heightThreshold)
-					Rect(drawList, taskPos + glm::vec2(0.0f, -taskStartHeight),
-					     taskPos + glm::vec2(frameWidth, -taskEndHeight), task.color, true);
+				if (abs(task_end_height - task_start_height) > height_threshold)
+					rect(draw_list, task_pos + glm::vec2(0.0f, -task_start_height),
+					     task_pos + glm::vec2(frame_width, -task_end_height), task.color, true);
 			}
 		}
 	}
 
-	void ProfilerGraph::RenderLegend(ImDrawList* drawList, glm::vec2 legendPos, glm::vec2 legendSize,
-	                                 size_t frameIndexOffset)
+	void ProfilerGraph::render_legend(ImDrawList* draw_list, glm::vec2 legend_pos, glm::vec2 legend_size,
+	                                 size_t frame_index_offset)
 	{
-		float markerLeftRectMargin = 3.0f;
-		float markerLeftRectWidth = 5.0f;
-		float maxFrameTime = 1.0f / 30.0f;
-		float markerMidWidth = 30.0f;
-		float markerRightRectWidth = 10.0f;
-		float markerRigthRectMargin = 3.0f;
-		float markerRightRectHeight = 10.0f;
-		float markerRightRectSpacing = 4.0f;
-		float nameOffset = 30.0f;
-		glm::vec2 textMargin = glm::vec2(5.0f, -3.0f);
+		float marker_left_rect_margin = 3.0f;
+		float marker_left_rect_width = 5.0f;
+		float max_frame_time = 1.0f / 30.0f;
+		float marker_mid_width = 30.0f;
+		float marker_right_rect_width = 10.0f;
+		float marker_rigth_rect_margin = 3.0f;
+		float marker_right_rect_height = 10.0f;
+		float marker_right_rect_spacing = 4.0f;
+		float name_offset = 30.0f;
+		glm::vec2 text_margin = glm::vec2(5.0f, -3.0f);
 
-		auto& currFrame = frames[(currFrameIndex - frameIndexOffset - 1 + 2 * frames.size()) % frames.size()];
-		size_t maxTasksCount = size_t(legendSize.y / (markerRightRectHeight + markerRightRectSpacing));
+		auto& curr_frame = frames_[(curr_frame_index_ - frame_index_offset - 1 + 2 * frames_.size()) % frames_.size()];
+		size_t max_tasks_count = size_t(legend_size.y / (marker_right_rect_height + marker_right_rect_spacing));
 
-		for (auto& taskStat : taskStats)
+		for (auto& task_stat : task_stats_)
 		{
-			taskStat.onScreenIndex = size_t(-1);
+			task_stat.on_screen_index = size_t(-1);
 		}
 
-		size_t tasksToShow = std::min<size_t>(taskStats.size(), maxTasksCount);
-		size_t tasksShownCount = 0;
-		for (size_t taskIndex = 0; taskIndex < currFrame.tasks.size(); taskIndex++)
+		size_t tasks_to_show = std::min<size_t>(task_stats_.size(), max_tasks_count);
+		size_t tasks_shown_count = 0;
+		for (size_t task_index = 0; task_index < curr_frame.tasks.size(); task_index++)
 		{
-			auto& task = currFrame.tasks[taskIndex];
-			auto& stat = taskStats[currFrame.taskStatsIndex[taskIndex]];
+			auto& task = curr_frame.tasks[task_index];
+			auto& stat = task_stats_[curr_frame.task_stats_index[task_index]];
 
-			if (stat.priorityOrder >= tasksToShow)
+			if (stat.priority_order >= tasks_to_show)
 				continue;
 
-			if (stat.onScreenIndex == size_t(-1))
+			if (stat.on_screen_index == size_t(-1))
 			{
-				stat.onScreenIndex = tasksShownCount++;
+				stat.on_screen_index = tasks_shown_count++;
 			}
 			else
 				continue;
-			float taskStartHeight = (float(task.startTime) / maxFrameTime) * legendSize.y;
-			float taskEndHeight = (float(task.endTime) / maxFrameTime) * legendSize.y;
+			float task_start_height = (float(task.start_time) / max_frame_time) * legend_size.y;
+			float task_end_height = (float(task.end_time) / max_frame_time) * legend_size.y;
 
-			glm::vec2 markerLeftRectMin = legendPos + glm::vec2(markerLeftRectMargin, legendSize.y);
-			glm::vec2 markerLeftRectMax = markerLeftRectMin + glm::vec2(markerLeftRectWidth, 0.0f);
-			markerLeftRectMin.y -= taskStartHeight;
-			markerLeftRectMax.y -= taskEndHeight;
+			glm::vec2 marker_left_rect_min = legend_pos + glm::vec2(marker_left_rect_margin, legend_size.y);
+			glm::vec2 marker_left_rect_max = marker_left_rect_min + glm::vec2(marker_left_rect_width, 0.0f);
+			marker_left_rect_min.y -= task_start_height;
+			marker_left_rect_max.y -= task_end_height;
 
-			glm::vec2 markerRightRectMin = legendPos + glm::vec2(
-				markerLeftRectMargin + markerLeftRectWidth + markerMidWidth,
-				legendSize.y - markerRigthRectMargin - (markerRightRectHeight + markerRightRectSpacing) * stat.
-				onScreenIndex);
-			glm::vec2 markerRightRectMax = markerRightRectMin + glm::vec2(
-				markerRightRectWidth, -markerRightRectHeight);
-			RenderTaskMarker(drawList, markerLeftRectMin, markerLeftRectMax, markerRightRectMin, markerRightRectMax,
+			glm::vec2 marker_right_rect_min = legend_pos + glm::vec2(
+				marker_left_rect_margin + marker_left_rect_width + marker_mid_width,
+				legend_size.y - marker_rigth_rect_margin - (marker_right_rect_height + marker_right_rect_spacing) * stat.
+				on_screen_index);
+			glm::vec2 marker_right_rect_max = marker_right_rect_min + glm::vec2(
+				marker_right_rect_width, -marker_right_rect_height);
+			render_task_marker(draw_list, marker_left_rect_min, marker_left_rect_max, marker_right_rect_min, marker_right_rect_max,
 			                 task.color);
 
-			uint32_t textColor = useColoredLegendText ? task.color : lz::Colors::imguiText; // task.color;
+			uint32_t text_color = use_colored_legend_text ? task.color : lz::Colors::imgui_text; // task.color;
 
-			float taskTimeMs = float(task.endTime - task.startTime);
-			std::ostringstream timeText;
-			timeText.precision(2);
-			timeText << std::fixed << std::string("[") << (taskTimeMs * 1000.0f);
+			float task_time_ms = float(task.end_time - task.start_time);
+			std::ostringstream time_text;
+			time_text.precision(2);
+			time_text << std::fixed << std::string("[") << (task_time_ms * 1000.0f);
 
-			Text(drawList, markerRightRectMax + textMargin, textColor, timeText.str().c_str());
-			Text(drawList, markerRightRectMax + textMargin + glm::vec2(nameOffset, 0.0f), textColor,
+			text(draw_list, marker_right_rect_max + text_margin, text_color, time_text.str().c_str());
+			text(draw_list, marker_right_rect_max + text_margin + glm::vec2(name_offset, 0.0f), text_color,
 			     (std::string("ms] ") + task.name).c_str());
 		}
 
@@ -214,7 +214,7 @@ namespace ImGuiUtils
 			for (auto priorityTask : priorityTasks)
 			{
 			  PriorityEntry entry;
-			  entry.task = frames[priorityTask.frameIndex].tasks[priorityTask.taskIndex];
+			  entry.task = frames_[priorityTask.frameIndex].tasks[priorityTask.taskIndex];
 			  entry.isUsed = false;
 			  priorityEntries[entry.task.name] = entry;
 			}
@@ -256,7 +256,7 @@ namespace ImGuiUtils
 		/*for (size_t priorityTaskIndex = 0; priorityTaskIndex < priorityTasks.size(); priorityTaskIndex++)
 			{
 			  auto &priorityTask = priorityTasks[priorityTaskIndex];
-			  auto &globalTask = frames[priorityTask.frameIndex].tasks[priorityTask.taskIndex];
+			  auto &globalTask = frames_[priorityTask.frameIndex].tasks[priorityTask.taskIndex];
 
 			  size_t lastFrameTaskIndex = currFrame.FindTask(globalTask.name);
 
@@ -266,110 +266,110 @@ namespace ImGuiUtils
 			}*/
 	}
 
-	void ProfilerGraph::Rect(ImDrawList* drawList, glm::vec2 minPoint, glm::vec2 maxPoint, uint32_t col, bool filled)
+	void ProfilerGraph::rect(ImDrawList* draw_list,  glm::vec2 min_point,  glm::vec2 max_point,  uint32_t col,  bool filled)
 	{
 		if (filled)
-			drawList->AddRectFilled(ImVec2(minPoint.x, minPoint.y), ImVec2(maxPoint.x, maxPoint.y), col);
+			draw_list->AddRectFilled(ImVec2(min_point.x, min_point.y), ImVec2(max_point.x, max_point.y), col);
 		else
-			drawList->AddRect(ImVec2(minPoint.x, minPoint.y), ImVec2(maxPoint.x, maxPoint.y), col);
+			draw_list->AddRect(ImVec2(min_point.x, min_point.y), ImVec2(max_point.x, max_point.y), col);
 	}
 
-	void ProfilerGraph::Text(ImDrawList* drawList, glm::vec2 point, uint32_t col, const char* text)
+	void ProfilerGraph::text(ImDrawList* draw_list, glm::vec2 point, uint32_t col,const  char* text)
 	{
-		drawList->AddText(ImVec2(point.x, point.y), col, text);
+		draw_list->AddText(ImVec2(point.x, point.y), col, text);
 	}
 
-	void ProfilerGraph::Triangle(ImDrawList* drawList, std::array<glm::vec2, 3> points, uint32_t col, bool filled)
+	void ProfilerGraph::triangle(ImDrawList* draw_list, const std::array<glm::vec2, 3>& points,  uint32_t col,  bool filled)
 	{
 		if (filled)
-			drawList->AddTriangleFilled(ImVec2(points[0].x, points[0].y), ImVec2(points[1].x, points[1].y),
+			draw_list->AddTriangleFilled(ImVec2(points[0].x, points[0].y), ImVec2(points[1].x, points[1].y),
 			                            ImVec2(points[2].x, points[2].y), col);
 		else
-			drawList->AddTriangle(ImVec2(points[0].x, points[0].y), ImVec2(points[1].x, points[1].y),
+			draw_list->AddTriangle(ImVec2(points[0].x, points[0].y), ImVec2(points[1].x, points[1].y),
 			                      ImVec2(points[2].x, points[2].y), col);
 	}
 
-	void ProfilerGraph::RenderTaskMarker(ImDrawList* drawList, glm::vec2 leftMinPoint, glm::vec2 leftMaxPoint,
-	                                     glm::vec2 rightMinPoint, glm::vec2 rightMaxPoint, uint32_t col)
+	void ProfilerGraph::render_task_marker(ImDrawList* draw_list, glm::vec2 left_min_point, glm::vec2 left_max_point,
+	                                     glm::vec2 right_min_point, glm::vec2 right_max_point, uint32_t col)
 	{
-		Rect(drawList, leftMinPoint, leftMaxPoint, col, true);
-		Rect(drawList, rightMinPoint, rightMaxPoint, col, true);
+		rect(draw_list, left_min_point, left_max_point, col, true);
+		rect(draw_list, right_min_point, right_max_point, col, true);
 		std::array<ImVec2, 4> points = {
-			ImVec2(leftMaxPoint.x, leftMinPoint.y),
-			ImVec2(leftMaxPoint.x, leftMaxPoint.y),
-			ImVec2(rightMinPoint.x, rightMaxPoint.y),
-			ImVec2(rightMinPoint.x, rightMinPoint.y)
+			ImVec2(left_max_point.x, left_min_point.y),
+			ImVec2(left_max_point.x, left_max_point.y),
+			ImVec2(right_min_point.x, right_max_point.y),
+			ImVec2(right_min_point.x, right_min_point.y)
 		};
-		drawList->AddConvexPolyFilled(points.data(), int(points.size()), col);
+		draw_list->AddConvexPolyFilled(points.data(), int(points.size()), col);
 	}
 
 	ProfilersWindow::ProfilersWindow():
-		cpuGraph(300),
-		gpuGraph(300)
+		cpu_graph(300),
+		gpu_graph(300)
 	{
-		stopProfiling = false;
-		frameOffset = 0;
-		frameWidth = 3;
-		frameSpacing = 1;
-		useColoredLegendText = true;
-		prevFpsFrameTime = std::chrono::system_clock::now();
-		fpsFramesCount = 0;
-		avgFrameTime = 1.0f;
+		stop_profiling = false;
+		frame_offset = 0;
+		frame_width = 3;
+		frame_spacing = 1;
+		use_colored_legend_text = true;
+		prev_fps_frame_time = std::chrono::system_clock::now();
+		fps_frames_count = 0;
+		avg_frame_time = 1.0f;
 	}
 
-	void ProfilersWindow::Render()
+	void ProfilersWindow::render()
 	{
-		fpsFramesCount++;
-		auto currFrameTime = std::chrono::system_clock::now();
+		fps_frames_count++;
+		const auto curr_frame_time = std::chrono::system_clock::now();
 		{
-			float fpsDeltaTime = std::chrono::duration<float>(currFrameTime - prevFpsFrameTime).count();
-			if (fpsDeltaTime > 0.5f)
+			float fps_delta_time = std::chrono::duration<float>(curr_frame_time - prev_fps_frame_time).count();
+			if (fps_delta_time > 0.5f)
 			{
-				this->avgFrameTime = fpsDeltaTime / float(fpsFramesCount);
-				fpsFramesCount = 0;
-				prevFpsFrameTime = currFrameTime;
+				this->avg_frame_time = fps_delta_time / float(fps_frames_count);
+				fps_frames_count = 0;
+				prev_fps_frame_time = curr_frame_time;
 			}
 		}
 
 		std::stringstream title;
 		title.precision(2);
-		title << std::fixed << "Legit profiler [" << 1.0f / avgFrameTime << "fps\t" << avgFrameTime * 1000.0f <<
+		title << std::fixed << "Legit profiler [" << 1.0f / avg_frame_time << "fps\t" << avg_frame_time * 1000.0f <<
 			"ms]###ProfilerWindow";
 		//###AnimatedTitle
 		ImGui::Begin(title.str().c_str(), 0, ImGuiWindowFlags_NoScrollbar);
-		ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+		ImVec2 canvas_size = ImGui::GetContentRegionAvail();
 
-		int sizeMargin = int(ImGui::GetStyle().ItemSpacing.y);
-		int maxGraphHeight = 300;
-		int availableGraphHeight = (int(canvasSize.y) - sizeMargin) / 2;
-		int graphHeight = std::min(maxGraphHeight, availableGraphHeight);
-		int legendWidth = 200;
-		int graphWidth = int(canvasSize.x) - legendWidth;
-		gpuGraph.RenderTimings(graphWidth, legendWidth, graphHeight, frameOffset);
-		cpuGraph.RenderTimings(graphWidth, legendWidth, graphHeight, frameOffset);
-		if (graphHeight * 2 + sizeMargin + sizeMargin < canvasSize.y)
+		int size_margin = int(ImGui::GetStyle().ItemSpacing.y);
+		int max_graph_height = 300;
+		int available_graph_height = (int(canvas_size.y) - size_margin) / 2;
+		int graph_height = std::min(max_graph_height, available_graph_height);
+		int legend_width = 200;
+		int graph_width = int(canvas_size.x) - legend_width;
+		gpu_graph.render_timings(graph_width, legend_width, graph_height, frame_offset);
+		cpu_graph.render_timings(graph_width, legend_width, graph_height, frame_offset);
+		if (graph_height * 2 + size_margin + size_margin < canvas_size.y)
 		{
 			ImGui::Columns(2);
 			size_t textSize = 50;
-			ImGui::Checkbox("Stop profiling", &stopProfiling);
+			ImGui::Checkbox("Stop profiling", &stop_profiling);
 			//ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - textSize);
-			ImGui::Checkbox("Colored legend text", &useColoredLegendText);
-			ImGui::DragInt("Frame offset", &frameOffset, 1.0f, 0, 400);
+			ImGui::Checkbox("Colored legend text", &use_colored_legend_text);
+			ImGui::DragInt("Frame offset", &frame_offset, 1.0f, 0, 400);
 			ImGui::NextColumn();
 
-			ImGui::SliderInt("Frame width", &frameWidth, 1, 4);
-			ImGui::SliderInt("Frame spacing", &frameSpacing, 0, 2);
+			ImGui::SliderInt("Frame width", &frame_width, 1, 4);
+			ImGui::SliderInt("Frame spacing", &frame_spacing, 0, 2);
 			ImGui::SliderFloat("Transparency", &ImGui::GetStyle().Colors[ImGuiCol_WindowBg].w, 0.0f, 1.0f);
 			ImGui::Columns(1);
 		}
-		if (!stopProfiling)
-			frameOffset = 0;
-		gpuGraph.frameWidth = frameWidth;
-		gpuGraph.frameSpacing = frameSpacing;
-		gpuGraph.useColoredLegendText = useColoredLegendText;
-		cpuGraph.frameWidth = frameWidth;
-		cpuGraph.frameSpacing = frameSpacing;
-		cpuGraph.useColoredLegendText = useColoredLegendText;
+		if (!stop_profiling)
+			frame_offset = 0;
+		gpu_graph.frame_width = frame_width;
+		gpu_graph.frame_spacing = frame_spacing;
+		gpu_graph.use_colored_legend_text = use_colored_legend_text;
+		cpu_graph.frame_width = frame_width;
+		cpu_graph.frame_spacing = frame_spacing;
+		cpu_graph.use_colored_legend_text = use_colored_legend_text;
 
 		ImGui::End();
 	}

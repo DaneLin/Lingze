@@ -2,36 +2,36 @@
 
 namespace lz
 {
-	vk::Sampler Sampler::GetHandle() const
+	vk::Sampler Sampler::get_handle() const
 	{
-		return samplerHandle.get();
+		return sampler_handle_.get();
 	}
 
 	bool Sampler::operator<(const Sampler& other) const
 	{
-		return std::tie(samplerHandle.get()) < std::tie(other.samplerHandle.get());
+		return std::tie(sampler_handle_.get()) < std::tie(other.sampler_handle_.get());
 	}
 
-	Sampler::Sampler(vk::Device logicalDevice, vk::SamplerAddressMode addressMode, vk::Filter minMagFilterType,
-		vk::SamplerMipmapMode mipFilterType, bool useComparison, vk::BorderColor borderColor)
+	Sampler::Sampler(vk::Device logical_device, vk::SamplerAddressMode address_mode, vk::Filter min_mag_filter_type,
+		vk::SamplerMipmapMode mip_filter_type, bool use_comparison, vk::BorderColor border_color)
 	{
 		// Configure sampler creation parameters
-		auto samplerCreateInfo = vk::SamplerCreateInfo()
-		                         .setAddressModeU(addressMode)     // Address mode for U coordinate
-		                         .setAddressModeV(addressMode)     // Address mode for V coordinate
-		                         .setAddressModeW(addressMode)     // Address mode for W coordinate
+		const auto sampler_create_info = vk::SamplerCreateInfo()
+		                         .setAddressModeU(address_mode)     // Address mode for U coordinate
+		                         .setAddressModeV(address_mode)     // Address mode for V coordinate
+		                         .setAddressModeW(address_mode)     // Address mode for W coordinate
 		                         .setAnisotropyEnable(false)       // Disable anisotropic filtering
-		                         .setCompareEnable(useComparison)  // Enable/disable comparison mode
-		                         .setCompareOp(useComparison ? vk::CompareOp::eLessOrEqual : vk::CompareOp::eAlways)
-		                         .setMagFilter(minMagFilterType)   // Magnification filter
-		                         .setMinFilter(minMagFilterType)   // Minification filter
+		                         .setCompareEnable(use_comparison)  // Enable/disable comparison mode
+		                         .setCompareOp(use_comparison ? vk::CompareOp::eLessOrEqual : vk::CompareOp::eAlways)
+		                         .setMagFilter(min_mag_filter_type)   // Magnification filter
+		                         .setMinFilter(min_mag_filter_type)   // Minification filter
 		                         .setMaxLod(1e7f)                  // Maximum level of detail
 		                         .setMinLod(0.0f)                  // Minimum level of detail
-		                         .setMipmapMode(mipFilterType)     // Mipmap filtering mode
+		                         .setMipmapMode(mip_filter_type)     // Mipmap filtering mode
 		                         .setUnnormalizedCoordinates(false)// Use normalized coordinates
-		                         .setBorderColor(borderColor);     // Border color
+		                         .setBorderColor(border_color);     // Border color
 
 		// Create the sampler
-		samplerHandle = logicalDevice.createSamplerUnique(samplerCreateInfo);
+		sampler_handle_ = logical_device.createSamplerUnique(sampler_create_info);
 	}
 }

@@ -6,71 +6,71 @@ namespace lz
 {
 	ShaderMemoryPool::ShaderMemoryPool(uint32_t alignment)
 	{
-		this->alignment = alignment;
+		this->alignment_ = alignment;
 	}
 
-	void ShaderMemoryPool::MapBuffer(lz::Buffer* buffer)
+	void ShaderMemoryPool::map_buffer(lz::Buffer* buffer)
 	{
-		this->buffer = buffer;
-		dstMemory = this->buffer->Map();
-		currOffset = 0;
-		currSize = 0;
-		currSetInfo = nullptr;
+		this->buffer_ = buffer;
+		dst_memory_ = this->buffer_->map();
+		curr_offset_ = 0;
+		curr_size_ = 0;
+		curr_set_info_ = nullptr;
 	}
 
-	void ShaderMemoryPool::UnmapBuffer()
+	void ShaderMemoryPool::unmap_buffer()
 	{
-		buffer->Unmap();
-		buffer = nullptr;
-		dstMemory = nullptr;
+		buffer_->unmap();
+		buffer_ = nullptr;
+		dst_memory_ = nullptr;
 	}
 
-	lz::Buffer* ShaderMemoryPool::GetBuffer()
+	lz::Buffer* ShaderMemoryPool::get_buffer() const
 	{
-		return buffer;
+		return buffer_;
 	}
 
-	ShaderMemoryPool::SetDynamicUniformBindings ShaderMemoryPool::BeginSet(const lz::DescriptorSetLayoutKey* setInfo)
+	ShaderMemoryPool::SetDynamicUniformBindings ShaderMemoryPool::begin_set(const lz::DescriptorSetLayoutKey* set_info)
 	{
-		this->currSetInfo = setInfo;
-		currSize += currSetInfo->GetTotalConstantBufferSize();
-		currSize = AlignSize(currSize, alignment);
+		this->curr_set_info_ = set_info;
+		curr_size_ += curr_set_info_->get_total_constant_buffer_size();
+		curr_size_ = align_size(curr_size_, alignment_);
 
-		SetDynamicUniformBindings dynamicBindings;
-		dynamicBindings.dynamicOffset = currOffset;
+		SetDynamicUniformBindings dynamic_bindings;
+		dynamic_bindings.dynamic_offset = curr_offset_;
 
-		std::vector<lz::DescriptorSetLayoutKey::UniformBufferId> uniformBufferIds;
-		uniformBufferIds.resize(setInfo->GetUniformBuffersCount());
-		setInfo->GetUniformBufferIds(uniformBufferIds.data());
+		std::vector<lz::DescriptorSetLayoutKey::UniformBufferId> uniform_buffer_ids;
+		uniform_buffer_ids.resize(set_info->get_uniform_buffers_count());
+		set_info->get_uniform_buffer_ids(uniform_buffer_ids.data());
 
-		uint32_t setUniformTotalSize = 0;
-		for (auto uniformBufferId : uniformBufferIds)
+		uint32_t set_uniform_total_size = 0;
+		for (const auto uniform_buffer_id : uniform_buffer_ids)
 		{
-			auto uniformBufferInfo = setInfo->GetUniformBufferInfo(uniformBufferId);
-			setUniformTotalSize += uniformBufferInfo.size;
-			dynamicBindings.uniformBufferBindings.push_back(lz::UniformBufferBinding(
-				this->GetBuffer(), uniformBufferInfo.shaderBindingIndex, uniformBufferInfo.offsetInSet,
-				uniformBufferInfo.size));
+			const auto uniform_buffer_info = set_info->get_uniform_buffer_info(uniform_buffer_id);
+			set_uniform_total_size += uniform_buffer_info.size;
+			dynamic_bindings.uniform_buffer_bindings.push_back(lz::UniformBufferBinding(
+				this->get_buffer(), uniform_buffer_info.shader_binding_index, uniform_buffer_info.offset_in_set,
+				uniform_buffer_info.size));
 		}
-		assert(currSetInfo->GetTotalConstantBufferSize() == setUniformTotalSize);
+		assert(curr_set_info_->get_total_constant_buffer_size() == set_uniform_total_size);
 
-		return dynamicBindings;
+		return dynamic_bindings;
 	}
 
-	void ShaderMemoryPool::EndSet()
+	void ShaderMemoryPool::end_set()
 	{
-		currOffset = currSize;
-		currSetInfo = nullptr;
+		curr_offset_ = curr_size_;
+		curr_set_info_ = nullptr;
 	}
 
 	
-	uint32_t ShaderMemoryPool::AlignSize(uint32_t size, uint32_t alignment)
+	uint32_t ShaderMemoryPool::align_size(uint32_t size, uint32_t alignment)
 	{
-		uint32_t resSize = size;
-		if (resSize % alignment != 0)
+		uint32_t res_size = size;
+		if (res_size % alignment != 0)
 		{
-			resSize += (alignment - (resSize % alignment));
+			res_size += (alignment - (res_size % alignment));
 		}
-		return resSize;
+		return res_size;
 	}
 }

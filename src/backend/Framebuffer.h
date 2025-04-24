@@ -12,7 +12,7 @@ namespace lz
 	{
 	public:
 		// GetHandle: Returns the native Vulkan framebuffer handle
-		vk::Framebuffer GetHandle();
+		vk::Framebuffer get_handle();
 
 		// Constructor: Creates a new framebuffer with specified image views
 		// Parameters:
@@ -20,11 +20,11 @@ namespace lz
 		// - imageViews: List of image views to use as attachments
 		// - size: Width and height of the framebuffer
 		// - renderPass: Render pass this framebuffer is compatible with
-		Framebuffer(vk::Device logicalDevice, const std::vector<const ImageView*>& imageViews,
-			vk::Extent2D size, vk::RenderPass renderPass);
+		Framebuffer(vk::Device logical_device, const std::vector<const ImageView*>& image_views,
+			vk::Extent2D size, vk::RenderPass render_pass);
 
 	private:
-		vk::UniqueFramebuffer framebuffer;  // Native Vulkan framebuffer handle
+		vk::UniqueFramebuffer framebuffer_;  // Native Vulkan framebuffer handle
 	};
 
 	

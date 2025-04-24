@@ -8,7 +8,7 @@ namespace lz
 	// Parameters:
 	// - format: Vulkan format to check
 	// Returns: True if the format is a depth format, false otherwise
-	static bool IsDepthFormat(vk::Format format)
+	static bool is_depth_format(const vk::Format format)
 	{
 		return (format >= vk::Format::eD16Unorm && format < vk::Format::eD32SfloatS8Uint);
 	}
@@ -17,25 +17,25 @@ namespace lz
 	// Parameters:
 	// - format: Vulkan format of the image
 	// Returns: Appropriate image usage flags for the given format
-	static vk::ImageUsageFlags GetGeneralUsageFlags(vk::Format format)
+	static vk::ImageUsageFlags get_general_usage_flags(const vk::Format format)
 	{
-		vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled;
-		if (IsDepthFormat(format))
+		vk::ImageUsageFlags usage_flags = vk::ImageUsageFlagBits::eSampled;
+		if (is_depth_format(format))
 		{
-			usageFlags |= vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
+			usage_flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
 		}
 		else
 		{
-			usageFlags |= vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst |
+			usage_flags |= vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst |
 				vk::ImageUsageFlagBits::eSampled;
 		}
-		return usageFlags;
+		return usage_flags;
 	}
 
 	// Common image usage flag combinations
-	static const vk::ImageUsageFlags colorImageUsage = vk::ImageUsageFlagBits::eColorAttachment |
+	static constexpr vk::ImageUsageFlags color_image_usage = vk::ImageUsageFlagBits::eColorAttachment |
 		vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
-	static const vk::ImageUsageFlags depthImageUsage = vk::ImageUsageFlagBits::eDepthStencilAttachment |
+	static constexpr vk::ImageUsageFlags depth_image_usage = vk::ImageUsageFlagBits::eDepthStencilAttachment |
 		vk::ImageUsageFlagBits::eSampled;
 
 	class Swapchain;
@@ -49,15 +49,15 @@ namespace lz
 		// Parameters:
 		// - other: The range to check against
 		// Returns: True if this range fully contains the other range
-		bool Contains(const ImageSubresourceRange& other);
+		bool contains(const ImageSubresourceRange& other) const;
 
 		// Comparison operator for container sorting
 		bool operator <(const ImageSubresourceRange& other) const;
 
-		uint32_t baseMipLevel; // First mipmap level in the range
-		uint32_t mipsCount; // Number of mipmap levels in the range
-		uint32_t baseArrayLayer; // First array layer in the range
-		uint32_t arrayLayersCount; // Number of array layers in the range
+		uint32_t base_mip_level; // First mipmap level in the range
+		uint32_t mips_count; // Number of mipmap levels in the range
+		uint32_t base_array_layer; // First array layer in the range
+		uint32_t array_layers_count; // Number of array layers in the range
 	};
 
 
@@ -67,55 +67,55 @@ namespace lz
 	{
 	public:
 		// GetHandle: Returns the native Vulkan image handle
-		vk::Image GetHandle() const;
+		vk::Image get_handle() const;
 
 		// GetFormat: Returns the format of the image
-		vk::Format GetFormat() const;
+		vk::Format get_format() const;
 
 		// GetType: Returns the type of the image (1D, 2D, or 3D)
-		vk::ImageType GetType() const;
+		vk::ImageType get_type() const;
 
 		// GetMipSize: Returns the size of a specific mipmap level
 		// Parameters:
 		// - mipLevel: Mipmap level to query
 		// Returns: Size of the specified mipmap level
-		glm::uvec3 GetMipSize(uint32_t mipLevel);
+		glm::uvec3 get_mip_size(uint32_t mip_level) const;
 
 		// GetAspectFlags: Returns the aspect flags of the image (color or depth)
-		vk::ImageAspectFlags GetAspectFlags() const;
+		vk::ImageAspectFlags get_aspect_flags() const;
 
-		uint32_t GetArrayLayersCount();
+		uint32_t get_array_layers_count() const;
 
-		uint32_t GetMipsCount();
+		uint32_t get_mips_count() const;
 
 		bool operator <(const ImageData& other) const;
 
 	private:
-		ImageData(vk::Image imageHandle, vk::ImageType imageType, glm::uvec3 size, uint32_t mipsCount,
-		          uint32_t arrayLayersCount, vk::Format format, vk::ImageLayout layout);
+		ImageData(vk::Image image_handle, vk::ImageType image_type, glm::uvec3 size, uint32_t mipsCount,
+		          uint32_t array_layers_count, vk::Format format, vk::ImageLayout layout);
 
-		void SetDebugName(std::string debugName);
+		void set_debug_name(const std::string& debug_name);
 
 		struct SubImageInfo
 		{
-			vk::ImageLayout currLayout;
+			vk::ImageLayout curr_layout;
 		};
 
 		struct MipInfo
 		{
-			std::vector<SubImageInfo> layerInfos;
+			std::vector<SubImageInfo> layer_infos;
 			glm::uvec3 size;
 		};
 
-		std::vector<MipInfo> mipInfos;
+		std::vector<MipInfo> mip_infos_;
 
-		vk::ImageAspectFlags aspectFlags;
-		vk::Image imageHandle;
-		vk::Format format;
-		vk::ImageType imageType;
-		uint32_t mipsCount;
-		uint32_t arrayLayersCount;
-		std::string debugName;
+		vk::ImageAspectFlags aspect_flags_;
+		vk::Image image_handle_;
+		vk::Format format_;
+		vk::ImageType image_type_;
+		uint32_t mips_count_;
+		uint32_t array_layers_count_;
+		std::string debug_name_;
 
 		friend class lz::Image;
 		friend class lz::Swapchain;
@@ -126,11 +126,11 @@ namespace lz
 	class Image
 	{
 	public:
-		lz::ImageData* GetImageData();
+		lz::ImageData* get_image_data() const;
 
-		vk::DeviceMemory GetMemory();
+		vk::DeviceMemory get_memory();
 
-		static vk::ImageCreateInfo CreateInfo2d(glm::uvec2 size, uint32_t mipsCount, uint32_t arrayLayersCount,
+		static vk::ImageCreateInfo create_info_2d(glm::uvec2 size, uint32_t mips_count, uint32_t array_layers_count,
 		                                        vk::Format format, vk::ImageUsageFlags usage);
 
 		// CreateInfoVolume: Creates an image create info structure for 3D volume images
@@ -141,7 +141,7 @@ namespace lz
 		// - format: Format of the image
 		// - usage: Usage flags for the image
 		// Returns: Configured image create info structure for a 3D volume image
-		static vk::ImageCreateInfo CreateInfoVolume(glm::uvec3 size, uint32_t mipsCount, uint32_t arrayLayersCount,
+		static vk::ImageCreateInfo create_info_volume(glm::uvec3 size, uint32_t mips_count, uint32_t array_layers_count,
 		                                            vk::Format format, vk::ImageUsageFlags usage);
 
 		// CreateInfoCube: Creates an image create info structure for cubemap images
@@ -151,7 +151,7 @@ namespace lz
 		// - format: Format of the image
 		// - usage: Usage flags for the image
 		// Returns: Configured image create info structure for a cubemap
-		static vk::ImageCreateInfo CreateInfoCube(glm::uvec2 size, uint32_t mipsCount, vk::Format format,
+		static vk::ImageCreateInfo create_info_cube(glm::uvec2 size, uint32_t mips_count, vk::Format format,
 		                                          vk::ImageUsageFlags usage);
 
 		// Constructor: Creates a new image with specified properties
@@ -160,12 +160,12 @@ namespace lz
 		// - logicalDevice: Logical device for image operations
 		// - imageInfo: Image creation parameters
 		// - memFlags: Memory property flags for the image allocation
-		Image(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::ImageCreateInfo imageInfo,
-		      vk::MemoryPropertyFlags memFlags = vk::MemoryPropertyFlagBits::eDeviceLocal);
+		Image(vk::PhysicalDevice physical_device, vk::Device logical_device, const vk::ImageCreateInfo& image_info,
+		      vk::MemoryPropertyFlags mem_flags = vk::MemoryPropertyFlagBits::eDeviceLocal);
 
 	private:
-		vk::UniqueImage imageHandle; // Native Vulkan image handle
-		std::unique_ptr<lz::ImageData> imageData; // Image metadata and layout tracking
-		vk::UniqueDeviceMemory imageMemory; // Device memory allocation for this image
+		vk::UniqueImage image_handle_; // Native Vulkan image handle
+		std::unique_ptr<lz::ImageData> image_data_; // Image metadata and layout tracking
+		vk::UniqueDeviceMemory image_memory_; // Device memory allocation for this image
 	};
 }

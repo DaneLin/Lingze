@@ -9,120 +9,122 @@ namespace lz
 {
 	bool ImageCache::ImageKey::operator<(const ImageKey& other) const
 	{
-		auto lUsageFlags = VkMemoryMapFlags(usageFlags);
-		auto rUsageFlags = VkMemoryMapFlags(other.usageFlags);
-		return std::tie(format, mipsCount, arrayLayersCount, lUsageFlags, size.x, size.y, size.z) < std::tie(
-			other.format, other.mipsCount, other.arrayLayersCount, rUsageFlags, other.size.x, other.size.y,
+		auto l_usage_flags = VkMemoryMapFlags(usage_flags);
+		auto r_usage_flags = VkMemoryMapFlags(other.usage_flags);
+		return std::tie(format, mips_count, array_layers_count, l_usage_flags, size.x, size.y, size.z) < std::tie(
+			other.format, other.mips_count, other.array_layers_count, r_usage_flags, other.size.x, other.size.y,
 			other.size.z);
 	}
 
-	ImageCache::ImageCache(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice,
-		vk::DispatchLoaderDynamic loader): physicalDevice(physicalDevice),
-		                                   logicalDevice(logicalDevice),
-		                                   loader(loader)
+	ImageCache::ImageCache(vk::PhysicalDevice physical_device, vk::Device logical_device,
+	                       vk::DispatchLoaderDynamic loader)
+		: physical_device_(physical_device),
+		  logical_device_(logical_device),
+		  loader_(loader)
 	{
 	}
 
-	void ImageCache::Release()
+	void ImageCache::release()
 	{
-		for (auto& cacheEntry : imageCache)
+		for (auto& cache_entry : image_cache_)
 		{
-			cacheEntry.second.usedCount = 0;
+			cache_entry.second.used_count = 0;
 		}
 	}
 
-	lz::ImageData* ImageCache::GetImage(ImageKey imageKey)
+	lz::ImageData* ImageCache::get_image(ImageKey image_key)
 	{
-		auto& cacheEntry = imageCache[imageKey];
-		if (cacheEntry.usedCount + 1 > cacheEntry.images.size())
+		auto& cache_entry = image_cache_[image_key];
+		if (cache_entry.used_count + 1 > cache_entry.images.size())
 		{
-			vk::ImageCreateInfo imageCreateInfo;
-			if (imageKey.size.z == glm::u32(-1))
+			vk::ImageCreateInfo image_create_info;
+			if (image_key.size.z == glm::u32(-1))
 			{
-				imageCreateInfo = lz::Image::CreateInfo2d(glm::uvec2(imageKey.size.x, imageKey.size.y),
-				                                          imageKey.mipsCount,
-				                                          imageKey.arrayLayersCount,
-				                                          imageKey.format,
-				                                          imageKey.usageFlags);
+				image_create_info = lz::Image::create_info_2d(glm::uvec2(image_key.size.x, image_key.size.y),
+				                                              image_key.mips_count,
+				                                              image_key.array_layers_count,
+				                                              image_key.format,
+				                                              image_key.usage_flags);
 			}
 			else
 			{
-				imageCreateInfo = lz::Image::CreateInfoVolume(imageKey.size, imageKey.mipsCount,
-				                                              imageKey.arrayLayersCount, imageKey.format,
-				                                              imageKey.usageFlags);
+				image_create_info = lz::Image::create_info_volume(image_key.size, image_key.mips_count,
+				                                                  image_key.array_layers_count, image_key.format,
+				                                                  image_key.usage_flags);
 			}
 
-			auto newImage = std::unique_ptr<lz::Image>(
-				new lz::Image(physicalDevice, logicalDevice, imageCreateInfo));
-			Core::SetObjectDebugName(logicalDevice, loader, newImage->GetImageData()->GetHandle(),
-			                         imageKey.debugName);
-			cacheEntry.images.emplace_back(std::move(newImage));
+			auto new_image = std::make_unique<lz::Image>(physical_device_, logical_device_, image_create_info);
+			Core::set_object_debug_name(logical_device_, loader_, new_image->get_image_data()->get_handle(),
+			                            image_key.debug_name);
+			cache_entry.images.emplace_back(std::move(new_image));
 		}
-		return cacheEntry.images[cacheEntry.usedCount++]->GetImageData();
+		return cache_entry.images[cache_entry.used_count++]->get_image_data();
 	}
 
-	ImageCache::ImageCacheEntry::ImageCacheEntry(): usedCount(0)
+	ImageCache::ImageCacheEntry::ImageCacheEntry(): used_count(0)
 	{
 	}
 
 	bool ImageViewCache::ImageViewKey::operator<(const ImageViewKey& other) const
 	{
-		return std::tie(image, subresourceRange) < std::tie(other.image, other.subresourceRange);
+		return std::tie(image, subresource_range) < std::tie(other.image, other.subresource_range);
 	}
 
-	ImageViewCache::ImageViewCache(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice): physicalDevice(physicalDevice), logicalDevice(logicalDevice)
+	ImageViewCache::ImageViewCache(vk::PhysicalDevice physical_device, vk::Device logical_device):
+		physical_device_(physical_device), logical_device_(logical_device)
 	{
 	}
 
-	lz::ImageView* ImageViewCache::GetImageView(ImageViewKey imageViewKey)
+	lz::ImageView* ImageViewCache::get_image_view(ImageViewKey image_view_key)
 	{
-		auto& imageView = imageViewCache[imageViewKey];
-		if (!imageView)
-			imageView = std::unique_ptr<lz::ImageView>(new lz::ImageView(
-				logicalDevice,
-				imageViewKey.image,
-				imageViewKey.subresourceRange.baseMipLevel,
-				imageViewKey.subresourceRange.mipsCount,
-				imageViewKey.subresourceRange.baseArrayLayer,
-				imageViewKey.subresourceRange.arrayLayersCount));
-		return imageView.get();
+		auto& image_view = image_view_cache_[image_view_key];
+		if (!image_view)
+			image_view = std::make_unique<lz::ImageView>(
+				logical_device_,
+				image_view_key.image,
+				image_view_key.subresource_range.base_mip_level,
+				image_view_key.subresource_range.mips_count,
+				image_view_key.subresource_range.base_array_layer,
+				image_view_key.subresource_range.array_layers_count);
+		return image_view.get();
 	}
 
-	BufferCache::BufferCache(vk::PhysicalDevice _physicalDevice, vk::Device _logicalDevice): physicalDevice(_physicalDevice),
-	                                                                                         logicalDevice(_logicalDevice)
+	BufferCache::BufferCache(vk::PhysicalDevice physical_device, vk::Device logical_device)
+		: physical_device_(physical_device),
+		  logical_device_(logical_device)
 	{
 	}
 
 	bool BufferCache::BufferKey::operator<(const BufferKey& other) const
 	{
-		return std::tie(elementSize, elementsCount) < std::tie(other.elementSize, other.elementsCount);
+		return std::tie(element_size, elements_count) < std::tie(other.element_size, other.elements_count);
 	}
 
-	void BufferCache::Release()
+	void BufferCache::release()
 	{
-		for (auto& cacheEntry : bufferCache)
+		for (auto& cache_entry : buffer_cache_)
 		{
-			cacheEntry.second.usedCount = 0;
+			cache_entry.second.used_count = 0;
 		}
 	}
 
-	lz::Buffer* BufferCache::GetBuffer(BufferKey bufferKey)
+	lz::Buffer* BufferCache::get_buffer(BufferKey buffer_key)
 	{
-		auto& cacheEntry = bufferCache[bufferKey];
-		if (cacheEntry.usedCount + 1 > cacheEntry.buffers.size())
+		auto& cache_entry = buffer_cache_[buffer_key];
+		if (cache_entry.used_count + 1 > cache_entry.buffers.size())
 		{
-			auto newBuffer = std::unique_ptr<lz::Buffer>(new lz::Buffer(
-				physicalDevice,
-				logicalDevice,
-				bufferKey.elementSize * bufferKey.elementsCount,
+			auto new_buffer = std::make_unique<lz::Buffer>(
+				physical_device_,
+				logical_device_,
+				buffer_key.element_size * buffer_key.elements_count,
 				vk::BufferUsageFlagBits::eStorageBuffer,
-				vk::MemoryPropertyFlagBits::eDeviceLocal));
-			cacheEntry.buffers.emplace_back(std::move(newBuffer));
+				vk::MemoryPropertyFlagBits::eDeviceLocal);
+			cache_entry.buffers.emplace_back(std::move(new_buffer));
 		}
-		return cacheEntry.buffers[cacheEntry.usedCount++].get();
+		return cache_entry.buffers[cache_entry.used_count++].get();
 	}
 
-	BufferCache::BufferCacheEntry::BufferCacheEntry(): usedCount(0)
+	BufferCache::BufferCacheEntry::BufferCacheEntry(): used_count(0)
 	{
 	}
 
@@ -130,917 +132,931 @@ namespace lz
 	{
 	}
 
-	RenderGraph::ImageHandleInfo::ImageHandleInfo(RenderGraph* renderGraph, ImageProxyId imageProxyId)
+	RenderGraph::ImageHandleInfo::ImageHandleInfo(RenderGraph* render_graph, ImageProxyId image_proxy_id)
 	{
-		this->renderGraph = renderGraph;
-		this->imageProxyId = imageProxyId;
+		this->render_graph_ = render_graph;
+		this->image_proxy_id_ = image_proxy_id;
 	}
 
-	void RenderGraph::ImageHandleInfo::Reset()
+	void RenderGraph::ImageHandleInfo::reset()
 	{
-		renderGraph->DeleteImage(imageProxyId);
+		render_graph_->delete_image(image_proxy_id_);
 	}
 
-	RenderGraph::ImageProxyId RenderGraph::ImageHandleInfo::Id() const
+	RenderGraph::ImageProxyId RenderGraph::ImageHandleInfo::id() const
 	{
-		return imageProxyId;
+		return image_proxy_id_;
 	}
 
-	void RenderGraph::ImageHandleInfo::SetDebugName(std::string name) const
+	void RenderGraph::ImageHandleInfo::set_debug_name(std::string name) const
 	{
-		renderGraph->SetImageProxyDebugName(imageProxyId, name);
+		render_graph_->set_image_proxy_debug_name(image_proxy_id_, name);
 	}
 
 	RenderGraph::ImageViewHandleInfo::ImageViewHandleInfo()
 	{
 	}
 
-	RenderGraph::ImageViewHandleInfo::ImageViewHandleInfo(RenderGraph* renderGraph, ImageViewProxyId imageViewProxyId)
+	RenderGraph::ImageViewHandleInfo::ImageViewHandleInfo(RenderGraph* render_graph,
+	                                                      ImageViewProxyId image_view_proxy_id)
 	{
-		this->renderGraph = renderGraph;
-		this->imageViewProxyId = imageViewProxyId;
+		this->render_graph_ = render_graph;
+		this->image_view_proxy_id_ = image_view_proxy_id;
 	}
 
-	void RenderGraph::ImageViewHandleInfo::Reset()
+	void RenderGraph::ImageViewHandleInfo::reset()
 	{
-		renderGraph->DeleteImageView(imageViewProxyId);
+		render_graph_->delete_image_view(image_view_proxy_id_);
 	}
 
-	RenderGraph::ImageViewProxyId RenderGraph::ImageViewHandleInfo::Id() const
+	RenderGraph::ImageViewProxyId RenderGraph::ImageViewHandleInfo::id() const
 	{
-		return imageViewProxyId;
+		return image_view_proxy_id_;
 	}
 
-	void RenderGraph::ImageViewHandleInfo::SetDebugName(std::string name) const
+	void RenderGraph::ImageViewHandleInfo::set_debug_name(std::string name) const
 	{
-		renderGraph->SetImageViewProxyDebugName(imageViewProxyId, name);
+		render_graph_->set_image_view_proxy_debug_name(image_view_proxy_id_, name);
 	}
 
 	RenderGraph::BufferHandleInfo::BufferHandleInfo()
 	{
 	}
 
-	RenderGraph::BufferHandleInfo::BufferHandleInfo(RenderGraph* renderGraph, BufferProxyId bufferProxyId)
+	RenderGraph::BufferHandleInfo::BufferHandleInfo(RenderGraph* render_graph, BufferProxyId buffer_proxy_id)
 	{
-		this->renderGraph = renderGraph;
-		this->bufferProxyId = bufferProxyId;
+		this->render_graph_ = render_graph;
+		this->buffer_proxy_id_ = buffer_proxy_id;
 	}
 
-	void RenderGraph::BufferHandleInfo::Reset()
+	void RenderGraph::BufferHandleInfo::reset()
 	{
-		renderGraph->DeleteBuffer(bufferProxyId);
+		render_graph_->delete_buffer(buffer_proxy_id_);
 	}
 
-	RenderGraph::BufferProxyId RenderGraph::BufferHandleInfo::Id() const
+	RenderGraph::BufferProxyId RenderGraph::BufferHandleInfo::id() const
 	{
-		return bufferProxyId;
+		return buffer_proxy_id_;
 	}
 
-	RenderGraph::RenderGraph(vk::PhysicalDevice physicalDevice, vk::Device logicalDevice,
-		vk::DispatchLoaderDynamic loader): physicalDevice(physicalDevice),
-		                                   logicalDevice(logicalDevice),
-		                                   loader(loader),
-		                                   renderPassCache(logicalDevice),
-		                                   framebufferCache(logicalDevice),
-		                                   imageCache(physicalDevice, logicalDevice, loader),
-		                                   imageViewCache(physicalDevice, logicalDevice),
-		                                   bufferCache(physicalDevice, logicalDevice)
+	RenderGraph::RenderGraph(vk::PhysicalDevice physical_device, vk::Device logical_device,
+	                         vk::DispatchLoaderDynamic loader)
+		: physical_device_(physical_device),
+		  logical_device_(logical_device),
+		  loader_(loader),
+		  render_pass_cache_(logical_device),
+		  framebuffer_cache_(logical_device),
+		  image_cache_(physical_device, logical_device, loader),
+		  image_view_cache_(physical_device, logical_device),
+		  buffer_cache_(physical_device, logical_device)
 	{
 	}
 
-	RenderGraph::ImageProxyUnique RenderGraph::AddImage(vk::Format format, uint32_t mipsCount,
-		uint32_t arrayLayersCount, glm::uvec2 size, vk::ImageUsageFlags usageFlags)
+	RenderGraph::ImageProxyUnique RenderGraph::add_image(vk::Format format, uint32_t mips_count,
+	                                                     uint32_t array_layers_count, glm::uvec2 size,
+	                                                     vk::ImageUsageFlags usage_flags)
 	{
-		return AddImage(format, mipsCount, arrayLayersCount, glm::uvec3(size.x, size.y, -1), usageFlags);
+		return add_image(format, mips_count, array_layers_count, glm::uvec3(size.x, size.y, -1), usage_flags);
 	}
 
-	RenderGraph::ImageProxyUnique RenderGraph::AddImage(vk::Format format, uint32_t mipsCount,
-		uint32_t arrayLayersCount, glm::uvec3 size, vk::ImageUsageFlags usageFlags)
+	RenderGraph::ImageProxyUnique RenderGraph::add_image(vk::Format format, uint32_t mips_count,
+	                                                     uint32_t array_layers_count, glm::uvec3 size,
+	                                                     vk::ImageUsageFlags usage_flags)
 	{
-		ImageProxy imageProxy;
-		imageProxy.type = ImageProxy::Types::Transient;
-		imageProxy.imageKey.format = format;
-		imageProxy.imageKey.usageFlags = usageFlags;
-		imageProxy.imageKey.mipsCount = mipsCount;
-		imageProxy.imageKey.arrayLayersCount = arrayLayersCount;
-		imageProxy.imageKey.size = size;
+		ImageProxy image_proxy;
+		image_proxy.type = ImageProxy::Types::eTransient;
+		image_proxy.image_key.format = format;
+		image_proxy.image_key.usage_flags = usage_flags;
+		image_proxy.image_key.mips_count = mips_count;
+		image_proxy.image_key.array_layers_count = array_layers_count;
+		image_proxy.image_key.size = size;
 
-		imageProxy.externalImage = nullptr;
-		auto uniqueProxyHandle = ImageProxyUnique(ImageHandleInfo(this, imageProxies.Add(std::move(imageProxy))));
-		std::string debugName = std::string("Graph image [") + std::to_string(size.x) + ", " +
-			std::to_string(size.y) + ", Id=" + std::to_string(uniqueProxyHandle->Id().asInt) + "]" + vk::to_string(
-				imageProxy.imageKey.format);
-		uniqueProxyHandle->SetDebugName(debugName);
-		return uniqueProxyHandle;
+		image_proxy.external_image = nullptr;
+		auto unique_proxy_handle = ImageProxyUnique(ImageHandleInfo(this, image_proxies_.add(std::move(image_proxy))));
+		const std::string debug_name = std::string("Graph image [") + std::to_string(size.x) + ", " +
+			std::to_string(size.y) + ", Id=" + std::to_string(unique_proxy_handle->id().as_int) + "]" + vk::to_string(
+				image_proxy.image_key.format);
+		unique_proxy_handle->set_debug_name(debug_name);
+		return unique_proxy_handle;
 	}
 
-	RenderGraph::ImageProxyUnique RenderGraph::AddExternalImage(lz::ImageData* image)
+	RenderGraph::ImageProxyUnique RenderGraph::add_external_image(lz::ImageData* image)
 	{
-		ImageProxy imageProxy;
-		imageProxy.type = ImageProxy::Types::External;
-		imageProxy.externalImage = image;
-		imageProxy.imageKey.debugName = "External graph image";
-		return ImageProxyUnique(ImageHandleInfo(this, imageProxies.Add(std::move(imageProxy))));
+		ImageProxy image_proxy;
+		image_proxy.type = ImageProxy::Types::eExternal;
+		image_proxy.external_image = image;
+		image_proxy.image_key.debug_name = "External graph image";
+		return ImageProxyUnique(ImageHandleInfo(this, image_proxies_.add(std::move(image_proxy))));
 	}
 
-	RenderGraph::ImageViewProxyUnique RenderGraph::AddImageView(ImageProxyId imageProxyId, uint32_t baseMipLevel,
-		uint32_t mipLevelsCount, uint32_t baseArrayLayer, uint32_t arrayLayersCount)
+	RenderGraph::ImageViewProxyUnique RenderGraph::add_image_view(ImageProxyId image_proxy_id, uint32_t base_mip_level,
+	                                                              uint32_t mip_levels_count, uint32_t base_array_layer,
+	                                                              uint32_t array_layers_count)
 	{
-		ImageViewProxy imageViewProxy;
-		imageViewProxy.externalView = nullptr;
-		imageViewProxy.type = ImageViewProxy::Types::Transient;
-		imageViewProxy.imageProxyId = imageProxyId;
-		imageViewProxy.subresourceRange.baseMipLevel = baseMipLevel;
-		imageViewProxy.subresourceRange.mipsCount = mipLevelsCount;
-		imageViewProxy.subresourceRange.baseArrayLayer = baseArrayLayer;
-		imageViewProxy.subresourceRange.arrayLayersCount = arrayLayersCount;
-		imageViewProxy.debugName = "View";
-		return ImageViewProxyUnique(ImageViewHandleInfo(this, imageViewProxies.Add(std::move(imageViewProxy))));
+		ImageViewProxy image_view_proxy;
+		image_view_proxy.external_view = nullptr;
+		image_view_proxy.type = ImageViewProxy::Types::eTransient;
+		image_view_proxy.image_proxy_id = image_proxy_id;
+		image_view_proxy.subresource_range.base_mip_level = base_mip_level;
+		image_view_proxy.subresource_range.mips_count = mip_levels_count;
+		image_view_proxy.subresource_range.base_array_layer = base_array_layer;
+		image_view_proxy.subresource_range.array_layers_count = array_layers_count;
+		image_view_proxy.debug_name = "View";
+		return ImageViewProxyUnique(ImageViewHandleInfo(this, image_view_proxies_.add(std::move(image_view_proxy))));
 	}
 
-	RenderGraph::ImageViewProxyUnique RenderGraph::AddExternalImageView(lz::ImageView* imageView,
-		lz::ImageUsageTypes usageType)
+	RenderGraph::ImageViewProxyUnique RenderGraph::add_external_image_view(lz::ImageView* image_view,
+	                                                                       lz::ImageUsageTypes usage_type)
 	{
-		ImageViewProxy imageViewProxy;
-		imageViewProxy.externalView = imageView;
-		imageViewProxy.externalUsageType = usageType;
-		imageViewProxy.type = ImageViewProxy::Types::External;
-		imageViewProxy.imageProxyId = ImageProxyId();
-		imageViewProxy.debugName = "External view";
-		return ImageViewProxyUnique(ImageViewHandleInfo(this, imageViewProxies.Add(std::move(imageViewProxy))));
+		ImageViewProxy image_view_proxy;
+		image_view_proxy.external_view = image_view;
+		image_view_proxy.external_usage_type = usage_type;
+		image_view_proxy.type = ImageViewProxy::Types::eExternal;
+		image_view_proxy.image_proxy_id = ImageProxyId();
+		image_view_proxy.debug_name = "External view";
+		return ImageViewProxyUnique(ImageViewHandleInfo(this, image_view_proxies_.add(std::move(image_view_proxy))));
 	}
 
-	void RenderGraph::DeleteImage(ImageProxyId imageId)
+	void RenderGraph::delete_image(ImageProxyId image_id)
 	{
-		imageProxies.Release(imageId);
+		image_proxies_.release(image_id);
 	}
 
-	void RenderGraph::SetImageProxyDebugName(ImageProxyId imageId, std::string debugName)
+	void RenderGraph::set_image_proxy_debug_name(ImageProxyId image_id, std::string debug_name)
 	{
-		imageProxies.Get(imageId).imageKey.debugName = debugName;
+		image_proxies_.get(image_id).image_key.debug_name = debug_name;
 	}
 
-	void RenderGraph::SetImageViewProxyDebugName(ImageViewProxyId imageViewId, std::string debugName)
+	void RenderGraph::set_image_view_proxy_debug_name(ImageViewProxyId image_view_id, std::string debug_name)
 	{
-		imageViewProxies.Get(imageViewId).debugName = debugName;
+		image_view_proxies_.get(image_view_id).debug_name = debug_name;
 	}
 
-	void RenderGraph::DeleteImageView(ImageViewProxyId imageViewId)
+	void RenderGraph::delete_image_view(ImageViewProxyId image_view_id)
 	{
-		imageViewProxies.Release(imageViewId);
+		image_view_proxies_.release(image_view_id);
 	}
 
-	void RenderGraph::DeleteBuffer(BufferProxyId bufferId)
+	void RenderGraph::delete_buffer(BufferProxyId buffer_id)
 	{
-		bufferProxies.Release(bufferId);
+		buffer_proxies_.release(buffer_id);
 	}
 
-	glm::uvec2 RenderGraph::GetMipSize(ImageProxyId imageProxyId, uint32_t mipLevel)
+	glm::uvec2 RenderGraph::get_mip_size(ImageProxyId image_proxy_id, uint32_t mip_level)
 	{
-		auto& imageProxy = imageProxies.Get(imageProxyId);
-		switch (imageProxy.type)
+		const auto& image_proxy = image_proxies_.get(image_proxy_id);
+		switch (image_proxy.type)
 		{
-		case ImageProxy::Types::External:
+		case ImageProxy::Types::eExternal:
 			{
-				return imageProxy.externalImage->GetMipSize(mipLevel);
+				return image_proxy.external_image->get_mip_size(mip_level);
 			}
 			break;
-		case ImageProxy::Types::Transient:
+		case ImageProxy::Types::eTransient:
 			{
-				glm::u32 mipMult = (1 << mipLevel);
-				return glm::uvec2(imageProxy.imageKey.size.x / mipMult, imageProxy.imageKey.size.y / mipMult);
+				const glm::u32 mip_mult = (1 << mip_level);
+				return glm::uvec2(image_proxy.image_key.size.x / mip_mult, image_proxy.image_key.size.y / mip_mult);
 			}
 			break;
 		}
 		return glm::uvec2(-1, -1);
 	}
 
-	glm::uvec2 RenderGraph::GetMipSize(ImageViewProxyId imageViewProxyId, uint32_t mipOffset)
+	glm::uvec2 RenderGraph::get_mip_size(ImageViewProxyId image_view_proxy_id, uint32_t mip_offset)
 	{
-		auto& imageViewProxy = imageViewProxies.Get(imageViewProxyId);
-		switch (imageViewProxy.type)
+		const auto& image_view_proxy = image_view_proxies_.get(image_view_proxy_id);
+		switch (image_view_proxy.type)
 		{
-		case ImageViewProxy::Types::External:
+		case ImageViewProxy::Types::eExternal:
 			{
-				uint32_t mipLevel = imageViewProxy.externalView->GetBaseMipLevel() + mipOffset;
-				return imageViewProxy.externalView->GetImageData()->GetMipSize(mipLevel);
+				const uint32_t mip_level = image_view_proxy.external_view->get_base_mip_level() + mip_offset;
+				return image_view_proxy.external_view->get_image_data()->get_mip_size(mip_level);
 			}
 			break;
-		case ImageViewProxy::Types::Transient:
+		case ImageViewProxy::Types::eTransient:
 			{
-				uint32_t mipLevel = imageViewProxy.subresourceRange.baseMipLevel + mipOffset;
-				return GetMipSize(imageViewProxy.imageProxyId, mipLevel);
+				const uint32_t mip_level = image_view_proxy.subresource_range.base_mip_level + mip_offset;
+				return get_mip_size(image_view_proxy.image_proxy_id, mip_level);
 			}
 			break;
 		}
 		return glm::uvec2(-1, -1);
 	}
 
-	RenderGraph::BufferProxyUnique RenderGraph::AddExternalBuffer(lz::Buffer* buffer)
+	RenderGraph::BufferProxyUnique RenderGraph::add_external_buffer(lz::Buffer* buffer)
 	{
-		BufferProxy bufferProxy;
-		bufferProxy.type = BufferProxy::Types::External;
-		bufferProxy.bufferKey.elementSize = -1;
-		bufferProxy.bufferKey.elementsCount = -1;
-		bufferProxy.externalBuffer = buffer;
-		return BufferProxyUnique(BufferHandleInfo(this, bufferProxies.Add(std::move(bufferProxy))));
+		BufferProxy buffer_proxy;
+		buffer_proxy.type = BufferProxy::Types::eExternal;
+		buffer_proxy.buffer_key.element_size = -1;
+		buffer_proxy.buffer_key.elements_count = -1;
+		buffer_proxy.external_buffer = buffer;
+		return BufferProxyUnique(BufferHandleInfo(this, buffer_proxies_.add(std::move(buffer_proxy))));
 	}
 
-	lz::ImageView* RenderGraph::PassContext::GetImageView(ImageViewProxyId imageViewProxyId)
+	lz::ImageView* RenderGraph::PassContext::get_image_view(ImageViewProxyId image_view_proxy_id) const
 	{
-		return resolvedImageViews[imageViewProxyId.asInt];
+		return resolved_image_views_[image_view_proxy_id.as_int];
 	}
 
-	lz::Buffer* RenderGraph::PassContext::GetBuffer(BufferProxyId bufferProxy)
+	lz::Buffer* RenderGraph::PassContext::get_buffer(BufferProxyId buffer_proxy) const
 	{
-		return resolvedBuffers[bufferProxy.asInt];
+		return resolved_buffers_[buffer_proxy.as_int];
 	}
 
-	vk::CommandBuffer RenderGraph::PassContext::GetCommandBuffer()
+	vk::CommandBuffer RenderGraph::PassContext::get_command_buffer() const
 	{
-		return commandBuffer;
+		return command_buffer_;
 	}
 
-	lz::RenderPass* RenderGraph::RenderPassContext::GetRenderPass()
+	lz::RenderPass* RenderGraph::RenderPassContext::get_render_pass() const
 	{
-		return renderPass;
+		return render_pass_;
 	}
 
 	RenderGraph::RenderPassDesc::RenderPassDesc()
 	{
-		profilerTaskName = "RenderPass";
-		profilerTaskColor = glm::packUnorm4x8(glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
+		profiler_task_name = "RenderPass";
+		profiler_task_color = glm::packUnorm4x8(glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
 	}
 
-	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::SetColorAttachments(
-		const std::vector<ImageViewProxyId>& colorAttachmentViewProxies, vk::AttachmentLoadOp loadop,
-		vk::ClearValue clearValue)
+	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::set_color_attachments(
+		const std::vector<ImageViewProxyId>& color_attachment_view_proxies, vk::AttachmentLoadOp load_op,
+		vk::ClearValue clear_value)
 	{
-		this->colorAttachments.resize(colorAttachmentViewProxies.size());
-		for (size_t index = 0; index < colorAttachmentViewProxies.size(); ++index)
+		this->color_attachments.resize(color_attachment_view_proxies.size());
+		for (size_t index = 0; index < color_attachment_view_proxies.size(); ++index)
 		{
-			this->colorAttachments[index] = {colorAttachmentViewProxies[index], loadop, clearValue};
+			this->color_attachments[index] = {color_attachment_view_proxies[index], load_op, clear_value};
 		}
 		return *this;
 	}
 
-	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::SetColorAttachments(
-		std::vector<Attachment>&& _colorAttachments)
+	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::set_color_attachments(
+		std::vector<Attachment>&& color_attachments)
 	{
-		this->colorAttachments = std::move(_colorAttachments);
+		this->color_attachments = std::move(color_attachments);
 		return *this;
 	}
 
-	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::SetDepthAttachment(
-		ImageViewProxyId _depthAttachmentViewProxyId, vk::AttachmentLoadOp _loadOp, vk::ClearValue _clearValue)
+	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::set_depth_attachment(
+		ImageViewProxyId depth_attachment_view_proxy_id, vk::AttachmentLoadOp load_op, vk::ClearValue _clearValue)
 	{
-		this->depthAttachment.imageViewProxyId = _depthAttachmentViewProxyId;
-		this->depthAttachment.loadOp = _loadOp;
-		this->depthAttachment.clearValue = _clearValue;
+		this->depth_attachment.image_view_proxy_id = depth_attachment_view_proxy_id;
+		this->depth_attachment.load_op = load_op;
+		this->depth_attachment.clear_value = _clearValue;
 		return *this;
 	}
 
-	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::SetDepthAttachment(Attachment _depthAttachment)
+	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::set_depth_attachment(Attachment depth_attachment)
 	{
-		this->depthAttachment = _depthAttachment;
+		this->depth_attachment = depth_attachment;
 		return *this;
 	}
 
-	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::SetVertexBuffers(
-		std::vector<BufferProxyId>&& _vertexBufferProxies)
+	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::set_vertex_buffers(
+		std::vector<BufferProxyId>&& vertex_buffer_proxies)
 	{
-		this->vertexBufferProxies = std::move(_vertexBufferProxies);
+		this->vertex_buffer_proxies = std::move(vertex_buffer_proxies);
 		return *this;
 	}
 
-	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::SetInputImages(
-		std::vector<ImageViewProxyId>&& _inputImageViewProxies)
+	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::set_input_images(
+		std::vector<ImageViewProxyId>&& input_image_view_proxies)
 	{
-		this->inputImageViewProxies = std::move(_inputImageViewProxies);
+		this->input_image_view_proxies = std::move(input_image_view_proxies);
 		return *this;
 	}
 
-	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::SetStorageBuffers(
-		std::vector<BufferProxyId>&& _inoutStorageBufferProxies)
+	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::set_storage_buffers(
+		std::vector<BufferProxyId>&& inout_storage_buffer_proxies)
 	{
-		this->inoutStorageBufferProxies = _inoutStorageBufferProxies;
+		this->inout_storage_buffer_proxies = inout_storage_buffer_proxies;
 		return *this;
 	}
 
-	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::SetStorageImages(
-		std::vector<ImageViewProxyId>&& _inoutStorageImageProxies)
+	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::set_storage_images(
+		std::vector<ImageViewProxyId>&& inout_storage_image_proxies)
 	{
-		this->inoutStorageImageProxies = _inoutStorageImageProxies;
+		this->inout_storage_image_proxies = inout_storage_image_proxies;
 		return *this;
 	}
 
-	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::SetRenderAreaExtent(vk::Extent2D _renderAreaExtent)
+	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::set_render_area_extent(vk::Extent2D render_area_extent)
 	{
-		this->renderAreaExtent = _renderAreaExtent;
+		this->render_area_extent = render_area_extent;
 		return *this;
 	}
 
-	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::SetRecordFunc(
-		std::function<void(RenderPassContext)> _recordFunc)
+	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::set_record_func(
+		std::function<void(RenderPassContext)> record_func)
 	{
-		this->recordFunc = _recordFunc;
+		this->record_func = record_func;
 		return *this;
 	}
 
-	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::SetProfilerInfo(uint32_t taskColor, std::string taskName)
+	RenderGraph::RenderPassDesc& RenderGraph::RenderPassDesc::set_profiler_info(
+		uint32_t task_color, std::string task_name)
 	{
-		this->profilerTaskColor = taskColor;
-		this->profilerTaskName = taskName;
+		this->profiler_task_color = task_color;
+		this->profiler_task_name = task_name;
 		return *this;
 	}
 
-	void RenderGraph::AddRenderPass(std::vector<ImageViewProxyId> colorAttachmentImageProxies,
-		ImageViewProxyId depthAttachmentImageProxy, std::vector<ImageViewProxyId> inputImageViewProxies,
-		vk::Extent2D renderAreaExtent, vk::AttachmentLoadOp loadOp, std::function<void(RenderPassContext)> recordFunc)
+	void RenderGraph::add_render_pass(std::vector<ImageViewProxyId> color_attachment_image_proxies,
+	                                  ImageViewProxyId depth_attachment_image_proxy,
+	                                  std::vector<ImageViewProxyId> input_image_view_proxies,
+	                                  vk::Extent2D render_area_extent, vk::AttachmentLoadOp load_op,
+	                                  std::function<void(RenderPassContext)> record_func)
 	{
-		RenderPassDesc renderPassDesc;
-		for (const auto& proxy : colorAttachmentImageProxies)
+		RenderPassDesc render_pass_desc;
+		for (const auto& proxy : color_attachment_image_proxies)
 		{
-			RenderPassDesc::Attachment colorAttachment = {
-				proxy, loadOp, vk::ClearColorValue(std::array<float, 4>{0.03f, 0.03f, 0.03f, 1.0f})
+			RenderPassDesc::Attachment color_attachment = {
+				proxy, load_op, vk::ClearColorValue(std::array<float, 4>{0.03f, 0.03f, 0.03f, 1.0f})
 			};
-			renderPassDesc.colorAttachments.push_back(colorAttachment);
+			render_pass_desc.color_attachments.push_back(color_attachment);
 		}
-		renderPassDesc.depthAttachment = {depthAttachmentImageProxy, loadOp, vk::ClearDepthStencilValue(1.0f, 0)};
-		renderPassDesc.inputImageViewProxies = inputImageViewProxies;
-		renderPassDesc.inoutStorageBufferProxies = {};
-		renderPassDesc.renderAreaExtent = renderAreaExtent;
-		renderPassDesc.recordFunc = recordFunc;
+		render_pass_desc.depth_attachment = {
+			depth_attachment_image_proxy, load_op, vk::ClearDepthStencilValue(1.0f, 0)
+		};
+		render_pass_desc.input_image_view_proxies = input_image_view_proxies;
+		render_pass_desc.inout_storage_buffer_proxies = {};
+		render_pass_desc.render_area_extent = render_area_extent;
+		render_pass_desc.record_func = record_func;
 
-		AddPass(renderPassDesc);
+		add_pass(render_pass_desc);
 	}
 
-	void RenderGraph::AddPass(RenderPassDesc& renderPassDesc)
+	void RenderGraph::add_pass(RenderPassDesc& render_pass_desc)
 	{
 		Task task;
-		task.type = Task::Types::RenderPass;
-		task.index = renderPassDescs.size();
-		AddTask(task);
+		task.type = Task::Types::eRenderPass;
+		task.index = render_pass_descs_.size();
+		add_task(task);
 
-		renderPassDescs.emplace_back(renderPassDesc);
+		render_pass_descs_.emplace_back(render_pass_desc);
 	}
 
-	void RenderGraph::Clear()
+	void RenderGraph::clear()
 	{
-		*this = RenderGraph(physicalDevice, logicalDevice, loader);
+		*this = RenderGraph(physical_device_, logical_device_, loader_);
 	}
 
 	RenderGraph::ComputePassDesc::ComputePassDesc()
 	{
-		profilerTaskName = "ComputePass";
-		profilerTaskColor = lz::Colors::belizeHole;
+		profiler_task_name = "ComputePass";
+		profiler_task_color = lz::Colors::belize_hole;
 	}
 
-	RenderGraph::ComputePassDesc& RenderGraph::ComputePassDesc::SetInputImages(
-		std::vector<ImageViewProxyId>&& _inputImageViewProxies)
+	RenderGraph::ComputePassDesc& RenderGraph::ComputePassDesc::set_input_images(
+		std::vector<ImageViewProxyId>&& input_image_view_proxies)
 	{
-		this->inputImageViewProxies = std::move(_inputImageViewProxies);
+		this->input_image_view_proxies = std::move(input_image_view_proxies);
 		return *this;
 	}
 
-	RenderGraph::ComputePassDesc& RenderGraph::ComputePassDesc::SetStorageBuffers(
-		std::vector<BufferProxyId>&& _inoutStorageBufferProxies)
+	RenderGraph::ComputePassDesc& RenderGraph::ComputePassDesc::set_storage_buffers(
+		std::vector<BufferProxyId>&& inout_storage_buffer_proxies)
 	{
-		this->inoutStorageBufferProxies = _inoutStorageBufferProxies;
+		this->inout_storage_buffer_proxies = inout_storage_buffer_proxies;
 		return *this;
 	}
 
-	RenderGraph::ComputePassDesc& RenderGraph::ComputePassDesc::SetStorageImages(
-		std::vector<ImageViewProxyId>&& _inoutStorageImageProxies)
+	RenderGraph::ComputePassDesc& RenderGraph::ComputePassDesc::set_storage_images(
+		std::vector<ImageViewProxyId>&& inout_storage_image_proxies)
 	{
-		this->inoutStorageImageProxies = _inoutStorageImageProxies;
+		this->inout_storage_image_proxies = inout_storage_image_proxies;
 		return *this;
 	}
 
-	RenderGraph::ComputePassDesc& RenderGraph::ComputePassDesc::SetRecordFunc(
-		std::function<void(PassContext)> _recordFunc)
+	RenderGraph::ComputePassDesc& RenderGraph::ComputePassDesc::set_record_func(
+		std::function<void(PassContext)> record_func)
 	{
-		this->recordFunc = _recordFunc;
+		this->record_func = record_func;
 		return *this;
 	}
 
-	RenderGraph::ComputePassDesc& RenderGraph::ComputePassDesc::SetProfilerInfo(uint32_t taskColor,
-		std::string taskName)
+	RenderGraph::ComputePassDesc& RenderGraph::ComputePassDesc::set_profiler_info(uint32_t task_color,
+		std::string task_name)
 	{
-		this->profilerTaskColor = taskColor;
-		this->profilerTaskName = taskName;
+		this->profiler_task_color = task_color;
+		this->profiler_task_name = task_name;
 		return *this;
 	}
 
-	void RenderGraph::AddComputePass(std::vector<BufferProxyId> inoutBufferProxies,
-		std::vector<ImageViewProxyId> inputImageViewProxies, std::function<void(PassContext)> recordFunc)
+	void RenderGraph::add_compute_pass(std::vector<BufferProxyId> inout_buffer_proxies,
+	                                   std::vector<ImageViewProxyId> input_image_view_proxies,
+	                                   std::function<void(PassContext)> record_func)
 	{
-		ComputePassDesc computePassDesc;
-		computePassDesc.inoutStorageBufferProxies = inoutBufferProxies;
-		computePassDesc.inputImageViewProxies = inputImageViewProxies;
-		computePassDesc.recordFunc = recordFunc;
+		ComputePassDesc compute_pass_desc;
+		compute_pass_desc.inout_storage_buffer_proxies = inout_buffer_proxies;
+		compute_pass_desc.input_image_view_proxies = input_image_view_proxies;
+		compute_pass_desc.record_func = record_func;
 
-		AddPass(computePassDesc);
+		add_pass(compute_pass_desc);
 	}
 
-	void RenderGraph::AddPass(ComputePassDesc& computePassDesc)
+	void RenderGraph::add_pass(ComputePassDesc& compute_pass_desc)
 	{
 		Task task;
-		task.type = Task::Types::ComputePass;
-		task.index = computePassDescs.size();
-		AddTask(task);
+		task.type = Task::Types::eComputePass;
+		task.index = compute_pass_descs_.size();
+		add_task(task);
 
-		computePassDescs.emplace_back(computePassDesc);
+		compute_pass_descs_.emplace_back(compute_pass_desc);
 	}
 
 	RenderGraph::TransferPassDesc::TransferPassDesc()
 	{
-		profilerTaskName = "TransferPass";
-		profilerTaskColor = lz::Colors::silver;
+		profiler_task_name = "TransferPass";
+		profiler_task_color = lz::Colors::silver;
 	}
 
-	RenderGraph::TransferPassDesc& RenderGraph::TransferPassDesc::SetSrcImages(
-		std::vector<ImageViewProxyId>&& _srcImageViewProxies)
+	RenderGraph::TransferPassDesc& RenderGraph::TransferPassDesc::set_src_images(
+		std::vector<ImageViewProxyId>&& src_image_view_proxies)
 	{
-		this->srcImageViewProxies = std::move(_srcImageViewProxies);
+		this->src_image_view_proxies = std::move(src_image_view_proxies);
 		return *this;
 	}
 
-	RenderGraph::TransferPassDesc& RenderGraph::TransferPassDesc::SetDstImages(
-		std::vector<ImageViewProxyId>&& _dstImageViewProxies)
+	RenderGraph::TransferPassDesc& RenderGraph::TransferPassDesc::set_dst_images(
+		std::vector<ImageViewProxyId>&& dst_image_view_proxies)
 	{
-		this->dstImageViewProxies = std::move(_dstImageViewProxies);
+		this->dst_image_view_proxies = std::move(dst_image_view_proxies);
 		return *this;
 	}
 
-	RenderGraph::TransferPassDesc& RenderGraph::TransferPassDesc::SetSrcBuffers(
-		std::vector<BufferProxyId>&& _srcBufferProxies)
+	RenderGraph::TransferPassDesc& RenderGraph::TransferPassDesc::set_src_buffers(
+		std::vector<BufferProxyId>&& src_buffer_proxies)
 	{
-		this->srcBufferProxies = std::move(_srcBufferProxies);
+		this->src_buffer_proxies = std::move(src_buffer_proxies);
 		return *this;
 	}
 
-	RenderGraph::TransferPassDesc& RenderGraph::TransferPassDesc::SetDstBuffers(
-		std::vector<BufferProxyId>&& _dstBufferProxies)
+	RenderGraph::TransferPassDesc& RenderGraph::TransferPassDesc::set_dst_buffers(
+		std::vector<BufferProxyId>&& dst_buffer_proxies)
 	{
-		this->dstBufferProxies = std::move(_dstBufferProxies);
+		this->dst_buffer_proxies = std::move(dst_buffer_proxies);
 		return *this;
 	}
 
-	RenderGraph::TransferPassDesc& RenderGraph::TransferPassDesc::SetRecordFunc(
-		std::function<void(PassContext)> _recordFunc)
+	RenderGraph::TransferPassDesc& RenderGraph::TransferPassDesc::set_record_func(
+		std::function<void(PassContext)> record_func)
 	{
-		this->recordFunc = _recordFunc;
+		this->record_func = record_func;
 		return *this;
 	}
 
-	RenderGraph::TransferPassDesc& RenderGraph::TransferPassDesc::SetProfilerInfo(uint32_t taskColor,
-		std::string taskName)
+	RenderGraph::TransferPassDesc& RenderGraph::TransferPassDesc::set_profiler_info(uint32_t task_color,
+		std::string task_name)
 	{
-		this->profilerTaskColor = taskColor;
-		this->profilerTaskName = taskName;
+		this->profiler_task_color = task_color;
+		this->profiler_task_name = task_name;
 		return *this;
 	}
 
-	void RenderGraph::AddPass(TransferPassDesc& transferPassDesc)
+	void RenderGraph::add_pass(TransferPassDesc& transfer_pass_desc)
 	{
 		Task task;
-		task.type = Task::Types::TransferPass;
-		task.index = transferPassDescs.size();
-		AddTask(task);
+		task.type = Task::Types::eTransferPass;
+		task.index = transfer_pass_descs_.size();
+		add_task(task);
 
-		transferPassDescs.emplace_back(transferPassDesc);
+		transfer_pass_descs_.emplace_back(transfer_pass_desc);
 	}
 
-	RenderGraph::ImagePresentPassDesc& RenderGraph::ImagePresentPassDesc::SetImage(
-		ImageViewProxyId _presentImageViewProxyId)
+	RenderGraph::ImagePresentPassDesc& RenderGraph::ImagePresentPassDesc::set_image(
+		ImageViewProxyId present_image_view_proxy_id)
 	{
-		this->presentImageViewProxyId = _presentImageViewProxyId;
+		this->present_image_view_proxy_id = present_image_view_proxy_id;
 		return *this;
 	}
 
-	void RenderGraph::AddPass(ImagePresentPassDesc&& imagePresentDesc)
+	void RenderGraph::add_pass(ImagePresentPassDesc&& image_present_desc)
 	{
 		Task task;
-		task.type = Task::Types::ImagePresent;
-		task.index = imagePresentDescs.size();
-		AddTask(task);
+		task.type = Task::Types::eImagePresent;
+		task.index = image_present_descs_.size();
+		add_task(task);
 
-		imagePresentDescs.push_back(imagePresentDesc);
+		image_present_descs_.push_back(image_present_desc);
 	}
 
-	void RenderGraph::AddImagePresent(ImageViewProxyId presentImageViewProxyId)
+	void RenderGraph::add_image_present(ImageViewProxyId present_image_view_proxy_id)
 	{
-		ImagePresentPassDesc imagePresentDesc;
-		imagePresentDesc.presentImageViewProxyId = presentImageViewProxyId;
+		ImagePresentPassDesc image_present_desc;
+		image_present_desc.present_image_view_proxy_id = present_image_view_proxy_id;
 
-		AddPass(std::move(imagePresentDesc));
+		add_pass(std::move(image_present_desc));
 	}
 
-	void RenderGraph::AddPass(FrameSyncBeginPassDesc&& frameSyncBeginDesc)
-	{
-		Task task;
-		task.type = Task::Types::FrameSyncBegin;
-		task.index = frameSyncBeginDescs.size();
-		AddTask(task);
-
-		frameSyncBeginDescs.push_back(frameSyncBeginDesc);
-	}
-
-	void RenderGraph::AddPass(FrameSyncEndPassDesc&& frameSyncEndDesc)
+	void RenderGraph::add_pass(FrameSyncBeginPassDesc&& frame_sync_begin_desc)
 	{
 		Task task;
-		task.type = Task::Types::FrameSyncEnd;
-		task.index = frameSyncEndDescs.size();
-		AddTask(task);
+		task.type = Task::Types::eFrameSyncBegin;
+		task.index = frame_sync_begin_descs_.size();
+		add_task(task);
 
-		frameSyncEndDescs.push_back(frameSyncEndDesc);
+		frame_sync_begin_descs_.push_back(frame_sync_begin_desc);
 	}
 
-	void RenderGraph::Execute(vk::CommandBuffer commandBuffer, lz::CpuProfiler* cpuProfiler,
-		lz::GpuProfiler* gpuProfiler)
+	void RenderGraph::add_pass(FrameSyncEndPassDesc&& frame_sync_end_desc)
 	{
-		ResolveImages();
-		ResolveImageViews();
-		ResolveBuffers();
+		Task task;
+		task.type = Task::Types::eFrameSyncEnd;
+		task.index = frame_sync_end_descs_.size();
+		add_task(task);
 
-		for (size_t taskIndex = 0; taskIndex < tasks.size(); ++taskIndex)
+		frame_sync_end_descs_.push_back(frame_sync_end_desc);
+	}
+
+	void RenderGraph::execute(vk::CommandBuffer command_buffer, lz::CpuProfiler* cpu_profiler,
+	                          lz::GpuProfiler* gpu_profiler)
+	{
+		resolve_images();
+		resolve_image_views();
+		resolve_buffers();
+
+		for (size_t task_index = 0; task_index < tasks_.size(); ++task_index)
 		{
-			auto& task = tasks[taskIndex];
+			auto& task = tasks_[task_index];
 			switch (task.type)
 			{
-			case Task::Types::RenderPass:
+			case Task::Types::eRenderPass:
 				{
-					auto& renderPassDesc = renderPassDescs[task.index];
-					auto profilerTask = CreateProfilerTask(renderPassDesc);
-					auto gpuTask = gpuProfiler->StartScopedTask(profilerTask.name, profilerTask.color,
-					                                            vk::PipelineStageFlagBits::eBottomOfPipe);
-					auto cpuTask = cpuProfiler->StartScopedTask(profilerTask.name, profilerTask.color);
+					auto& render_pass_desc = render_pass_descs_[task.index];
+					auto profiler_task = create_profiler_task(render_pass_desc);
+					auto gpu_task = gpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color,
+					                                                vk::PipelineStageFlagBits::eBottomOfPipe);
+					auto cpu_task = cpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color);
 
-					RenderPassContext passContext;
-					passContext.resolvedImageViews.resize(imageViewProxies.GetSize(), nullptr);
-					passContext.resolvedBuffers.resize(bufferProxies.GetSize(), nullptr);
+					RenderPassContext pass_context;
+					pass_context.resolved_image_views_.resize(image_view_proxies_.get_size(), nullptr);
+					pass_context.resolved_buffers_.resize(buffer_proxies_.get_size(), nullptr);
 
-					for (auto& inputImageViewProxy : renderPassDesc.inputImageViewProxies)
+					for (auto& input_image_view_proxy : render_pass_desc.input_image_view_proxies)
 					{
-						passContext.resolvedImageViews[inputImageViewProxy.asInt] = GetResolvedImageView(
-							taskIndex, inputImageViewProxy);
+						pass_context.resolved_image_views_[input_image_view_proxy.as_int] = get_resolved_image_view(
+							task_index, input_image_view_proxy);
 					}
 
-					for (auto& inoutStorageImageProxy : renderPassDesc.inoutStorageImageProxies)
+					for (auto& inout_storage_image_proxy : render_pass_desc.inout_storage_image_proxies)
 					{
-						passContext.resolvedImageViews[inoutStorageImageProxy.asInt] = GetResolvedImageView(
-							taskIndex, inoutStorageImageProxy);
+						pass_context.resolved_image_views_[inout_storage_image_proxy.as_int] = get_resolved_image_view(
+							task_index, inout_storage_image_proxy);
 					}
 
-					for (auto& inoutBufferProxy : renderPassDesc.inoutStorageBufferProxies)
+					for (auto& inout_buffer_proxy : render_pass_desc.inout_storage_buffer_proxies)
 					{
-						passContext.resolvedBuffers[inoutBufferProxy.asInt] = GetResolvedBuffer(
-							taskIndex, inoutBufferProxy);
+						pass_context.resolved_buffers_[inout_buffer_proxy.as_int] = get_resolved_buffer(
+							task_index, inout_buffer_proxy);
 					}
 
-					for (auto& vertexBufferProxy : renderPassDesc.vertexBufferProxies)
+					for (auto& vertex_buffer_proxy : render_pass_desc.vertex_buffer_proxies)
 					{
-						passContext.resolvedBuffers[vertexBufferProxy.asInt] = GetResolvedBuffer(
-							taskIndex, vertexBufferProxy);
+						pass_context.resolved_buffers_[vertex_buffer_proxy.as_int] = get_resolved_buffer(
+							task_index, vertex_buffer_proxy);
 					}
 
-					vk::PipelineStageFlags srcStage;
-					vk::PipelineStageFlags dstStage;
-					std::vector<vk::ImageMemoryBarrier> imageBarriers;
+					vk::PipelineStageFlags src_stage;
+					vk::PipelineStageFlags dst_stage;
+					std::vector<vk::ImageMemoryBarrier> image_barriers;
 
-					for (auto inputImageViewProxy : renderPassDesc.inputImageViewProxies)
+					for (auto input_image_view_proxy : render_pass_desc.input_image_view_proxies)
 					{
-						auto imageView = GetResolvedImageView(taskIndex, inputImageViewProxy);
-						AddImageTransitionBarriers(imageView, ImageUsageTypes::GraphicsShaderRead, taskIndex,
-						                           srcStage, dstStage, imageBarriers);
+						auto image_view = get_resolved_image_view(task_index, input_image_view_proxy);
+						add_image_transition_barriers(image_view, ImageUsageTypes::eGraphicsShaderRead, task_index,
+						                              src_stage, dst_stage, image_barriers);
 					}
 
-					for (auto& inoutStorageImageProxy : renderPassDesc.inoutStorageImageProxies)
+					for (auto& inout_storage_image_proxy : render_pass_desc.inout_storage_image_proxies)
 					{
-						auto imageView = GetResolvedImageView(taskIndex, inoutStorageImageProxy);
-						AddImageTransitionBarriers(imageView, ImageUsageTypes::GraphicsShaderReadWrite, taskIndex,
-						                           srcStage, dstStage, imageBarriers);
+						auto image_view = get_resolved_image_view(task_index, inout_storage_image_proxy);
+						add_image_transition_barriers(image_view, ImageUsageTypes::eGraphicsShaderReadWrite, task_index,
+						                              src_stage, dst_stage, image_barriers);
 					}
 
-					for (auto& colorAttachment : renderPassDesc.colorAttachments)
+					for (auto& color_attachment : render_pass_desc.color_attachments)
 					{
-						auto imageView = GetResolvedImageView(taskIndex, colorAttachment.imageViewProxyId);
-						AddImageTransitionBarriers(imageView, ImageUsageTypes::ColorAttachment, taskIndex, srcStage,
-						                           dstStage, imageBarriers);
+						auto image_view = get_resolved_image_view(task_index, color_attachment.image_view_proxy_id);
+						add_image_transition_barriers(image_view, ImageUsageTypes::eColorAttachment, task_index,
+						                              src_stage,
+						                              dst_stage, image_barriers);
 					}
 
-					if (!(renderPassDesc.depthAttachment.imageViewProxyId == ImageViewProxyId()))
+					if (!(render_pass_desc.depth_attachment.image_view_proxy_id == ImageViewProxyId()))
 					{
-						auto imageView = GetResolvedImageView(
-							taskIndex, renderPassDesc.depthAttachment.imageViewProxyId);
-						AddImageTransitionBarriers(imageView, ImageUsageTypes::DepthAttachment, taskIndex, srcStage,
-						                           dstStage, imageBarriers);
+						auto image_view = get_resolved_image_view(
+							task_index, render_pass_desc.depth_attachment.image_view_proxy_id);
+						add_image_transition_barriers(image_view, ImageUsageTypes::eDepthAttachment, task_index,
+						                              src_stage,
+						                              dst_stage, image_barriers);
 					}
 
-					std::vector<vk::BufferMemoryBarrier> bufferBarriers;
+					std::vector<vk::BufferMemoryBarrier> buffer_barriers;
 
-					for (auto vertexBufferProxy : renderPassDesc.vertexBufferProxies)
+					for (auto vertex_buffer_proxy : render_pass_desc.vertex_buffer_proxies)
 					{
-						auto storageBuffer = GetResolvedBuffer(taskIndex, vertexBufferProxy);
-						AddBufferBarriers(storageBuffer, BufferUsageTypes::VertexBuffer, taskIndex, srcStage,
-						                  dstStage, bufferBarriers);
+						auto storage_buffer = get_resolved_buffer(task_index, vertex_buffer_proxy);
+						add_buffer_barriers(storage_buffer, BufferUsageTypes::eVertexBuffer, task_index, src_stage,
+						                    dst_stage, buffer_barriers);
 					}
 
-					for (auto inoutBufferProxy : renderPassDesc.inoutStorageBufferProxies)
+					for (auto inout_buffer_proxy : render_pass_desc.inout_storage_buffer_proxies)
 					{
-						auto storageBuffer = GetResolvedBuffer(taskIndex, inoutBufferProxy);
-						AddBufferBarriers(storageBuffer, BufferUsageTypes::GraphicsShaderReadWrite, taskIndex,
-						                  srcStage, dstStage, bufferBarriers);
+						auto storage_buffer = get_resolved_buffer(task_index, inout_buffer_proxy);
+						add_buffer_barriers(storage_buffer, BufferUsageTypes::eGraphicsShaderReadWrite, task_index,
+						                    src_stage, dst_stage, buffer_barriers);
 					}
 
-					if (imageBarriers.size() > 0 || bufferBarriers.size() > 0)
+					if (image_barriers.size() > 0 || buffer_barriers.size() > 0)
 					{
-						commandBuffer.pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), {}, bufferBarriers,
-						                              imageBarriers);
+						command_buffer.pipelineBarrier(src_stage, dst_stage, vk::DependencyFlags(), {}, buffer_barriers,
+						                               image_barriers);
 					}
 
-					std::vector<FramebufferCache::Attachment> colorAttachments;
-					FramebufferCache::Attachment depthAttachment;
+					std::vector<FramebufferCache::Attachment> color_attachments;
+					FramebufferCache::Attachment depth_attachment;
 
-					lz::RenderPassCache::RenderPassKey renderPassKey;
+					lz::RenderPassCache::RenderPassKey render_pass_key;
 
-					for (auto& attachment : renderPassDesc.colorAttachments)
+					for (auto& attachment : render_pass_desc.color_attachments)
 					{
-						auto imageView = GetResolvedImageView(taskIndex, attachment.imageViewProxyId);
+						auto image_view = get_resolved_image_view(task_index, attachment.image_view_proxy_id);
 
-						renderPassKey.colorAttachmentDescs.push_back({
-							imageView->GetImageData()->GetFormat(), attachment.loadOp, attachment.clearValue
+						render_pass_key.color_attachment_descs.push_back({
+							image_view->get_image_data()->get_format(), attachment.load_op, attachment.clear_value
 						});
-						colorAttachments.push_back({imageView, attachment.clearValue});
+						color_attachments.push_back({image_view, attachment.clear_value});
 					}
-					bool depthPresent = !(renderPassDesc.depthAttachment.imageViewProxyId == ImageViewProxyId());
-					if (depthPresent)
+					bool depth_present = !(render_pass_desc.depth_attachment.image_view_proxy_id == ImageViewProxyId());
+					if (depth_present)
 					{
-						auto imageView = GetResolvedImageView(
-							taskIndex, renderPassDesc.depthAttachment.imageViewProxyId);
+						auto image_view = get_resolved_image_view(
+							task_index, render_pass_desc.depth_attachment.image_view_proxy_id);
 
-						renderPassKey.depthAttachmentDesc = {
-							imageView->GetImageData()->GetFormat(), renderPassDesc.depthAttachment.loadOp,
-							renderPassDesc.depthAttachment.clearValue
+						render_pass_key.depth_attachment_desc = {
+							image_view->get_image_data()->get_format(), render_pass_desc.depth_attachment.load_op,
+							render_pass_desc.depth_attachment.clear_value
 						};
-						depthAttachment = {imageView, renderPassDesc.depthAttachment.clearValue};
+						depth_attachment = {image_view, render_pass_desc.depth_attachment.clear_value};
 					}
 					else
 					{
-						renderPassKey.depthAttachmentDesc.format = vk::Format::eUndefined;
+						render_pass_key.depth_attachment_desc.format = vk::Format::eUndefined;
 					}
 
-					auto renderPass = renderPassCache.GetRenderPass(renderPassKey);
-					passContext.renderPass = renderPass;
+					auto render_pass = render_pass_cache_.get_render_pass(render_pass_key);
+					pass_context.render_pass_ = render_pass;
 
-					framebufferCache.BeginPass(commandBuffer, colorAttachments,
-					                           depthPresent ? (&depthAttachment) : nullptr, renderPass,
-					                           renderPassDesc.renderAreaExtent);
-					passContext.commandBuffer = commandBuffer;
-					renderPassDesc.recordFunc(passContext);
-					framebufferCache.EndPass(commandBuffer);
+					framebuffer_cache_.begin_pass(command_buffer, color_attachments,
+					                             depth_present ? (&depth_attachment) : nullptr, render_pass,
+					                             render_pass_desc.render_area_extent);
+					pass_context.command_buffer_ = command_buffer;
+					render_pass_desc.record_func(pass_context);
+					framebuffer_cache_.end_pass(command_buffer);
 				}
 				break;
-			case Task::Types::ComputePass:
+			case Task::Types::eComputePass:
 				{
-					auto& computePassDesc = computePassDescs[task.index];
-					auto profilerTask = CreateProfilerTask(computePassDesc);
-					auto gpuTask = gpuProfiler->StartScopedTask(profilerTask.name, profilerTask.color,
-					                                            vk::PipelineStageFlagBits::eBottomOfPipe);
-					auto cpuTask = cpuProfiler->StartScopedTask(profilerTask.name, profilerTask.color);
+					auto& compute_pass_desc = compute_pass_descs_[task.index];
+					auto profiler_task = create_profiler_task(compute_pass_desc);
+					auto gpu_task = gpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color,
+					                                                vk::PipelineStageFlagBits::eBottomOfPipe);
+					auto cpu_task = cpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color);
 
-					PassContext passContext;
-					passContext.resolvedImageViews.resize(imageViewProxies.GetSize(), nullptr);
-					passContext.resolvedBuffers.resize(bufferProxies.GetSize(), nullptr);
+					PassContext pass_context;
+					pass_context.resolved_image_views_.resize(image_view_proxies_.get_size(), nullptr);
+					pass_context.resolved_buffers_.resize(buffer_proxies_.get_size(), nullptr);
 
-					for (auto& inputImageViewProxy : computePassDesc.inputImageViewProxies)
+					for (auto& input_image_view_proxy : compute_pass_desc.input_image_view_proxies)
 					{
-						passContext.resolvedImageViews[inputImageViewProxy.asInt] = GetResolvedImageView(
-							taskIndex, inputImageViewProxy);
+						pass_context.resolved_image_views_[input_image_view_proxy.as_int] = get_resolved_image_view(
+							task_index, input_image_view_proxy);
 					}
 
-					for (auto& inoutBufferProxy : computePassDesc.inoutStorageBufferProxies)
+					for (auto& inout_buffer_proxy : compute_pass_desc.inout_storage_buffer_proxies)
 					{
-						passContext.resolvedBuffers[inoutBufferProxy.asInt] = GetResolvedBuffer(
-							taskIndex, inoutBufferProxy);
+						pass_context.resolved_buffers_[inout_buffer_proxy.as_int] = get_resolved_buffer(
+							task_index, inout_buffer_proxy);
 					}
 
-					for (auto& inoutStorageImageProxy : computePassDesc.inoutStorageImageProxies)
+					for (auto& inout_storage_image_proxy : compute_pass_desc.inout_storage_image_proxies)
 					{
-						passContext.resolvedImageViews[inoutStorageImageProxy.asInt] = GetResolvedImageView(
-							taskIndex, inoutStorageImageProxy);
+						pass_context.resolved_image_views_[inout_storage_image_proxy.as_int] = get_resolved_image_view(
+							task_index, inout_storage_image_proxy);
 					}
 
-					vk::PipelineStageFlags srcStage;
-					vk::PipelineStageFlags dstStage;
+					vk::PipelineStageFlags src_stage;
+					vk::PipelineStageFlags dst_stage;
 
-					std::vector<vk::ImageMemoryBarrier> imageBarriers;
-					for (auto inputImageViewProxy : computePassDesc.inputImageViewProxies)
+					std::vector<vk::ImageMemoryBarrier> image_barriers;
+					for (auto input_image_view_proxy : compute_pass_desc.input_image_view_proxies)
 					{
-						auto imageView = GetResolvedImageView(taskIndex, inputImageViewProxy);
-						AddImageTransitionBarriers(imageView, ImageUsageTypes::ComputeShaderRead, taskIndex,
-						                           srcStage, dstStage, imageBarriers);
+						auto image_view = get_resolved_image_view(task_index, input_image_view_proxy);
+						add_image_transition_barriers(image_view, ImageUsageTypes::eComputeShaderRead, task_index,
+						                              src_stage, dst_stage, image_barriers);
 					}
 
-					for (auto& inoutStorageImageProxy : computePassDesc.inoutStorageImageProxies)
+					for (auto& inout_storage_image_proxy : compute_pass_desc.inout_storage_image_proxies)
 					{
-						auto imageView = GetResolvedImageView(taskIndex, inoutStorageImageProxy);
-						AddImageTransitionBarriers(imageView, ImageUsageTypes::ComputeShaderReadWrite, taskIndex,
-						                           srcStage, dstStage, imageBarriers);
+						auto image_view = get_resolved_image_view(task_index, inout_storage_image_proxy);
+						add_image_transition_barriers(image_view, ImageUsageTypes::eComputeShaderReadWrite, task_index,
+						                              src_stage, dst_stage, image_barriers);
 					}
 
-					std::vector<vk::BufferMemoryBarrier> bufferBarriers;
-					for (auto inoutBufferProxy : computePassDesc.inoutStorageBufferProxies)
+					std::vector<vk::BufferMemoryBarrier> buffer_barriers;
+					for (auto inout_buffer_proxy : compute_pass_desc.inout_storage_buffer_proxies)
 					{
-						auto storageBuffer = GetResolvedBuffer(taskIndex, inoutBufferProxy);
-						AddBufferBarriers(storageBuffer, BufferUsageTypes::ComputeShaderReadWrite, taskIndex,
-						                  srcStage, dstStage, bufferBarriers);
+						auto storage_buffer = get_resolved_buffer(task_index, inout_buffer_proxy);
+						add_buffer_barriers(storage_buffer, BufferUsageTypes::eComputeShaderReadWrite, task_index,
+						                    src_stage, dst_stage, buffer_barriers);
 					}
 
-					if (imageBarriers.size() > 0 || bufferBarriers.size() > 0)
+					if (image_barriers.size() > 0 || buffer_barriers.size() > 0)
 					{
-						commandBuffer.pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), {}, bufferBarriers,
-						                              imageBarriers);
+						command_buffer.pipelineBarrier(src_stage, dst_stage, vk::DependencyFlags(), {}, buffer_barriers,
+						                               image_barriers);
 					}
 
-					passContext.commandBuffer = commandBuffer;
-					if (computePassDesc.recordFunc)
+					pass_context.command_buffer_ = command_buffer;
+					if (compute_pass_desc.record_func)
 					{
-						computePassDesc.recordFunc(passContext);
+						compute_pass_desc.record_func(pass_context);
 					}
 				}
 				break;
-			case Task::Types::TransferPass:
+			case Task::Types::eTransferPass:
 				{
-					auto& transferPassDesc = transferPassDescs[task.index];
-					auto profilerTask = CreateProfilerTask(transferPassDesc);
-					auto gpuTask = gpuProfiler->StartScopedTask(profilerTask.name, profilerTask.color,
-					                                            vk::PipelineStageFlagBits::eBottomOfPipe);
-					auto cpuTask = cpuProfiler->StartScopedTask(profilerTask.name, profilerTask.color);
+					auto& transfer_pass_desc = transfer_pass_descs_[task.index];
+					auto profiler_task = create_profiler_task(transfer_pass_desc);
+					auto gpu_task = gpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color,
+					                                                vk::PipelineStageFlagBits::eBottomOfPipe);
+					auto cpu_task = cpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color);
 
-					PassContext passContext;
-					passContext.resolvedImageViews.resize(imageViewProxies.GetSize(), nullptr);
-					passContext.resolvedBuffers.resize(bufferProxies.GetSize(), nullptr);
+					PassContext pass_context;
+					pass_context.resolved_image_views_.resize(image_view_proxies_.get_size(), nullptr);
+					pass_context.resolved_buffers_.resize(buffer_proxies_.get_size(), nullptr);
 
-					for (auto& srcImageViewProxy : transferPassDesc.srcImageViewProxies)
+					for (auto& src_image_view_proxy : transfer_pass_desc.src_image_view_proxies)
 					{
-						passContext.resolvedImageViews[srcImageViewProxy.asInt] = GetResolvedImageView(
-							taskIndex, srcImageViewProxy);
+						pass_context.resolved_image_views_[src_image_view_proxy.as_int] = get_resolved_image_view(
+							task_index, src_image_view_proxy);
 					}
-					for (auto& dstImageViewProxy : transferPassDesc.dstImageViewProxies)
+					for (auto& dst_image_view_proxy : transfer_pass_desc.dst_image_view_proxies)
 					{
-						passContext.resolvedImageViews[dstImageViewProxy.asInt] = GetResolvedImageView(
-							taskIndex, dstImageViewProxy);
-					}
-
-					for (auto& srcBufferProxy : transferPassDesc.srcBufferProxies)
-					{
-						passContext.resolvedBuffers[srcBufferProxy.asInt] = GetResolvedBuffer(
-							taskIndex, srcBufferProxy);
+						pass_context.resolved_image_views_[dst_image_view_proxy.as_int] = get_resolved_image_view(
+							task_index, dst_image_view_proxy);
 					}
 
-					for (auto& dstBufferProxy : transferPassDesc.dstBufferProxies)
+					for (auto& src_buffer_proxy : transfer_pass_desc.src_buffer_proxies)
 					{
-						passContext.resolvedBuffers[dstBufferProxy.asInt] = GetResolvedBuffer(
-							taskIndex, dstBufferProxy);
+						pass_context.resolved_buffers_[src_buffer_proxy.as_int] = get_resolved_buffer(
+							task_index, src_buffer_proxy);
 					}
 
-					vk::PipelineStageFlags srcStage;
-					vk::PipelineStageFlags dstStage;
-
-					std::vector<vk::ImageMemoryBarrier> imageBarriers;
-					for (auto srcImageViewProxy : transferPassDesc.srcImageViewProxies)
+					for (auto& dst_buffer_proxy : transfer_pass_desc.dst_buffer_proxies)
 					{
-						auto imageView = GetResolvedImageView(taskIndex, srcImageViewProxy);
-						AddImageTransitionBarriers(imageView, ImageUsageTypes::TransferSrc, taskIndex, srcStage,
-						                           dstStage, imageBarriers);
+						pass_context.resolved_buffers_[dst_buffer_proxy.as_int] = get_resolved_buffer(
+							task_index, dst_buffer_proxy);
 					}
 
-					for (auto dstImageViewProxy : transferPassDesc.dstImageViewProxies)
+					vk::PipelineStageFlags src_stage;
+					vk::PipelineStageFlags dst_stage;
+
+					std::vector<vk::ImageMemoryBarrier> image_barriers;
+					for (auto src_image_view_proxy : transfer_pass_desc.src_image_view_proxies)
 					{
-						auto imageView = GetResolvedImageView(taskIndex, dstImageViewProxy);
-						AddImageTransitionBarriers(imageView, ImageUsageTypes::TransferDst, taskIndex, srcStage,
-						                           dstStage, imageBarriers);
+						auto image_view = get_resolved_image_view(task_index, src_image_view_proxy);
+						add_image_transition_barriers(image_view, ImageUsageTypes::eTransferSrc, task_index, src_stage,
+						                              dst_stage, image_barriers);
 					}
 
-					std::vector<vk::BufferMemoryBarrier> bufferBarriers;
-					for (auto srcBufferProxy : transferPassDesc.srcBufferProxies)
+					for (auto dst_image_view_proxy : transfer_pass_desc.dst_image_view_proxies)
 					{
-						auto storageBuffer = GetResolvedBuffer(taskIndex, srcBufferProxy);
-						AddBufferBarriers(storageBuffer, BufferUsageTypes::TransferSrc, taskIndex, srcStage,
-						                  dstStage, bufferBarriers);
+						auto image_view = get_resolved_image_view(task_index, dst_image_view_proxy);
+						add_image_transition_barriers(image_view, ImageUsageTypes::eTransferDst, task_index, src_stage,
+						                              dst_stage, image_barriers);
 					}
 
-					for (auto dstBufferProxy : transferPassDesc.dstBufferProxies)
+					std::vector<vk::BufferMemoryBarrier> buffer_barriers;
+					for (auto src_buffer_proxy : transfer_pass_desc.src_buffer_proxies)
 					{
-						auto storageBuffer = GetResolvedBuffer(taskIndex, dstBufferProxy);
-						AddBufferBarriers(storageBuffer, BufferUsageTypes::TransferSrc, taskIndex, srcStage,
-						                  dstStage, bufferBarriers);
+						auto storage_buffer = get_resolved_buffer(task_index, src_buffer_proxy);
+						add_buffer_barriers(storage_buffer, BufferUsageTypes::eTransferSrc, task_index, src_stage,
+						                    dst_stage, buffer_barriers);
 					}
 
-					if (imageBarriers.size() > 0 || bufferBarriers.size() > 0)
-						commandBuffer.pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), {}, bufferBarriers,
-						                              imageBarriers);
+					for (auto dst_buffer_proxy : transfer_pass_desc.dst_buffer_proxies)
+					{
+						auto storage_buffer = get_resolved_buffer(task_index, dst_buffer_proxy);
+						add_buffer_barriers(storage_buffer, BufferUsageTypes::eTransferSrc, task_index, src_stage,
+						                    dst_stage, buffer_barriers);
+					}
 
-					passContext.commandBuffer = commandBuffer;
-					if (transferPassDesc.recordFunc)
-						transferPassDesc.recordFunc(passContext);
+					if (image_barriers.size() > 0 || buffer_barriers.size() > 0)
+						command_buffer.pipelineBarrier(src_stage, dst_stage, vk::DependencyFlags(), {}, buffer_barriers,
+						                               image_barriers);
+
+					pass_context.command_buffer_ = command_buffer;
+					if (transfer_pass_desc.record_func)
+						transfer_pass_desc.record_func(pass_context);
 				}
 				break;
-			case Task::Types::ImagePresent:
+			case Task::Types::eImagePresent:
 				{
-					auto imagePesentDesc = imagePresentDescs[task.index];
-					auto profilerTask = CreateProfilerTask(imagePesentDesc);
-					auto gpuTask = gpuProfiler->StartScopedTask(profilerTask.name, profilerTask.color,
-					                                            vk::PipelineStageFlagBits::eBottomOfPipe);
-					auto cpuTask = cpuProfiler->StartScopedTask(profilerTask.name, profilerTask.color);
+					auto& image_present_desc = image_present_descs_[task.index];
+					auto profiler_task = create_profiler_task(image_present_desc);
+					auto gpu_task = gpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color,
+					                                                vk::PipelineStageFlagBits::eBottomOfPipe);
+					auto cpu_task = cpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color);
 
-					vk::PipelineStageFlags srcStage;
-					vk::PipelineStageFlags dstStage;
-					std::vector<vk::ImageMemoryBarrier> imageBarriers;
+					vk::PipelineStageFlags src_stage;
+					vk::PipelineStageFlags dst_stage;
+					std::vector<vk::ImageMemoryBarrier> image_barriers;
 					{
-						auto imageView = GetResolvedImageView(taskIndex, imagePesentDesc.presentImageViewProxyId);
-						AddImageTransitionBarriers(imageView, ImageUsageTypes::Present, taskIndex, srcStage,
-						                           dstStage, imageBarriers);
+						auto image_view =
+							get_resolved_image_view(task_index, image_present_desc.present_image_view_proxy_id);
+						add_image_transition_barriers(image_view, ImageUsageTypes::ePresent, task_index, src_stage,
+						                              dst_stage, image_barriers);
 					}
 
-					if (imageBarriers.size() > 0)
-						commandBuffer.pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), {}, {},
-						                              imageBarriers);
+					if (image_barriers.size() > 0)
+						command_buffer.pipelineBarrier(src_stage, dst_stage, vk::DependencyFlags(), {}, {},
+						                               image_barriers);
 				}
 				break;
-			case Task::Types::FrameSyncBegin:
+			case Task::Types::eFrameSyncBegin:
 				{
-					auto frameSyncDesc = frameSyncBeginDescs[task.index];
-					auto profilerTask = CreateProfilerTask(frameSyncDesc);
-					auto gpuTask = gpuProfiler->StartScopedTask(profilerTask.name, profilerTask.color,
-					                                            vk::PipelineStageFlagBits::eBottomOfPipe);
-					auto cpuTask = cpuProfiler->StartScopedTask(profilerTask.name, profilerTask.color);
+					auto& frame_sync_desc = frame_sync_begin_descs_[task.index];
+					auto profiler_task = create_profiler_task(frame_sync_desc);
+					auto gpu_task = gpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color,
+					                                                vk::PipelineStageFlagBits::eBottomOfPipe);
+					auto cpu_task = cpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color);
 
-					std::vector<vk::ImageMemoryBarrier> imageBarriers;
-					vk::PipelineStageFlags srcStage = vk::PipelineStageFlagBits::eBottomOfPipe;
-					vk::PipelineStageFlags dstStage = vk::PipelineStageFlagBits::eTopOfPipe;
+					std::vector<vk::ImageMemoryBarrier> image_barriers;
+					vk::PipelineStageFlags src_stage = vk::PipelineStageFlagBits::eBottomOfPipe;
+					vk::PipelineStageFlags dst_stage = vk::PipelineStageFlagBits::eTopOfPipe;
 
-					auto memoryBarrier = vk::MemoryBarrier();
-					commandBuffer.pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), {memoryBarrier}, {},
-					                              {});
+					auto memory_barrier = vk::MemoryBarrier();
+					command_buffer.pipelineBarrier(src_stage, dst_stage, vk::DependencyFlags(), {memory_barrier}, {},
+					                               {});
 				}
 				break;
-			case Task::Types::FrameSyncEnd:
+			case Task::Types::eFrameSyncEnd:
 				{
-					auto frameSyncDesc = frameSyncEndDescs[task.index];
-					auto profilerTask = CreateProfilerTask(frameSyncDesc);
-					auto gpuTask = gpuProfiler->StartScopedTask(profilerTask.name, profilerTask.color,
-					                                            vk::PipelineStageFlagBits::eBottomOfPipe);
-					auto cpuTask = cpuProfiler->StartScopedTask(profilerTask.name, profilerTask.color);
+					auto& frame_sync_desc = frame_sync_end_descs_[task.index];
+					auto profiler_task = create_profiler_task(frame_sync_desc);
+					auto gpu_task = gpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color,
+					                                                vk::PipelineStageFlagBits::eBottomOfPipe);
+					auto cpu_task = cpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color);
 
-					std::vector<vk::ImageMemoryBarrier> imageBarriers;
-					vk::PipelineStageFlags srcStage = vk::PipelineStageFlagBits::eBottomOfPipe;
-					vk::PipelineStageFlags dstStage = vk::PipelineStageFlagBits::eTopOfPipe;
-					for (auto imageViewProxy : imageViewProxies)
+					std::vector<vk::ImageMemoryBarrier> image_barriers;
+					vk::PipelineStageFlags src_stage = vk::PipelineStageFlagBits::eBottomOfPipe;
+					vk::PipelineStageFlags dst_stage = vk::PipelineStageFlagBits::eTopOfPipe;
+					for (auto image_view_proxy : image_view_proxies_)
 					{
-						if (imageViewProxy.externalView != nullptr && imageViewProxy.externalUsageType !=
-							lz::ImageUsageTypes::Unknown && imageViewProxy.externalUsageType !=
-							lz::ImageUsageTypes::None)
-							AddImageTransitionBarriers(imageViewProxy.externalView,
-							                           imageViewProxy.externalUsageType, taskIndex, srcStage,
-							                           dstStage, imageBarriers);
+						if (image_view_proxy.external_view != nullptr && image_view_proxy.external_usage_type !=
+							lz::ImageUsageTypes::eUnknown && image_view_proxy.external_usage_type !=
+							lz::ImageUsageTypes::eNone)
+							add_image_transition_barriers(image_view_proxy.external_view,
+							                              image_view_proxy.external_usage_type, task_index, src_stage,
+							                              dst_stage, image_barriers);
 					}
 
 					/*std::vector<vk::BufferMemoryBarrier> bufferBarriers;
-						for (auto bufferProxy : bufferProxies)
+						for (auto bufferProxy : buffer_proxies_)
 						{
 						  if(bufferProxy.externalBuffer != nullptr)
 						  auto storageBuffer = GetResolvedBuffer(taskIndex, inoutBufferProxy);
 						  AddBufferBarriers(storageBuffer, BufferUsageTypes::ComputeShaderReadWrite, taskIndex, srcStage, dstStage, bufferBarriers);
 						}*/
 
-					if (imageBarriers.size() > 0)
-						commandBuffer.pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), {}, {},
-						                              imageBarriers);
+					if (image_barriers.size() > 0)
+						command_buffer.pipelineBarrier(src_stage, dst_stage, vk::DependencyFlags(), {}, {},
+						                               image_barriers);
 				}
 				break;
 			}
 		}
 
-		FlushExternalImages(commandBuffer, cpuProfiler, gpuProfiler);
+		flush_external_images(command_buffer, cpu_profiler, gpu_profiler);
 
-		renderPassDescs.clear();
-		transferPassDescs.clear();
-		imagePresentDescs.clear();
-		frameSyncBeginDescs.clear();
-		frameSyncEndDescs.clear();
-		tasks.clear();
+		render_pass_descs_.clear();
+		transfer_pass_descs_.clear();
+		image_present_descs_.clear();
+		frame_sync_begin_descs_.clear();
+		frame_sync_end_descs_.clear();
+		tasks_.clear();
 	}
 
-	void RenderGraph::FlushExternalImages(vk::CommandBuffer commandBuffer, lz::CpuProfiler* cpuProfiler,
-		lz::GpuProfiler* gpuProfiler)
+	void RenderGraph::flush_external_images(vk::CommandBuffer command_buffer_, lz::CpuProfiler* cpu_profiler,
+	                                        lz::GpuProfiler* gpu_profiler)
 	{
 		//need to make sure I don't override the same mip level of an image twice if there's more than view for it
 
-		/*if (tasks.size() == 0) return;
-			size_t lastTaskIndex = tasks.size() - 1;
+		/*if (tasks_.size() == 0) return;
+			size_t lastTaskIndex = tasks_.size() - 1;
 
 			for (auto &imageViewProxy : this->imageViewProxies)
 			{
@@ -1052,488 +1068,505 @@ namespace lz
 				std::vector<vk::ImageMemoryBarrier> imageBarriers;
 				if (imageViewProxy.externalUsageType != lz::ImageUsageTypes::Unknown)
 				{
-				  AddImageTransitionBarriers(imageViewProxy.externalView, imageViewProxy.externalUsageType, tasks.size(), srcStage, dstStage, imageBarriers);
+				  AddImageTransitionBarriers(imageViewProxy.externalView, imageViewProxy.externalUsageType, tasks_.size(), srcStage, dstStage, imageBarriers);
 				}
 
 				if (imageBarriers.size() > 0)
-				  commandBuffer.pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), {}, {}, imageBarriers);
+				  command_buffer_.pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), {}, {}, imageBarriers);
 			  }
 			}*/
 	}
 
-	bool RenderGraph::ImageViewContainsSubresource(lz::ImageView* imageView, lz::ImageData* imageData,
-		uint32_t mipLevel, uint32_t arrayLayer)
+	bool RenderGraph::image_view_contains_subresource(lz::ImageView* image_view, lz::ImageData* image_data,
+	                                                  uint32_t mip_level, uint32_t array_layer)
 	{
 		return (
-			imageView->GetImageData() == imageData &&
-			arrayLayer >= imageView->GetBaseArrayLayer() && arrayLayer < imageView->GetBaseArrayLayer() + imageView
-			->GetArrayLayersCount() &&
-			mipLevel >= imageView->GetBaseMipLevel() && mipLevel < imageView->GetBaseMipLevel() + imageView->
-			GetMipLevelsCount());
+			image_view->get_image_data() == image_data &&
+			array_layer >= image_view->get_base_array_layer() && array_layer < image_view->get_base_array_layer() +
+			image_view
+			->get_array_layers_count() &&
+			mip_level >= image_view->get_base_mip_level() && mip_level < image_view->get_base_mip_level() + image_view->
+			get_mip_levels_count());
 	}
 
-	ImageUsageTypes RenderGraph::GetTaskImageSubresourceUsageType(size_t taskIndex, lz::ImageData* imageData,
-		uint32_t mipLevel, uint32_t arrayLayer)
+	ImageUsageTypes RenderGraph::get_task_image_subresource_usage_type(size_t task_index, lz::ImageData* image_data,
+	                                                                   uint32_t mip_level, uint32_t array_layer)
 	{
-		Task& task = tasks[taskIndex];
+		Task& task = tasks_[task_index];
 		switch (task.type)
 		{
-		case Task::Types::RenderPass:
+		case Task::Types::eRenderPass:
 			{
-				auto& renderPassDesc = renderPassDescs[task.index];
-				for (const auto& colorAttachment : renderPassDesc.colorAttachments)
+				const auto& render_pass_desc = render_pass_descs_[task.index];
+				for (const auto& color_attachment : render_pass_desc.color_attachments)
 				{
-					auto attachmentImageView = GetResolvedImageView(taskIndex, colorAttachment.imageViewProxyId);
-					if (ImageViewContainsSubresource(attachmentImageView, imageData, mipLevel, arrayLayer))
+					const auto attachment_image_view = get_resolved_image_view(
+						task_index, color_attachment.image_view_proxy_id);
+					if (image_view_contains_subresource(attachment_image_view, image_data, mip_level, array_layer))
 					{
-						return ImageUsageTypes::ColorAttachment;
+						return ImageUsageTypes::eColorAttachment;
 					}
 				}
 
-				if (!(renderPassDesc.depthAttachment.imageViewProxyId == ImageViewProxyId()))
+				if (!(render_pass_desc.depth_attachment.image_view_proxy_id == ImageViewProxyId()))
 				{
-					auto attachmentImageView = GetResolvedImageView(
-						taskIndex, renderPassDesc.depthAttachment.imageViewProxyId);
-					if (ImageViewContainsSubresource(attachmentImageView, imageData, mipLevel, arrayLayer))
+					auto attachmentImageView = get_resolved_image_view(
+						task_index, render_pass_desc.depth_attachment.image_view_proxy_id);
+					if (image_view_contains_subresource(attachmentImageView, image_data, mip_level, array_layer))
 					{
-						return ImageUsageTypes::DepthAttachment;
+						return ImageUsageTypes::eDepthAttachment;
 					}
 				}
 
-				for (const auto& imageViewProxy : renderPassDesc.inputImageViewProxies)
+				for (const auto& image_view_proxy : render_pass_desc.input_image_view_proxies)
 				{
-					if (ImageViewContainsSubresource(GetResolvedImageView(taskIndex, imageViewProxy), imageData,
-					                                 mipLevel, arrayLayer))
-						return ImageUsageTypes::GraphicsShaderRead;
+					if (image_view_contains_subresource(get_resolved_image_view(task_index, image_view_proxy),
+					                                    image_data,
+					                                    mip_level, array_layer))
+						return ImageUsageTypes::eGraphicsShaderRead;
 				}
 
-				for (const auto& imageViewProxy : renderPassDesc.inoutStorageImageProxies)
+				for (const auto& image_view_proxy : render_pass_desc.inout_storage_image_proxies)
 				{
-					if (ImageViewContainsSubresource(GetResolvedImageView(taskIndex, imageViewProxy), imageData,
-					                                 mipLevel, arrayLayer))
-						return ImageUsageTypes::GraphicsShaderReadWrite;
+					if (image_view_contains_subresource(get_resolved_image_view(task_index, image_view_proxy),
+					                                    image_data,
+					                                    mip_level, array_layer))
+						return ImageUsageTypes::eGraphicsShaderReadWrite;
 				}
 			}
 			break;
-		case Task::Types::ComputePass:
+		case Task::Types::eComputePass:
 			{
-				auto& computePassDesc = computePassDescs[task.index];
-				for (auto imageViewProxy : computePassDesc.inputImageViewProxies)
+				const auto& compute_pass_desc = compute_pass_descs_[task.index];
+				for (const auto& image_view_proxy : compute_pass_desc.input_image_view_proxies)
 				{
-					if (ImageViewContainsSubresource(GetResolvedImageView(taskIndex, imageViewProxy), imageData,
-					                                 mipLevel, arrayLayer))
-						return ImageUsageTypes::ComputeShaderRead;
+					if (image_view_contains_subresource(get_resolved_image_view(task_index, image_view_proxy),
+					                                    image_data,
+					                                    mip_level, array_layer))
+						return ImageUsageTypes::eComputeShaderRead;
 				}
-				for (auto imageViewProxy : computePassDesc.inoutStorageImageProxies)
+				for (const auto& image_view_proxy : compute_pass_desc.inout_storage_image_proxies)
 				{
-					if (ImageViewContainsSubresource(GetResolvedImageView(taskIndex, imageViewProxy), imageData,
-					                                 mipLevel, arrayLayer))
-						return ImageUsageTypes::ComputeShaderReadWrite;
+					if (image_view_contains_subresource(get_resolved_image_view(task_index, image_view_proxy),
+					                                    image_data,
+					                                    mip_level, array_layer))
+						return ImageUsageTypes::eComputeShaderReadWrite;
 				}
 			}
 			break;
-		case Task::Types::TransferPass:
+		case Task::Types::eTransferPass:
 			{
-				auto& transferPassDesc = transferPassDescs[task.index];
-				for (auto srcImageViewProxy : transferPassDesc.srcImageViewProxies)
+				const auto& transfer_pass_desc = transfer_pass_descs_[task.index];
+				for (const auto& src_image_view_proxy : transfer_pass_desc.src_image_view_proxies)
 				{
-					if (ImageViewContainsSubresource(GetResolvedImageView(taskIndex, srcImageViewProxy), imageData,
-					                                 mipLevel, arrayLayer))
-						return ImageUsageTypes::TransferSrc;
+					if (image_view_contains_subresource(get_resolved_image_view(task_index, src_image_view_proxy),
+					                                    image_data,
+					                                    mip_level, array_layer))
+						return ImageUsageTypes::eTransferSrc;
 				}
-				for (auto dstImageViewProxy : transferPassDesc.dstImageViewProxies)
+				for (const auto& dst_image_view_proxy : transfer_pass_desc.dst_image_view_proxies)
 				{
-					if (ImageViewContainsSubresource(GetResolvedImageView(taskIndex, dstImageViewProxy), imageData,
-					                                 mipLevel, arrayLayer))
-						return ImageUsageTypes::TransferDst;
+					if (image_view_contains_subresource(get_resolved_image_view(task_index, dst_image_view_proxy),
+					                                    image_data,
+					                                    mip_level, array_layer))
+						return ImageUsageTypes::eTransferDst;
 				}
 			}
 			break;
-		case Task::Types::ImagePresent:
+		case Task::Types::eImagePresent:
 			{
-				auto& imagePresentDesc = imagePresentDescs[task.index];
-				if (ImageViewContainsSubresource(
-					GetResolvedImageView(taskIndex, imagePresentDesc.presentImageViewProxyId), imageData, mipLevel,
-					arrayLayer))
-					return ImageUsageTypes::Present;
+				const auto& image_present_desc = image_present_descs_[task.index];
+				if (image_view_contains_subresource(
+					get_resolved_image_view(task_index, image_present_desc.present_image_view_proxy_id), image_data,
+					mip_level,
+					array_layer))
+					return ImageUsageTypes::ePresent;
 			}
 			break;
 		}
 
-		return ImageUsageTypes::None;
+		return ImageUsageTypes::eNone;
 	}
 
-	BufferUsageTypes RenderGraph::GetTaskBufferUsageType(size_t taskIndex, lz::Buffer* buffer)
+	BufferUsageTypes RenderGraph::get_task_buffer_usage_type(size_t task_index, lz::Buffer* buffer)
 	{
-		Task& task = tasks[taskIndex];
+		const Task& task = tasks_[task_index];
 
 		switch (task.type)
 		{
-		case Task::Types::RenderPass:
+		case Task::Types::eRenderPass:
 			{
-				auto& renderPassDesc = renderPassDescs[task.index];
-				for (auto storageBufferProxy : renderPassDesc.inoutStorageBufferProxies)
+				const auto& render_pass_desc = render_pass_descs_[task.index];
+				for (const auto& storage_buffer_proxy : render_pass_desc.inout_storage_buffer_proxies)
 				{
-					auto storageBuffer = GetResolvedBuffer(taskIndex, storageBufferProxy);
-					if (buffer->get_handle() == storageBuffer->get_handle())
+					const auto storage_buffer = get_resolved_buffer(task_index, storage_buffer_proxy);
+					if (buffer->get_handle() == storage_buffer->get_handle())
 					{
-						return BufferUsageTypes::GraphicsShaderReadWrite;
+						return BufferUsageTypes::eGraphicsShaderReadWrite;
 					}
 				}
 
-				for (auto vertexBufferProxy : renderPassDesc.vertexBufferProxies)
+				for (const auto& vertex_buffer_proxy : render_pass_desc.vertex_buffer_proxies)
 				{
-					auto vertexBuffer = GetResolvedBuffer(taskIndex, vertexBufferProxy);
-					if (buffer->get_handle() == vertexBuffer->get_handle())
+					const auto vertex_buffer = get_resolved_buffer(task_index, vertex_buffer_proxy);
+					if (buffer->get_handle() == vertex_buffer->get_handle())
 					{
-						return BufferUsageTypes::VertexBuffer;
+						return BufferUsageTypes::eVertexBuffer;
 					}
 				}
 			}
 			break;
-		case Task::Types::ComputePass:
+		case Task::Types::eComputePass:
 			{
-				auto& computePassDesc = computePassDescs[task.index];
-				for (auto storageBufferProxy : computePassDesc.inoutStorageBufferProxies)
+				const auto& compute_pass_desc = compute_pass_descs_[task.index];
+				for (const auto storage_buffer_proxy : compute_pass_desc.inout_storage_buffer_proxies)
 				{
-					auto storageBuffer = GetResolvedBuffer(taskIndex, storageBufferProxy);
-					if (buffer->get_handle() == storageBuffer->get_handle())
-						return BufferUsageTypes::ComputeShaderReadWrite;
+					const auto storage_buffer = get_resolved_buffer(task_index, storage_buffer_proxy);
+					if (buffer->get_handle() == storage_buffer->get_handle())
+						return BufferUsageTypes::eComputeShaderReadWrite;
 				}
 			}
 			break;
 
-		case Task::Types::TransferPass:
+		case Task::Types::eTransferPass:
 			{
-				auto& transferPassDesc = transferPassDescs[task.index];
-				for (auto srcBufferProxy : transferPassDesc.srcBufferProxies)
+				const auto& transfer_pass_desc = transfer_pass_descs_[task.index];
+				for (const auto src_buffer_proxy : transfer_pass_desc.src_buffer_proxies)
 				{
-					auto srcBuffer = GetResolvedBuffer(taskIndex, srcBufferProxy);
-					if (buffer->get_handle() == srcBuffer->get_handle())
-						return BufferUsageTypes::TransferSrc;
+					const auto src_buffer = get_resolved_buffer(task_index, src_buffer_proxy);
+					if (buffer->get_handle() == src_buffer->get_handle())
+						return BufferUsageTypes::eTransferSrc;
 				}
-				for (auto dstBufferProxy : transferPassDesc.dstBufferProxies)
+				for (const auto dst_buffer_proxy : transfer_pass_desc.dst_buffer_proxies)
 				{
-					auto dstBuffer = GetResolvedBuffer(taskIndex, dstBufferProxy);
-					if (buffer->get_handle() == dstBuffer->get_handle())
-						return BufferUsageTypes::TransferSrc;
+					const auto dst_buffer = get_resolved_buffer(task_index, dst_buffer_proxy);
+					if (buffer->get_handle() == dst_buffer->get_handle())
+						return BufferUsageTypes::eTransferSrc;
 				}
 			}
 			break;
 		}
-		return BufferUsageTypes::None;
+		return BufferUsageTypes::eNone;
 	}
 
-	ImageUsageTypes RenderGraph::GetLastImageSubresourceUsageType(size_t taskIndex, lz::ImageData* imageData,
-		uint32_t mipLevel, uint32_t arrayLayer)
+	ImageUsageTypes RenderGraph::get_last_image_subresource_usage_type(size_t task_index, lz::ImageData* image_data,
+	                                                                   uint32_t mip_level, uint32_t array_layer)
 	{
-		for (size_t taskOffset = 0; taskOffset < taskIndex; taskOffset++)
+		for (size_t task_offset = 0; task_offset < task_index; task_offset++)
 		{
-			size_t prevTaskIndex = taskIndex - taskOffset - 1;
-			auto usageType = GetTaskImageSubresourceUsageType(prevTaskIndex, imageData, mipLevel, arrayLayer);
-			if (usageType != ImageUsageTypes::None)
-				return usageType;
+			const size_t prev_task_index = task_index - task_offset - 1;
+			const auto usage_type = get_task_image_subresource_usage_type(
+				prev_task_index, image_data, mip_level, array_layer);
+			if (usage_type != ImageUsageTypes::eNone)
+				return usage_type;
 		}
 
-		for (auto& imageViewProxy : imageViewProxies)
+		for (const auto& image_view_proxy : image_view_proxies_)
 		{
-			if (imageViewProxy.type == ImageViewProxy::Types::External && imageViewProxy.externalView->
-				GetImageData() == imageData)
+			if (image_view_proxy.type == ImageViewProxy::Types::eExternal && image_view_proxy.external_view->
+				get_image_data() == image_data)
 			{
-				return imageViewProxy.externalUsageType;
+				return image_view_proxy.external_usage_type;
 			}
 		}
-		return ImageUsageTypes::None;
+		return ImageUsageTypes::eNone;
 	}
 
-	BufferUsageTypes RenderGraph::GetLastBufferUsageType(size_t taskIndex, lz::Buffer* buffer)
+	BufferUsageTypes RenderGraph::get_last_buffer_usage_type(size_t task_index, lz::Buffer* buffer)
 	{
-		for (size_t taskOffset = 1; taskOffset < taskIndex; taskOffset++)
+		for (size_t task_offset = 1; task_offset < task_index; task_offset++)
 		{
-			size_t prevTaskIndex = taskIndex - taskOffset;
-			auto usageType = GetTaskBufferUsageType(prevTaskIndex, buffer);
-			if (usageType != BufferUsageTypes::None)
-				return usageType;
+			const size_t prev_task_index = task_index - task_offset;
+			const auto usage_type = get_task_buffer_usage_type(prev_task_index, buffer);
+			if (usage_type != BufferUsageTypes::eNone)
+				return usage_type;
 		}
-		return BufferUsageTypes::None;
+		return BufferUsageTypes::eNone;
 	}
 
-	void RenderGraph::FlushImageTransitionBarriers(lz::ImageData* imageData, vk::ImageSubresourceRange range,
-		ImageUsageTypes srcUsageType, ImageUsageTypes dstUsageType, vk::PipelineStageFlags& srcStage,
-		vk::PipelineStageFlags& dstStage, std::vector<vk::ImageMemoryBarrier>& imageBarriers)
+	void RenderGraph::flush_image_transition_barriers(lz::ImageData* image_data, vk::ImageSubresourceRange range,
+	                                                  ImageUsageTypes src_usage_type, ImageUsageTypes dst_usage_type,
+	                                                  vk::PipelineStageFlags& src_stage,
+	                                                  vk::PipelineStageFlags& dst_stage,
+	                                                  std::vector<vk::ImageMemoryBarrier>& image_barriers)
 	{
-		if (IsImageBarrierNeeded(srcUsageType, dstUsageType) && range.layerCount > 0 && range.levelCount > 0)
+		if (is_image_barrier_needed(src_usage_type, dst_usage_type) && range.layerCount > 0 && range.levelCount > 0)
 		{
-			auto srcImageAccessPattern = GetSrcImageAccessPattern(srcUsageType);
-			auto dstImageAccessPattern = GetDstImageAccessPattern(dstUsageType);
-			auto imageBarrier = vk::ImageMemoryBarrier()
-			                    .setSrcAccessMask(srcImageAccessPattern.accessMask)
-			                    .setDstAccessMask(dstImageAccessPattern.accessMask)
-			                    .setOldLayout(srcImageAccessPattern.layout)
-			                    .setNewLayout(dstImageAccessPattern.layout)
-			                    .setSubresourceRange(range)
-			                    .setImage(imageData->GetHandle());
+			const auto src_image_access_pattern = get_src_image_access_pattern(src_usage_type);
+			const auto dst_image_access_pattern = get_dst_image_access_pattern(dst_usage_type);
+			auto image_barrier = vk::ImageMemoryBarrier()
+			                     .setSrcAccessMask(src_image_access_pattern.access_mask)
+			                     .setDstAccessMask(dst_image_access_pattern.access_mask)
+			                     .setOldLayout(src_image_access_pattern.layout)
+			                     .setNewLayout(dst_image_access_pattern.layout)
+			                     .setSubresourceRange(range)
+			                     .setImage(image_data->get_handle());
 
-			if (srcImageAccessPattern.queueFamilyType == dstImageAccessPattern.queueFamilyType)
+			if (src_image_access_pattern.queue_family_type == dst_image_access_pattern.queue_family_type)
 			{
-				imageBarrier
+				image_barrier
 					.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 					.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
 			}
 			else
 			{
 				// TODO: transfer queue
-				imageBarrier
+				image_barrier
 					.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 					.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
 			}
 
-			srcStage |= srcImageAccessPattern.stage;
-			dstStage |= dstImageAccessPattern.stage;
+			src_stage |= src_image_access_pattern.stage;
+			dst_stage |= dst_image_access_pattern.stage;
 
-			imageBarriers.push_back(imageBarrier);
+			image_barriers.push_back(image_barrier);
 		}
 	}
 
-	void RenderGraph::AddImageTransitionBarriers(lz::ImageView* imageView, ImageUsageTypes dstUsageType,
-		size_t dstTaskIndex, vk::PipelineStageFlags& srcStage, vk::PipelineStageFlags& dstStage,
-		std::vector<vk::ImageMemoryBarrier>& imageBarriers)
+	void RenderGraph::add_image_transition_barriers(lz::ImageView* image_view, ImageUsageTypes dst_usage_type,
+	                                                size_t dst_task_index, vk::PipelineStageFlags& src_stage,
+	                                                vk::PipelineStageFlags& dst_stage,
+	                                                std::vector<vk::ImageMemoryBarrier>& image_barriers)
 	{
 		auto range = vk::ImageSubresourceRange()
-			.setAspectMask(imageView->GetImageData()->GetAspectFlags());
+			.setAspectMask(image_view->get_image_data()->get_aspect_flags());
 
-		for (uint32_t arrayLayer = imageView->GetBaseArrayLayer(); arrayLayer < imageView->GetBaseArrayLayer() +
-		     imageView->GetArrayLayersCount(); ++arrayLayer)
+		for (uint32_t array_layer = image_view->get_base_array_layer(); array_layer < image_view->get_base_array_layer() +
+		     image_view->get_array_layers_count(); ++array_layer)
 		{
-			range.setBaseArrayLayer(arrayLayer)
+			range.setBaseArrayLayer(array_layer)
 			     .setLayerCount(1)
-			     .setBaseMipLevel(imageView->GetBaseMipLevel())
+			     .setBaseMipLevel(image_view->get_base_mip_level())
 			     .setLevelCount(0);
-			ImageUsageTypes prevSubresourceUsageType = ImageUsageTypes::None;
+			ImageUsageTypes prev_subresource_usage_type = ImageUsageTypes::eNone;
 
-			for (uint32_t mipLevel = imageView->GetBaseMipLevel(); mipLevel < imageView->GetBaseMipLevel() +
-			     imageView->GetMipLevelsCount(); ++mipLevel)
+			for (uint32_t mip_level = image_view->get_base_mip_level(); mip_level < image_view->get_base_mip_level() +
+			     image_view->get_mip_levels_count(); ++mip_level)
 			{
-				auto lastUsageType = GetLastImageSubresourceUsageType(
-					dstTaskIndex, imageView->GetImageData(), mipLevel, arrayLayer);
-				if (prevSubresourceUsageType != lastUsageType)
+				const auto last_usage_type = get_last_image_subresource_usage_type(
+					dst_task_index, image_view->get_image_data(), mip_level, array_layer);
+				if (prev_subresource_usage_type != last_usage_type)
 				{
-					FlushImageTransitionBarriers(imageView->GetImageData(),
-					                             range, prevSubresourceUsageType, dstUsageType, srcStage, dstStage,
-					                             imageBarriers);
-					range.setBaseMipLevel(mipLevel)
+					flush_image_transition_barriers(image_view->get_image_data(),
+					                                range, prev_subresource_usage_type, dst_usage_type, src_stage,
+					                                dst_stage,
+					                                image_barriers);
+					range.setBaseMipLevel(mip_level)
 					     .setLevelCount(0);
-					prevSubresourceUsageType = lastUsageType;
+					prev_subresource_usage_type = last_usage_type;
 				}
 				range.levelCount++;
 			}
-			FlushImageTransitionBarriers(imageView->GetImageData(), range, prevSubresourceUsageType, dstUsageType,
-			                             srcStage, dstStage, imageBarriers);
+			flush_image_transition_barriers(image_view->get_image_data(), range, prev_subresource_usage_type,
+			                                dst_usage_type,
+			                                src_stage, dst_stage, image_barriers);
 		}
 	}
 
-	void RenderGraph::FlushBufferTransitionBarriers(lz::Buffer* buffer, BufferUsageTypes srcUsageType,
-		BufferUsageTypes dstUsageType, vk::PipelineStageFlags& srcStage, vk::PipelineStageFlags& dstStage,
-		std::vector<vk::BufferMemoryBarrier>& bufferBarriers)
+	void RenderGraph::flush_buffer_transition_barriers(lz::Buffer* buffer, BufferUsageTypes src_usage_type,
+	                                                   BufferUsageTypes dst_usage_type,
+	                                                   vk::PipelineStageFlags& src_stage,
+	                                                   vk::PipelineStageFlags& dst_stage,
+	                                                   std::vector<vk::BufferMemoryBarrier>& buffer_barriers)
 	{
-		if (IsBufferBarrierNeeded(srcUsageType, dstUsageType))
+		if (is_buffer_barrier_needed(src_usage_type, dst_usage_type))
 		{
-			auto srcBufferAccessPattern = GetSrcBufferAccessPattern(srcUsageType);
-			auto dstBufferAccessPattern = GetDstBufferAccessPattern(dstUsageType);
-			auto bufferBarrier = vk::BufferMemoryBarrier()
-			                     .setSrcAccessMask(srcBufferAccessPattern.accessMask)
+			const auto src_buffer_access_pattern = get_src_buffer_access_pattern(src_usage_type);
+			const auto dst_buffer_access_pattern = get_dst_buffer_access_pattern(dst_usage_type);
+			auto buffer_barrier = vk::BufferMemoryBarrier()
+			                     .setSrcAccessMask(src_buffer_access_pattern.access_mask)
 			                     .setOffset(0)
 			                     .setSize(VK_WHOLE_SIZE)
-			                     .setDstAccessMask(dstBufferAccessPattern.accessMask)
+			                     .setDstAccessMask(dst_buffer_access_pattern.access_mask)
 			                     .setBuffer(buffer->get_handle());
 
-			if (srcBufferAccessPattern.queueFamilyType == dstBufferAccessPattern.queueFamilyType)
+			if (src_buffer_access_pattern.queue_family_type == dst_buffer_access_pattern.queue_family_type)
 			{
-				bufferBarrier.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+				buffer_barrier.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 				             .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
 			}
 			else
 			{
 				// TODO: transfer queue 
-				bufferBarrier
+				buffer_barrier
 					.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 					.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
 			}
 
-			srcStage |= srcBufferAccessPattern.stage;
-			dstStage |= dstBufferAccessPattern.stage;
-			bufferBarriers.push_back(bufferBarrier);
+			src_stage |= src_buffer_access_pattern.stage;
+			dst_stage |= dst_buffer_access_pattern.stage;
+			buffer_barriers.push_back(buffer_barrier);
 		}
 	}
 
-	void RenderGraph::AddBufferBarriers(lz::Buffer* buffer, BufferUsageTypes dstUsageType, size_t dstTaskIndex,
-		vk::PipelineStageFlags& srcStage, vk::PipelineStageFlags& dstStage,
-		std::vector<vk::BufferMemoryBarrier>& bufferBarriers)
+	void RenderGraph::add_buffer_barriers(lz::Buffer* buffer, BufferUsageTypes dstUsageType, size_t dst_task_index,
+	                                      vk::PipelineStageFlags& src_stage, vk::PipelineStageFlags& dst_stage,
+	                                      std::vector<vk::BufferMemoryBarrier>& buffer_barriers)
 	{
-		auto lastUsageType = GetLastBufferUsageType(dstTaskIndex, buffer);
-		FlushBufferTransitionBarriers(buffer, lastUsageType, dstUsageType, srcStage, dstStage, bufferBarriers);
+		const auto last_usage_type = get_last_buffer_usage_type(dst_task_index, buffer);
+		flush_buffer_transition_barriers(buffer, last_usage_type, dstUsageType, src_stage, dst_stage, buffer_barriers);
 	}
 
-	bool RenderGraph::ImageViewProxy::Contains(const ImageViewProxy& other)
+	bool RenderGraph::ImageViewProxy::contains(const ImageViewProxy& other)
 	{
-		if (type == Types::Transient && subresourceRange.Contains(other.subresourceRange) && type == other.type
-			&& imageProxyId == other.imageProxyId)
+		if (type == Types::eTransient && subresource_range.contains(other.subresource_range) && type == other.type
+			&& image_proxy_id == other.image_proxy_id)
 		{
 			return true;
 		}
 
-		if (type == Types::External && externalView == other.externalView)
+		if (type == Types::eExternal && external_view == other.external_view)
 		{
 			return true;
 		}
 		return false;
 	}
 
-	void RenderGraph::ResolveImages()
+	void RenderGraph::resolve_images()
 	{
-		imageCache.Release();
+		image_cache_.release();
 
-		for (auto& imageProxy : imageProxies)
+		for (auto& image_proxy : image_proxies_)
 		{
-			switch (imageProxy.type)
+			switch (image_proxy.type)
 			{
-			case ImageProxy::Types::External:
+			case ImageProxy::Types::eExternal:
 				{
-					imageProxy.resolvedImage = imageProxy.externalImage;
+					image_proxy.resolved_image = image_proxy.external_image;
 				}
 				break;
-			case ImageProxy::Types::Transient:
+			case ImageProxy::Types::eTransient:
 				{
-					imageProxy.resolvedImage = imageCache.GetImage(imageProxy.imageKey);
+					image_proxy.resolved_image = image_cache_.get_image(image_proxy.image_key);
 				}
 				break;
 			}
 		}
 	}
 
-	lz::ImageData* RenderGraph::GetResolvedImage(size_t taskIndex, ImageProxyId imageProxy)
+	lz::ImageData* RenderGraph::get_resolved_image(size_t task_index, ImageProxyId image_proxy)
 	{
-		return imageProxies.Get(imageProxy).resolvedImage;
+		return image_proxies_.get(image_proxy).resolved_image;
 	}
 
-	void RenderGraph::ResolveImageViews()
+	void RenderGraph::resolve_image_views()
 	{
-		for (auto& imageViewProxy : imageViewProxies)
+		for (auto& image_view_proxy : image_view_proxies_)
 		{
-			switch (imageViewProxy.type)
+			switch (image_view_proxy.type)
 			{
-			case ImageViewProxy::Types::External:
+			case ImageViewProxy::Types::eExternal:
 				{
-					imageViewProxy.resolvedImageView = imageViewProxy.externalView;
+					image_view_proxy.resolved_image_view = image_view_proxy.external_view;
 				}
 				break;
-			case ImageViewProxy::Types::Transient:
+			case ImageViewProxy::Types::eTransient:
 				{
 					ImageViewCache::ImageViewKey imageViewKey;
-					imageViewKey.image = GetResolvedImage(0, imageViewProxy.imageProxyId);
-					imageViewKey.subresourceRange = imageViewProxy.subresourceRange;
-					imageViewKey.debugName = imageViewProxy.debugName + "[img: " + imageProxies.Get(
-						imageViewProxy.imageProxyId).imageKey.debugName + "]";
+					imageViewKey.image = get_resolved_image(0, image_view_proxy.image_proxy_id);
+					imageViewKey.subresource_range = image_view_proxy.subresource_range;
+					imageViewKey.debug_name = image_view_proxy.debug_name + "[img: " + image_proxies_.get(
+						image_view_proxy.image_proxy_id).image_key.debug_name + "]";
 
-					imageViewProxy.resolvedImageView = imageViewCache.GetImageView(imageViewKey);
+					image_view_proxy.resolved_image_view = image_view_cache_.get_image_view(imageViewKey);
 				}
 				break;
 			}
 		}
 	}
 
-	lz::ImageView* RenderGraph::GetResolvedImageView(size_t taskIndex, ImageViewProxyId imageViewProxyId)
+	lz::ImageView* RenderGraph::get_resolved_image_view(size_t task_index, ImageViewProxyId image_view_proxy_id)
 	{
-		return imageViewProxies.Get(imageViewProxyId).resolvedImageView;
+		return image_view_proxies_.get(image_view_proxy_id).resolved_image_view;
 	}
 
-	void RenderGraph::ResolveBuffers()
+	void RenderGraph::resolve_buffers()
 	{
-		bufferCache.Release();
+		buffer_cache_.release();
 
-		for (auto& bufferProxy : bufferProxies)
+		for (auto& buffer_proxy : buffer_proxies_)
 		{
-			switch (bufferProxy.type)
+			switch (buffer_proxy.type)
 			{
-			case BufferProxy::Types::External:
+			case BufferProxy::Types::eExternal:
 				{
-					bufferProxy.resolvedBuffer = bufferProxy.externalBuffer;
+					buffer_proxy.resolved_buffer = buffer_proxy.external_buffer;
 				}
 				break;
-			case BufferProxy::Types::Transient:
+			case BufferProxy::Types::eTransient:
 				{
-					bufferProxy.resolvedBuffer = bufferCache.GetBuffer(bufferProxy.bufferKey);
+					buffer_proxy.resolved_buffer = buffer_cache_.get_buffer(buffer_proxy.buffer_key);
 				}
 				break;
 			}
 		}
 	}
 
-	lz::Buffer* RenderGraph::GetResolvedBuffer(size_t taskIndex, BufferProxyId bufferProxyId)
+	lz::Buffer* RenderGraph::get_resolved_buffer(size_t task_index, BufferProxyId buffer_proxy_id)
 	{
-		return bufferProxies.Get(bufferProxyId).resolvedBuffer;
+		return buffer_proxies_.get(buffer_proxy_id).resolved_buffer;
 	}
 
-	void RenderGraph::AddTask(Task task)
+	void RenderGraph::add_task(Task task)
 	{
-		tasks.push_back(task);
+		tasks_.push_back(task);
 	}
 
-	lz::ProfilerTask RenderGraph::CreateProfilerTask(const RenderPassDesc& renderPassDesc)
+	lz::ProfilerTask RenderGraph::create_profiler_task(const RenderPassDesc& render_pass_desc)
 	{
 		lz::ProfilerTask task;
-		task.startTime = -1.0f;
-		task.endTime = -1.0f;
-		task.name = renderPassDesc.profilerTaskName;
-		task.color = renderPassDesc.profilerTaskColor;
+		task.start_time = -1.0f;
+		task.end_time = -1.0f;
+		task.name = render_pass_desc.profiler_task_name;
+		task.color = render_pass_desc.profiler_task_color;
 		return task;
 	}
 
-	lz::ProfilerTask RenderGraph::CreateProfilerTask(const ComputePassDesc& computePassDesc)
+	lz::ProfilerTask RenderGraph::create_profiler_task(const ComputePassDesc& compute_pass_desc)
 	{
 		lz::ProfilerTask task;
-		task.startTime = -1.0f;
-		task.endTime = -1.0f;
-		task.name = computePassDesc.profilerTaskName;
-		task.color = computePassDesc.profilerTaskColor;
+		task.start_time = -1.0f;
+		task.end_time = -1.0f;
+		task.name = compute_pass_desc.profiler_task_name;
+		task.color = compute_pass_desc.profiler_task_color;
 		return task;
 	}
 
-	lz::ProfilerTask RenderGraph::CreateProfilerTask(const TransferPassDesc& transferPassDesc)
+	lz::ProfilerTask RenderGraph::create_profiler_task(const TransferPassDesc& transfer_pass_desc)
 	{
 		lz::ProfilerTask task;
-		task.startTime = -1.0f;
-		task.endTime = -1.0f;
-		task.name = transferPassDesc.profilerTaskName;
-		task.color = transferPassDesc.profilerTaskColor;
+		task.start_time = -1.0f;
+		task.end_time = -1.0f;
+		task.name = transfer_pass_desc.profiler_task_name;
+		task.color = transfer_pass_desc.profiler_task_color;
 		return task;
 	}
 
-	lz::ProfilerTask RenderGraph::CreateProfilerTask(const ImagePresentPassDesc& imagePresentPassDesc)
+	lz::ProfilerTask RenderGraph::create_profiler_task(const ImagePresentPassDesc& image_present_pass_desc)
 	{
 		lz::ProfilerTask task;
-		task.startTime = -1.0f;
-		task.endTime = -1.0f;
+		task.start_time = -1.0f;
+		task.end_time = -1.0f;
 		task.name = "ImagePresent";
 		task.color = glm::packUnorm4x8(glm::vec4(0.0f, 1.0f, 0.5f, 1.0f));
 		return task;
 	}
 
-	lz::ProfilerTask RenderGraph::CreateProfilerTask(const FrameSyncBeginPassDesc& frameSyncBeginPassDesc)
+	lz::ProfilerTask RenderGraph::create_profiler_task(const FrameSyncBeginPassDesc& frame_sync_begin_pass_desc)
 	{
 		lz::ProfilerTask task;
-		task.startTime = -1.0f;
-		task.endTime = -1.0f;
+		task.start_time = -1.0f;
+		task.end_time = -1.0f;
 		task.name = "FrameSyncBegin";
 		task.color = glm::packUnorm4x8(glm::vec4(0.0f, 0.5f, 1.0f, 1.0f));
 		return task;
 	}
 
-	lz::ProfilerTask RenderGraph::CreateProfilerTask(const FrameSyncEndPassDesc& frameSyncEndPassDesc)
+	lz::ProfilerTask RenderGraph::create_profiler_task(const FrameSyncEndPassDesc& frame_sync_end_pass_desc)
 	{
 		lz::ProfilerTask task;
-		task.startTime = -1.0f;
-		task.endTime = -1.0f;
+		task.start_time = -1.0f;
+		task.end_time = -1.0f;
 		task.name = "FrameSyncEnd";
 		task.color = glm::packUnorm4x8(glm::vec4(0.0f, 0.5f, 1.0f, 1.0f));
 		return task;

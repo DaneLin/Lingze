@@ -23,30 +23,30 @@ namespace lz
 	{
 		// Default constructor: Creates an invalid resource ID
 		ShaderResourceId()
-			: id(size_t(-1))
+			: id_(size_t(-1))
 		{
 		}
 
 		// Equality operator
 		bool operator==(const ShaderResourceId<Base>& other) const
 		{
-			return this->id == other.id;
+			return this->id_ == other.id_;
 		}
 
 		// IsValid: Checks if this is a valid resource ID
 		// Returns: True if the ID is valid, false otherwise
-		bool IsValid()
+		bool is_valid() const
 		{
-			return id != size_t(-1);
+			return id_ != size_t(-1);
 		}
 
 	private:
 		// Private constructor used by friend classes
-		explicit ShaderResourceId(size_t id) : id(id)
+		explicit ShaderResourceId(size_t id) : id_(id)
 		{
 		}
 
-		size_t id;  // Internal ID value
+		size_t id_; // Internal ID value
 		friend class DescriptorSetLayoutKey;
 		friend class Shader;
 	};
@@ -63,14 +63,14 @@ namespace lz
 		// - imageView: Image view to bind
 		// - sampler: Sampler to bind
 		// - shaderBindingId: Binding point in the shader
-		ImageSamplerBinding(lz::ImageView* imageView, lz::Sampler* sampler, uint32_t shaderBindingId);
+		ImageSamplerBinding(lz::ImageView* image_view, lz::Sampler* sampler, uint32_t shader_binding_id);
 
 		// Comparison operator for container ordering
 		bool operator<(const ImageSamplerBinding& other) const;
 
-		lz::ImageView* imageView;     // Image view to bind
-		lz::Sampler* sampler;         // Sampler to bind
-		uint32_t shaderBindingId;     // Binding point in the shader
+		lz::ImageView* image_view; // Image view to bind
+		lz::Sampler* sampler; // Sampler to bind
+		uint32_t shader_binding_id; // Binding point in the shader
 	};
 
 	// UniformBufferBinding: Structure for uniform buffer binding data
@@ -86,15 +86,16 @@ namespace lz
 		// - shaderBindingId: Binding point in the shader
 		// - offset: Offset within the buffer
 		// - size: Size of the data to bind
-		UniformBufferBinding(lz::Buffer* buffer, uint32_t shaderBindingId, vk::DeviceSize offset, vk::DeviceSize size);
+		UniformBufferBinding(lz::Buffer* buffer, uint32_t shader_binding_id, vk::DeviceSize offset,
+		                     vk::DeviceSize size);
 
 		// Comparison operator for container ordering
 		bool operator <(const UniformBufferBinding& other) const;
 
-		lz::Buffer* buffer;        // Buffer to bind
-		uint32_t shaderBindingId;  // Binding point in the shader
-		vk::DeviceSize offset;     // Offset within the buffer
-		vk::DeviceSize size;       // Size of the data to bind
+		lz::Buffer* buffer; // Buffer to bind
+		uint32_t shader_binding_id; // Binding point in the shader
+		vk::DeviceSize offset; // Offset within the buffer
+		vk::DeviceSize size; // Size of the data to bind
 	};
 
 	// StorageBufferBinding: Structure for storage buffer binding data
@@ -110,16 +111,16 @@ namespace lz
 		// - _shaderBindingId: Binding point in the shader
 		// - _offset: Offset within the buffer
 		// - _size: Size of the data to bind
-		StorageBufferBinding(lz::Buffer* _buffer, uint32_t _shaderBindingId, vk::DeviceSize _offset,
-		                     vk::DeviceSize _size);
+		StorageBufferBinding(lz::Buffer* buffer, uint32_t shader_binding_id, vk::DeviceSize offset,
+		                     vk::DeviceSize size);
 
 		// Comparison operator for container ordering
 		bool operator <(const StorageBufferBinding& other) const;
 
-		lz::Buffer* buffer;        // Buffer to bind
-		uint32_t shaderBindingId;  // Binding point in the shader
-		vk::DeviceSize offset;     // Offset within the buffer
-		vk::DeviceSize size;       // Size of the data to bind
+		lz::Buffer* buffer; // Buffer to bind
+		uint32_t shader_binding_id; // Binding point in the shader
+		vk::DeviceSize offset; // Offset within the buffer
+		vk::DeviceSize size; // Size of the data to bind
 	};
 
 	// StorageImageBinding: Structure for storage image binding data
@@ -133,13 +134,13 @@ namespace lz
 		// Parameters:
 		// - _imageView: Image view to bind
 		// - _shaderBindingId: Binding point in the shader
-		StorageImageBinding(lz::ImageView* _imageView, uint32_t _shaderBindingId);
+		StorageImageBinding(lz::ImageView* image_view, uint32_t shader_binding_id);
 
 		// Comparison operator for container ordering
 		bool operator <(const StorageImageBinding& other) const;
 
-		lz::ImageView* imageView;    // Image view to bind
-		uint32_t shaderBindingId;    // Binding point in the shader
+		lz::ImageView* image_view; // Image view to bind
+		uint32_t shader_binding_id; // Binding point in the shader
 	};
 
 	// DescriptorSetLayoutKey: Class for managing descriptor set layouts
@@ -166,10 +167,10 @@ namespace lz
 			// Comparison operator for container ordering
 			bool operator<(const UniformData& other) const;
 
-			std::string name;             // Name of the uniform variable
-			uint32_t offsetInBinding;     // Offset within the uniform buffer
-			uint32_t size;                // Size of the uniform variable
-			UniformBufferId uniformBufferId;  // ID of the parent uniform buffer
+			std::string name; // Name of the uniform variable
+			uint32_t offset_in_binding; // Offset within the uniform buffer
+			uint32_t size; // Size of the uniform variable
+			UniformBufferId uniform_buffer_id; // ID of the parent uniform buffer
 		};
 
 		// UniformBufferData: Structure for uniform buffer information
@@ -178,13 +179,13 @@ namespace lz
 			// Comparison operator for container ordering
 			bool operator<(const UniformBufferData& other) const;
 
-			std::string name;                // Name of the uniform buffer
-			uint32_t shaderBindingIndex;     // Binding point in the shader
-			vk::ShaderStageFlags stageFlags; // Shader stages that use this uniform buffer
+			std::string name; // Name of the uniform buffer
+			uint32_t shader_binding_index; // Binding point in the shader
+			vk::ShaderStageFlags stage_flags; // Shader stages that use this uniform buffer
 
-			uint32_t size;                   // Size of the uniform buffer
-			uint32_t offsetInSet;            // Offset within the descriptor set
-			std::vector<UniformId> uniformIds;  // IDs of uniform variables in this buffer
+			uint32_t size; // Size of the uniform buffer
+			uint32_t offset_in_set; // Offset within the descriptor set
+			std::vector<UniformId> uniform_ids; // IDs of uniform variables in this buffer
 		};
 
 		// ImageSamplerData: Structure for combined image sampler information
@@ -193,9 +194,9 @@ namespace lz
 			// Comparison operator for container ordering
 			bool operator<(const ImageSamplerData& other) const;
 
-			std::string name;                // Name of the combined image sampler
-			uint32_t shaderBindingIndex;     // Binding point in the shader
-			vk::ShaderStageFlags stageFlags; // Shader stages that use this image sampler
+			std::string name; // Name of the combined image sampler
+			uint32_t shader_binding_index; // Binding point in the shader
+			vk::ShaderStageFlags stage_flags; // Shader stages that use this image sampler
 		};
 
 		// StorageBufferData: Structure for storage buffer information
@@ -205,12 +206,12 @@ namespace lz
 			bool operator<(const StorageBufferData& other) const;
 
 			std::string name;
-			uint32_t shaderBindingIndex;
-			vk::ShaderStageFlags stageFlags;
+			uint32_t shader_binding_index;
+			vk::ShaderStageFlags stage_flags;
 
-			uint32_t podPartSize;
-			uint32_t arrayMemberSize;
-			uint32_t offsetInSet;
+			uint32_t pod_part_size;
+			uint32_t array_member_size;
+			uint32_t offset_in_set;
 		};
 
 		// StorageImageData: Structure for storage image information
@@ -220,153 +221,156 @@ namespace lz
 			bool operator<(const StorageImageData& other) const;
 
 			std::string name;
-			uint32_t shaderBindingIndex;
-			vk::ShaderStageFlags stageFlags;
+			uint32_t shader_binding_index;
+			vk::ShaderStageFlags stage_flags;
 		};
 
-		size_t GetUniformBuffersCount() const;
+		size_t get_uniform_buffers_count() const;
 
-		void GetUniformBufferIds(UniformBufferId* dstUniformBufferIds, size_t count = -1, size_t offset = 0) const;
+		void get_uniform_buffer_ids(UniformBufferId* dst_uniform_buffer_ids, size_t count = -1,
+		                            size_t offset = 0) const;
 
-		UniformBufferId GetUniformBufferId(std::string bufferName) const;
+		UniformBufferId get_uniform_buffer_id(std::string buffer_name) const;
 
-		UniformBufferId GetUniformBufferId(uint32_t bufferBindingId) const;
+		UniformBufferId get_uniform_buffer_id(uint32_t buffer_binding_id) const;
 
-		UniformBufferData GetUniformBufferInfo(UniformBufferId uniformBufferId) const;
+		UniformBufferData get_uniform_buffer_info(UniformBufferId uniform_buffer_id) const;
 
-		UniformBufferBinding MakeUniformBufferBinding(std::string bufferName, lz::Buffer* buffer,
-		                                              vk::DeviceSize offset = 0,
-		                                              vk::DeviceSize size = VK_WHOLE_SIZE) const;
+		UniformBufferBinding make_uniform_buffer_binding(std::string buffer_name, lz::Buffer* buffer,
+		                                                 vk::DeviceSize offset = 0,
+		                                                 vk::DeviceSize size = VK_WHOLE_SIZE) const;
 
-		size_t GetStorageBuffersCount() const;
+		size_t get_storage_buffers_count() const;
 
-		void GetStorageBufferIds(StorageBufferId* dstStorageBufferIds, size_t count = -1, size_t offset = 0) const;
+		void get_storage_buffer_ids(StorageBufferId* dst_storage_buffer_ids, size_t count = -1,
+		                            size_t offset = 0) const;
 
-		StorageBufferId GetStorageBufferId(std::string storageBufferName) const;
+		StorageBufferId get_storage_buffer_id(std::string storage_buffer_name) const;
 
-		StorageBufferId GetStorageBufferId(uint32_t bufferBindingId) const;
+		StorageBufferId get_storage_buffer_id(uint32_t buffer_binding_id) const;
 
-		StorageBufferData GetStorageBufferInfo(StorageBufferId storageBufferId) const;
+		StorageBufferData get_storage_buffer_info(StorageBufferId storage_buffer_id) const;
 
-		StorageBufferBinding MakeStorageBufferBinding(std::string bufferName, lz::Buffer* _buffer,
-		                                              vk::DeviceSize _offset = 0,
-		                                              vk::DeviceSize _size = VK_WHOLE_SIZE) const;
+		StorageBufferBinding make_storage_buffer_binding(std::string buffer_name, lz::Buffer* buffer,
+		                                                 vk::DeviceSize offset = 0,
+		                                                 vk::DeviceSize size = VK_WHOLE_SIZE) const;
 
 		template <typename MemberType>
-		StorageBufferBinding MakeCheckedStorageBufferBinding(std::string bufferName,
-			lz::Buffer* _buffer, vk::DeviceSize _offset, vk::DeviceSize _size) const
+		StorageBufferBinding make_checked_storage_buffer_binding(std::string buffer_name,
+		                                                         lz::Buffer* buffer, vk::DeviceSize offset,
+		                                                         vk::DeviceSize size) const
 		{
-			auto storageBufferId = GetStorageBufferId(bufferName);
-			assert(storageBufferId.IsValid());
-			auto storageBufferInfo = GetStorageBufferInfo(storageBufferId);
-			assert(storageBufferInfo.arrayMemberSize == sizeof(MemberType));
-			return StorageBufferBinding(_buffer, storageBufferInfo.shaderBindingIndex, _offset, _size);
+			auto storage_buffer_id = get_storage_buffer_id(buffer_name);
+			assert(storage_buffer_id.is_valid());
+			auto storage_buffer_info = get_storage_buffer_info(storage_buffer_id);
+			assert(storage_buffer_info.array_member_size == sizeof(MemberType));
+			return StorageBufferBinding(buffer, storage_buffer_info.shader_binding_index, offset, size);
 		}
 
-		size_t GetUniformsCount() const;
+		size_t get_uniforms_count() const;
 
-		void GetUniformIds(UniformId* dstUniformIds, size_t count = -1, size_t offset = 0) const;
+		void get_uniform_ids(UniformId* dst_uniform_ids, size_t count = -1, size_t offset = 0) const;
 
-		UniformData GetUniformInfo(UniformId uniformId) const;
+		UniformData get_uniform_info(UniformId uniform_id) const;
 
-		UniformId GetUniformId(std::string name) const;
+		UniformId get_uniform_id(std::string name) const;
 
-		size_t GetImageSamplersCount() const;
+		size_t get_image_samplers_count() const;
 
-		void GetImageSamplerIds(ImageSamplerId* dstImageSamplerIds, size_t count = -1, size_t offset = 0) const;
+		void get_image_sampler_ids(ImageSamplerId* dst_image_sampler_ids, size_t count = -1, size_t offset = 0) const;
 
-		ImageSamplerData GetImageSamplerInfo(ImageSamplerId imageSamplerId) const;
+		ImageSamplerData get_image_sampler_info(ImageSamplerId image_sampler_id) const;
 
-		ImageSamplerId GetImageSamplerId(std::string imageSamplerName) const;
+		ImageSamplerId get_image_sampler_id(std::string image_sampler_name) const;
 
-		ImageSamplerId GetImageSamplerId(uint32_t shaderBindingIndex) const;
+		ImageSamplerId get_image_sampler_id(uint32_t shader_binding_index) const;
 
-		ImageSamplerBinding MakeImageSamplerBinding(std::string imageSamplerName, lz::ImageView* _imageView,
-		                                            lz::Sampler* _sampler) const;
+		ImageSamplerBinding make_image_sampler_binding(std::string image_sampler_name, lz::ImageView* image_view,
+		                                               lz::Sampler* sampler) const;
 
-		size_t GetStorageImagesCount() const;
+		size_t get_storage_images_count() const;
 
-		void GetStorageImageIds(StorageImageId* dstStorageImageIds, size_t count = -1, size_t offset = 0) const;
+		void get_storage_image_ids(StorageImageId* dst_storage_image_ids, size_t count = -1, size_t offset = 0) const;
 
-		StorageImageId GetStorageImageId(std::string storageImageName) const;
+		StorageImageId get_storage_image_id(std::string storage_image_name) const;
 
-		StorageImageId GetStorageImageId(uint32_t bufferBindingId) const;
+		StorageImageId get_storage_image_id(uint32_t buffer_binding_id) const;
 
-		StorageImageData GetStorageImageInfo(StorageImageId storageImageId) const;
+		StorageImageData get_storage_image_info(StorageImageId storage_image_id) const;
 
-		StorageImageBinding MakeStorageImageBinding(std::string imageName, lz::ImageView* _imageView) const;
+		StorageImageBinding make_storage_image_binding(std::string image_name, lz::ImageView* image_view) const;
 
-		uint32_t GetTotalConstantBufferSize() const;
+		uint32_t get_total_constant_buffer_size() const;
 
-		bool IsEmpty() const;
+		bool is_empty() const;
 
 		bool operator<(const DescriptorSetLayoutKey& other) const;
 
-		static DescriptorSetLayoutKey Merge(DescriptorSetLayoutKey* setLayouts, size_t setsCount);
+		static DescriptorSetLayoutKey merge(DescriptorSetLayoutKey* set_layouts, size_t sets_count);
 
 	private:
-		void RebuildIndex();
+		void rebuild_index();
 
 
 		friend class Shader;
-		uint32_t setShaderId;
-		uint32_t size;
+		uint32_t set_shader_id_;
+		uint32_t size_;
 
-		std::vector<UniformData> uniformDatum;
-		std::vector<UniformBufferData> uniformBufferDatum;
-		std::vector<ImageSamplerData> imageSamplerDatum;
-		std::vector<StorageBufferData> storageBufferDatum;
-		std::vector<StorageImageData> storageImageDatum;
+		std::vector<UniformData> uniform_datum_;
+		std::vector<UniformBufferData> uniform_buffer_datum_;
+		std::vector<ImageSamplerData> image_sampler_datum_;
+		std::vector<StorageBufferData> storage_buffer_datum_;
+		std::vector<StorageImageData> storage_image_datum_;
 
-		std::map<std::string, UniformId> uniformNameToIds;
-		std::map<std::string, UniformBufferId> uniformBufferNameToIds;
-		std::map<uint32_t, UniformBufferId> uniformBufferBindingToIds;
-		std::map<std::string, ImageSamplerId> imageSamplerNameToIds;
-		std::map<uint32_t, ImageSamplerId> imageSamplerBindingToIds;
-		std::map<std::string, StorageBufferId> storageBufferNameToIds;
-		std::map<uint32_t, StorageBufferId> storageBufferBindingToIds;
-		std::map<std::string, StorageImageId> storageImageNameToIds;
-		std::map<uint32_t, StorageImageId> storageImageBindingToIds;
+		std::map<std::string, UniformId> uniform_name_to_ids_;
+		std::map<std::string, UniformBufferId> uniform_buffer_name_to_ids_;
+		std::map<uint32_t, UniformBufferId> uniform_buffer_binding_to_ids_;
+		std::map<std::string, ImageSamplerId> image_sampler_name_to_ids_;
+		std::map<uint32_t, ImageSamplerId> image_sampler_binding_to_ids_;
+		std::map<std::string, StorageBufferId> storage_buffer_name_to_ids_;
+		std::map<uint32_t, StorageBufferId> storage_buffer_binding_to_ids_;
+		std::map<std::string, StorageImageId> storage_image_name_to_ids_;
+		std::map<uint32_t, StorageImageId> storage_image_binding_to_ids_;
 	};
 
 	class Shader
 	{
 	public:
-		Shader(vk::Device logicalDevice, std::string shaderFile);
+		Shader(vk::Device logical_device, std::string shader_file);
 
-		Shader(vk::Device logicalDevice, const std::vector<uint32_t>& bytecode);
+		Shader(vk::Device logical_device, const std::vector<uint32_t>& bytecode);
 
-		static const std::vector<uint32_t> GetBytecode(std::string filename);
+		static const std::vector<uint32_t> get_bytecode(std::string filename);
 
-		lz::ShaderModule* GetModule();
+		lz::ShaderModule* get_module();
 
 
-		size_t GetSetsCount();
+		size_t get_sets_count();
 
-		const DescriptorSetLayoutKey* GetSetInfo(size_t setIndex);
+		const DescriptorSetLayoutKey* get_set_info(size_t set_index);
 
-		glm::uvec3 GetLocalSize();
+		glm::uvec3 get_local_size();
 
 	private:
-		void Init(vk::Device logicalDevice, const std::vector<uint32_t>& bytecode);
+		void init(vk::Device logical_device, const std::vector<uint32_t>& bytecode);
 
-		std::vector<DescriptorSetLayoutKey> descriptorSetLayoutKeys;
+		std::vector<DescriptorSetLayoutKey> descriptor_set_layout_keys_;
 
-		std::unique_ptr<lz::ShaderModule> shaderModule;
-		glm::uvec3 localSize;
+		std::unique_ptr<lz::ShaderModule> shader_module_;
+		glm::uvec3 local_size_;
 	};
 
 	class ShaderProgram
 	{
 	public:
-		ShaderProgram(Shader* _vertexShader, Shader* _fragmentShader);
+		ShaderProgram(Shader* vertex_shader, Shader* fragment_shader);
 
-		size_t GetSetsCount();
+		size_t get_sets_count();
 
-		const DescriptorSetLayoutKey* GetSetInfo(size_t setIndex);
+		const DescriptorSetLayoutKey* get_set_info(size_t set_index);
 
-		std::vector<DescriptorSetLayoutKey> combinedDescriptorSetLayoutKeys;
-		Shader* vertexShader;
-		Shader* fragmentShader;
+		std::vector<DescriptorSetLayoutKey> combined_descriptor_set_layout_keys;
+		Shader* vertex_shader;
+		Shader* fragment_shader;
 	};
 }

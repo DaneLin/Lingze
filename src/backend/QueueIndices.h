@@ -9,7 +9,7 @@ namespace lz
 	// - Present queue is used for presenting images to the display
 	struct QueueFamilyIndices
 	{
-		uint32_t graphicsFamilyIndex;  // Index of the graphics queue family
-		uint32_t presentFamilyIndex;   // Index of the presentation queue family
+		uint32_t graphics_family_index;  // Index of the graphics queue family
+		uint32_t present_family_index;   // Index of the presentation queue family
 	};
 }

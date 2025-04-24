@@ -7,264 +7,264 @@
 
 namespace lz
 {
-	PresentQueue::PresentQueue(lz::Core* core, lz::WindowDesc windowDesc, uint32_t imagesCount,
-	                           vk::PresentModeKHR preferredMode)
+	PresentQueue::PresentQueue(lz::Core* core, lz::WindowDesc window_desc, uint32_t images_count,
+	                           vk::PresentModeKHR preferred_mode)
 	{
-		this->core = core;
-		this->windowDesc = windowDesc;
-		this->imagesCount = imagesCount;
-		this->preferredMode = preferredMode;
+		this->core_ = core;
+		this->window_desc_ = window_desc;
+		this->images_count_ = images_count;
+		this->preferred_mode_ = preferred_mode;
 
-		RecreateSwapchain();
+		recreate_swapchain();
 	}
 
-	void PresentQueue::RecreateSwapchain()
+	void PresentQueue::recreate_swapchain()
 	{
 		// 完全重新创建交换链，而不是重用现有的交换链
-		if (this->swapchain)
+		if (this->swapchain_)
 		{
 			// 首先尝试使用更优雅的方式重建交换链
-			int width, height;
 			RECT rect;
-			GetClientRect(windowDesc.hWnd, &rect);
-			width = rect.right - rect.left;
-			height = rect.bottom - rect.top;
+			GetClientRect(window_desc_.h_wnd, &rect);
+			int width = rect.right - rect.left;
+			int height = rect.bottom - rect.top;
 
 			if (width > 0 && height > 0)
 			{
-				vk::Extent2D newSize(width, height);
-				bool recreateSuccess = swapchain->Recreate(newSize);
-				if (recreateSuccess)
+				const vk::Extent2D new_size(width, height);
+				const bool recreate_success = swapchain_->recreate(new_size);
+				if (recreate_success)
 				{
 					// 重建成功
-					this->swapchainImageViews = swapchain->GetImageViews();
-					this->swapchainRect = vk::Rect2D(vk::Offset2D(), swapchain->GetSize());
-					this->imageIndex = -1;
+					this->swapchain_image_views_ = swapchain_->get_image_views();
+					this->swapchain_rect_ = vk::Rect2D(vk::Offset2D(), swapchain_->get_size());
+					this->image_index_ = -1;
 					return;
 				}
 			}
 
 			// 如果重建失败，则释放旧的交换链，创建新的
-			this->swapchain.reset();
+			this->swapchain_.reset();
 		}
 
 		// 创建全新的交换链
-		this->swapchain = core->CreateSwapchain(windowDesc, imagesCount, preferredMode);
-		this->swapchainImageViews = swapchain->GetImageViews();
-		this->swapchainRect = vk::Rect2D(vk::Offset2D(), swapchain->GetSize());
-		this->imageIndex = -1;
+		this->swapchain_ = core_->create_swapchain(window_desc_, images_count_, preferred_mode_);
+		this->swapchain_image_views_ = swapchain_->get_image_views();
+		this->swapchain_rect_ = vk::Rect2D(vk::Offset2D(), swapchain_->get_size());
+		this->image_index_ = -1;
 	}
 
-	lz::ImageView* PresentQueue::AcquireImage(vk::Semaphore signalSemaphore)
+	lz::ImageView* PresentQueue::acquire_image(vk::Semaphore signal_semaphore)
 	{
-		this->imageIndex = swapchain->AcquireNextImage(signalSemaphore).value;
-		return swapchainImageViews[imageIndex];
+		this->image_index_ = swapchain_->acquire_next_image(signal_semaphore).value;
+		return swapchain_image_views_[image_index_];
 	}
 
-	void PresentQueue::PresentImage(vk::Semaphore waitSemaphore)
+	void PresentQueue::present_image(vk::Semaphore wait_semaphore)
 	{
-		vk::SwapchainKHR swapchains[] = {swapchain->GetHandle()};
-		vk::Semaphore waitSemaphores[] = {waitSemaphore};
-		auto presentInfo = vk::PresentInfoKHR()
+		const vk::SwapchainKHR swapchains[] = {swapchain_->get_handle()};
+		const vk::Semaphore wait_semaphores[] = {wait_semaphore};
+		const auto present_info = vk::PresentInfoKHR()
 		                   .setSwapchainCount(1)
 		                   .setPSwapchains(swapchains)
-		                   .setPImageIndices(&imageIndex)
+		                   .setPImageIndices(&image_index_)
 		                   .setPResults(nullptr)
 		                   .setWaitSemaphoreCount(1)
-		                   .setPWaitSemaphores(waitSemaphores);
+		                   .setPWaitSemaphores(wait_semaphores);
 
-		auto res = core->GetPresentQueue().presentKHR(presentInfo);
+		auto res = core_->get_present_queue().presentKHR(present_info);
 	}
 
-	vk::Extent2D PresentQueue::GetImageSize()
+	vk::Extent2D PresentQueue::get_image_size()
 	{
-		return swapchain->GetSize();
+		return swapchain_->get_size();
 	}
 
-	InFlightQueue::InFlightQueue(lz::Core* core, lz::WindowDesc windowDesc, uint32_t inFlightCount,
-	                             vk::PresentModeKHR preferredMode)
+	InFlightQueue::InFlightQueue(lz::Core* core, lz::WindowDesc window_desc, uint32_t in_flight_count,
+	                             vk::PresentModeKHR preferred_mode)
 	{
-		this->core = core;
-		this->windowDesc = windowDesc;
-		this->inFlightCount = inFlightCount;
-		this->preferredMode = preferredMode;
-		this->memoryPool = std::make_unique<lz::ShaderMemoryPool>(core->GetDynamicMemoryAlignment());
+		this->core_ = core;
+		this->window_desc_ = window_desc;
+		this->in_flight_count_ = in_flight_count;
+		this->preferred_mode_ = preferred_mode;
+		this->memory_pool_ = std::make_unique<lz::ShaderMemoryPool>(core->get_dynamic_memory_alignment());
 
-		presentQueue.reset(new PresentQueue(core, windowDesc, inFlightCount, preferredMode));
-		InitFrameResources();
+		present_queue_.reset(new PresentQueue(core, window_desc, in_flight_count, preferred_mode));
+		init_frame_resources();
 	}
 
-	void InFlightQueue::RecreateSwapchain()
+	void InFlightQueue::recreate_swapchain()
 	{
 		// 等待设备空闲
-		core->WaitIdle();
+		core_->wait_idle();
 
 		// 删除所有与旧交换链相关的资源
-		swapchainImageViewProxies.clear();
+		swapchain_image_view_proxies_.clear();
 
 		// 重新创建交换链
-		presentQueue->RecreateSwapchain();
+		present_queue_->recreate_swapchain();
 	}
 
-	void InFlightQueue::InitFrameResources()
+	void InFlightQueue::init_frame_resources()
 	{
-		frames.clear();
-		for (size_t frameIndex = 0; frameIndex < inFlightCount; frameIndex++)
+		frames_.clear();
+		for (size_t frame_index = 0; frame_index < in_flight_count_; frame_index++)
 		{
 			FrameResources frame;
-			frame.inFlightFence = core->CreateFence(true);
-			frame.imageAcquiredSemaphore = core->CreateVulkanSemaphore();
-			frame.renderingFinishedSemaphore = core->CreateVulkanSemaphore();
+			frame.in_flight_fence = core_->create_fence(true);
+			frame.image_acquired_semaphore = core_->create_vulkan_semaphore();
+			frame.rendering_finished_semaphore = core_->create_vulkan_semaphore();
 
-			frame.commandBuffer = std::move(core->AllocateCommandBuffers(1)[0]);
-			core->SetObjectDebugName(frame.commandBuffer.get(),
-			                         std::string("Frame") + std::to_string(frameIndex) + " command buffer");
-			frame.shaderMemoryBuffer = std::unique_ptr<lz::Buffer>(new lz::Buffer(
-				core->GetPhysicalDevice(), core->GetLogicalDevice(), 100000000, vk::BufferUsageFlagBits::eUniformBuffer,
-				vk::MemoryPropertyFlagBits::eHostCoherent));
-			frame.gpuProfiler = std::unique_ptr<lz::GpuProfiler>(
-				new lz::GpuProfiler(core->GetPhysicalDevice(), core->GetLogicalDevice(), 512));
-			frames.push_back(std::move(frame));
+			frame.command_buffer = std::move(core_->allocate_command_buffers(1)[0]);
+			core_->set_object_debug_name(frame.command_buffer.get(),
+			                         std::string("Frame") + std::to_string(frame_index) + " command buffer");
+			frame.shader_memory_buffer = std::make_unique<lz::Buffer>(
+				core_->get_physical_device(), core_->get_logical_device(), 100000000,
+				vk::BufferUsageFlagBits::eUniformBuffer,
+				vk::MemoryPropertyFlagBits::eHostCoherent);
+			frame.gpu_profiler = std::make_unique<lz::GpuProfiler>(core_->get_physical_device(),
+			                                                       core_->get_logical_device(), 512);
+			frames_.push_back(std::move(frame));
 		}
-		frameIndex = 0;
+		frame_index_ = 0;
 	}
 
-	vk::Extent2D InFlightQueue::GetImageSize()
+	vk::Extent2D InFlightQueue::get_image_size() const
 	{
-		return presentQueue->GetImageSize();
+		return present_queue_->get_image_size();
 	}
 
-	size_t InFlightQueue::GetInFlightFramesCount()
+	size_t InFlightQueue::get_in_flight_frames_count() const
 	{
-		return frames.size();
+		return frames_.size();
 	}
 
-	InFlightQueue::FrameInfo InFlightQueue::BeginFrame()
+	InFlightQueue::FrameInfo InFlightQueue::begin_frame()
 	{
-		this->profilerFrameId = cpuProfiler.StartFrame();
+		this->profiler_frame_id_ = cpu_profiler_.start_frame();
 
-		auto& currFrame = frames[frameIndex];
+		auto& curr_frame = frames_[frame_index_];
 		{
-			auto fenceTask = cpuProfiler.StartScopedTask("WaitForFence", lz::Colors::pomegranate);
-			core->WaitForFence(currFrame.inFlightFence.get());
-			core->ResetFence(currFrame.inFlightFence.get());
-		}
-
-		{
-			auto imageAcquireTask = cpuProfiler.StartScopedTask("ImageAcquire", lz::Colors::emerald);
-			currSwapchainImageView = presentQueue->AcquireImage(currFrame.imageAcquiredSemaphore.get());
+			auto fence_task = cpu_profiler_.start_scoped_task("WaitForFence", lz::Colors::pomegranate);
+			core_->wait_for_fence(curr_frame.in_flight_fence.get());
+			core_->reset_fence(curr_frame.in_flight_fence.get());
 		}
 
 		{
-			auto gpuGatheringTask = cpuProfiler.StartScopedTask("GpuPrfGathering", lz::Colors::amethyst);
-			currFrame.gpuProfiler->GatherTimestamps();
+			auto image_acquire_task = cpu_profiler_.start_scoped_task("ImageAcquire", lz::Colors::emerald);
+			curr_swapchain_image_view_ = present_queue_->acquire_image(curr_frame.image_acquired_semaphore.get());
 		}
 
-		auto& swapchainViewProxyId = swapchainImageViewProxies[currSwapchainImageView];
-		if (!swapchainViewProxyId.IsAttached())
 		{
-			swapchainViewProxyId = core->GetRenderGraph()->AddExternalImageView(currSwapchainImageView);
+			auto gpu_gathering_task = cpu_profiler_.start_scoped_task("GpuPrfGathering", lz::Colors::amethyst);
+			curr_frame.gpu_profiler->gather_timestamps();
 		}
-		core->GetRenderGraph()->AddPass(lz::RenderGraph::FrameSyncBeginPassDesc());
 
-		memoryPool->MapBuffer(currFrame.shaderMemoryBuffer.get());
+		auto& swapchain_view_proxy_id = swapchain_image_view_proxies_[curr_swapchain_image_view_];
+		if (!swapchain_view_proxy_id.is_attached())
+		{
+			swapchain_view_proxy_id = core_->get_render_graph()->add_external_image_view(curr_swapchain_image_view_);
+		}
+		core_->get_render_graph()->add_pass(lz::RenderGraph::FrameSyncBeginPassDesc());
 
-		FrameInfo frameInfo;
-		frameInfo.memoryPool = memoryPool.get();
-		frameInfo.frameIndex = frameIndex;
-		frameInfo.swapchainImageViewProxyId = swapchainViewProxyId->Id();
+		memory_pool_->map_buffer(curr_frame.shader_memory_buffer.get());
 
-		return frameInfo;
+		FrameInfo frame_info;
+		frame_info.memory_pool = memory_pool_.get();
+		frame_info.frame_index = frame_index_;
+		frame_info.swapchain_image_view_proxy_id = swapchain_view_proxy_id->id();
+
+		return frame_info;
 	}
 
-	void InFlightQueue::EndFrame()
+	void InFlightQueue::end_frame()
 	{
-		auto& currFrame = frames[frameIndex];
+		auto& curr_frame = frames_[frame_index_];
 
-		core->GetRenderGraph()->AddImagePresent(swapchainImageViewProxies[currSwapchainImageView]->Id());
-		core->GetRenderGraph()->AddPass(lz::RenderGraph::FrameSyncEndPassDesc());
+		core_->get_render_graph()->add_image_present(swapchain_image_view_proxies_[curr_swapchain_image_view_]->id());
+		core_->get_render_graph()->add_pass(lz::RenderGraph::FrameSyncEndPassDesc());
 
-		auto bufferBeginInfo = vk::CommandBufferBeginInfo()
+		constexpr auto buffer_begin_info = vk::CommandBufferBeginInfo()
 			.setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
-		currFrame.commandBuffer->begin(bufferBeginInfo);
+		curr_frame.command_buffer->begin(buffer_begin_info);
 		{
-			auto gpuFrame = currFrame.gpuProfiler->StartScopedFrame(currFrame.commandBuffer.get());
-			core->GetRenderGraph()->Execute(currFrame.commandBuffer.get(), &cpuProfiler, currFrame.gpuProfiler.get());
+			auto gpuFrame = curr_frame.gpu_profiler->start_scoped_frame(curr_frame.command_buffer.get());
+			core_->get_render_graph()->execute(curr_frame.command_buffer.get(), &cpu_profiler_, curr_frame.gpu_profiler.get());
 		}
-		currFrame.commandBuffer->end();
+		curr_frame.command_buffer->end();
 
-		memoryPool->UnmapBuffer();
+		memory_pool_->unmap_buffer();
 
 
 		{
 			{
-				auto presentTask = cpuProfiler.StartScopedTask("Submit", lz::Colors::amethyst);
-				vk::Semaphore waitSemaphores[] = {currFrame.imageAcquiredSemaphore.get()};
-				vk::Semaphore signalSemaphores[] = {currFrame.renderingFinishedSemaphore.get()};
-				vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+				auto present_task = cpu_profiler_.start_scoped_task("Submit", lz::Colors::amethyst);
+				const vk::Semaphore wait_semaphores[] = {curr_frame.image_acquired_semaphore.get()};
+				const vk::Semaphore signal_semaphores[] = {curr_frame.rendering_finished_semaphore.get()};
+				constexpr vk::PipelineStageFlags wait_stages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
 
-				auto submitInfo = vk::SubmitInfo()
+				auto submit_info = vk::SubmitInfo()
 				                  .setWaitSemaphoreCount(1)
-				                  .setPWaitSemaphores(waitSemaphores)
-				                  .setPWaitDstStageMask(waitStages)
+				                  .setPWaitSemaphores(wait_semaphores)
+				                  .setPWaitDstStageMask(wait_stages)
 				                  .setCommandBufferCount(1)
-				                  .setPCommandBuffers(&currFrame.commandBuffer.get())
+				                  .setPCommandBuffers(&curr_frame.command_buffer.get())
 				                  .setSignalSemaphoreCount(1)
-				                  .setPSignalSemaphores(signalSemaphores);
+				                  .setPSignalSemaphores(signal_semaphores);
 
-				core->GetGraphicsQueue().submit({submitInfo}, currFrame.inFlightFence.get());
+				core_->get_graphics_queue().submit({submit_info}, curr_frame.in_flight_fence.get());
 			}
-			auto presentTask = cpuProfiler.StartScopedTask("Present", lz::Colors::alizarin);
-			presentQueue->PresentImage(currFrame.renderingFinishedSemaphore.get());
+			auto present_task = cpu_profiler_.start_scoped_task("Present", lz::Colors::alizarin);
+			present_queue_->present_image(curr_frame.rendering_finished_semaphore.get());
 		}
-		frameIndex = (frameIndex + 1) % frames.size();
+		frame_index_ = (frame_index_ + 1) % frames_.size();
 
-		cpuProfiler.EndFrame(profilerFrameId);
-		lastFrameCpuProfilerTasks = cpuProfiler.GetProfilerTasks();
+		cpu_profiler_.end_frame(profiler_frame_id_);
+		last_frame_cpu_profiler_tasks_ = cpu_profiler_.get_profiler_tasks();
 	}
 
-	const std::vector<lz::ProfilerTask>& InFlightQueue::GetLastFrameCpuProfilerData()
+	const std::vector<lz::ProfilerTask>& InFlightQueue::get_last_frame_cpu_profiler_data()
 	{
-		return lastFrameCpuProfilerTasks;
+		return last_frame_cpu_profiler_tasks_;
 	}
 
-	const std::vector<lz::ProfilerTask>& InFlightQueue::GetLastFrameGpuProfilerData()
+	const std::vector<lz::ProfilerTask>& InFlightQueue::get_last_frame_gpu_profiler_data()
 	{
-		return frames[frameIndex].gpuProfiler->GetProfilerTasks();
+		return frames_[frame_index_].gpu_profiler->get_profiler_tasks();
 	}
 
-	CpuProfiler& InFlightQueue::GetCpuProfiler()
+	CpuProfiler& InFlightQueue::get_cpu_profiler()
 	{
-		return cpuProfiler;
+		return cpu_profiler_;
 	}
 
 	ExecuteOnceQueue::ExecuteOnceQueue(lz::Core* core)
 	{
-		this->core = core;
-		commandBuffer = std::move(core->AllocateCommandBuffers(1)[0]);
+		this->core_ = core;
+		command_buffer_ = std::move(core->allocate_command_buffers(1)[0]);
 	}
 
-	vk::CommandBuffer ExecuteOnceQueue::BeginCommandBuffer()
+	vk::CommandBuffer ExecuteOnceQueue::begin_command_buffer()
 	{
-		auto bufferBeginInfo = vk::CommandBufferBeginInfo()
+		constexpr auto buffer_begin_info = vk::CommandBufferBeginInfo()
 			.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-		commandBuffer->begin(bufferBeginInfo);
-		return commandBuffer.get();
+		command_buffer_->begin(buffer_begin_info);
+		return command_buffer_.get();
 	}
 
-	void ExecuteOnceQueue::EndCommandBuffer()
+	void ExecuteOnceQueue::end_command_buffer()
 	{
-		commandBuffer->end();
-		vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eAllCommands};
+		command_buffer_->end();
+		constexpr vk::PipelineStageFlags wait_stages[] = {vk::PipelineStageFlagBits::eAllCommands};
 
-		auto submitInfo = vk::SubmitInfo()
+		auto submit_info = vk::SubmitInfo()
 		                  .setWaitSemaphoreCount(0)
-		                  .setPWaitDstStageMask(waitStages)
+		                  .setPWaitDstStageMask(wait_stages)
 		                  .setCommandBufferCount(1)
-		                  .setPCommandBuffers(&commandBuffer.get())
+		                  .setPCommandBuffers(&command_buffer_.get())
 		                  .setSignalSemaphoreCount(0);
 
-		core->GetGraphicsQueue().submit({submitInfo}, nullptr);
-		core->GetGraphicsQueue().waitIdle();
+		core_->get_graphics_queue().submit({submit_info}, nullptr);
+		core_->get_graphics_queue().waitIdle();
 	}
 }

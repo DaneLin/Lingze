@@ -11,7 +11,7 @@ namespace lz
 	{
 	public:
 		// GetHandle: Returns the native Vulkan sampler handle
-		vk::Sampler GetHandle() const;
+		vk::Sampler get_handle() const;
 
 		// Comparison operator for container ordering
 		bool operator <(const Sampler& other) const;
@@ -24,11 +24,11 @@ namespace lz
 		// - mipFilterType: Filtering mode between mipmap levels
 		// - useComparison: Whether to use comparison mode for shadow sampling
 		// - borderColor: Color used for border address mode
-		Sampler(vk::Device logicalDevice, vk::SamplerAddressMode addressMode, vk::Filter minMagFilterType,
-		        vk::SamplerMipmapMode mipFilterType, bool useComparison = false,
-		        vk::BorderColor borderColor = vk::BorderColor());
+		Sampler(vk::Device logical_device, vk::SamplerAddressMode address_mode, vk::Filter min_mag_filter_type,
+		        vk::SamplerMipmapMode mip_filter_type, bool use_comparison = false,
+		        vk::BorderColor border_color = vk::BorderColor());
 
 	private:
-		vk::UniqueSampler samplerHandle;  // Native Vulkan sampler handle
+		vk::UniqueSampler sampler_handle_;  // Native Vulkan sampler handle
 	};
 }
