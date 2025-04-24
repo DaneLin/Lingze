@@ -43,13 +43,19 @@ namespace lz
         {
             if (!init())
             {
-                std::cerr << "Application initialization failed!" << std::endl;
+                std::cerr << "Application initialization failed!" << '\n';
                 return -1;
             }
+
+        	auto prev_frame_time = std::chrono::system_clock::now();;
 
             // Main loop
             while (!glfwWindowShouldClose(window_))
             {
+				auto curr_frame_time = std::chrono::system_clock::now();
+				delta_time_ = std::chrono::duration<float>(curr_frame_time - prev_frame_time).count();
+				prev_frame_time = curr_frame_time;
+
                 glfwPollEvents();
                 process_input();
                 render_frame();
@@ -63,7 +69,7 @@ namespace lz
         }
         catch (const std::exception& e)
         {
-            std::cerr << "Error: " << e.what() << std::endl;
+            std::cerr << "Error: " << e.what() << '\n';
             return -1;
         }
 
@@ -76,7 +82,7 @@ namespace lz
         // Initialize GLFW
         if (!glfwInit())
         {
-            std::cerr << "GLFW initialization failed" << std::endl;
+            std::cerr << "GLFW initialization failed" << '\n';
             return false;
         }
 
@@ -85,7 +91,7 @@ namespace lz
         window_ = glfwCreateWindow(window_width_, window_height_, app_name_.c_str(), nullptr, nullptr);
         if (!window_)
         {
-            std::cerr << "GLFW window creation failed" << std::endl;
+            std::cerr << "GLFW window creation failed" << '\n';
             glfwTerminate();
             return false;
         }
@@ -95,7 +101,7 @@ namespace lz
 
         // Set up Vulkan instance and window
         const char* glfw_extensions[] = { "VK_KHR_surface", "VK_KHR_win32_surface" };
-        uint32_t glfw_extension_count = sizeof(glfw_extensions) / sizeof(glfw_extensions[0]);
+        uint32_t glfw_extension_count = std::size(glfw_extensions);
 
         WindowDesc window_desc = {};
         window_desc.h_instance = GetModuleHandle(NULL);
@@ -108,7 +114,7 @@ namespace lz
         // Load scene
         if (!load_scene())
         {
-            std::cerr << "Scene loading failed" << std::endl;
+            std::cerr << "Scene loading failed" << '\n';
             return false;
         }
 
@@ -116,7 +122,7 @@ namespace lz
         renderer_ = create_renderer();
         if (!renderer_)
         {
-            std::cerr << "Renderer creation failed" << std::endl;
+            std::cerr << "Renderer creation failed" << '\n';
             return false;
         }
 
@@ -125,6 +131,9 @@ namespace lz
 
         // Initialize ImGui renderer
         imgui_renderer_ = std::make_unique<render::ImGuiRenderer>(core_.get(), window_);
+
+        glfwGetCursorPos(window_, &mouse_pos_.x, &mouse_pos_.y);
+		prev_mouse_pos_ = mouse_pos_;
 
         return true;
     }
@@ -137,18 +146,18 @@ namespace lz
         std::ifstream file_stream(config_file_name);
         if (!file_stream.is_open())
         {
-            std::cerr << "Unable to open scene file!" << std::endl;
+            std::cerr << "Unable to open scene file!" << '\n';
             return false;
         }
         
         bool result = reader.parse(file_stream, config_root);
         if (!result)
         {
-            std::cerr << "Error: Failed to parse file " << config_file_name << ": " << reader.getFormattedErrorMessages() << std::endl;
+            std::cerr << "Error: Failed to parse file " << config_file_name << ": " << reader.getFormattedErrorMessages() << '\n';
             return false;
         }
 
-        std::cerr << "File " << config_file_name << " parsed successfully" << std::endl;
+        std::cerr << "File " << config_file_name << " parsed successfully" << '\n';
         scene_ = std::make_unique<lz::Scene>(config_root["scene"], core_.get(), geo_type);
         
         return true;
@@ -166,6 +175,8 @@ namespace lz
         if (imgui_renderer_)
         {
             imgui_renderer_->process_input(window_);
+
+			glfwGetCursorPos(window_, &mouse_pos_.x, &mouse_pos_.y);
         }
     }
 
@@ -177,7 +188,7 @@ namespace lz
         {
             if (framebuffer_resized_)
             {
-                std::cout << "Window resized, recreate swapchain" << std::endl;
+                std::cout << "Window resized, recreate swapchain" << '\n';
                 framebuffer_resized_ = false;
                 
                 if (in_flight_queue_)
@@ -201,7 +212,7 @@ namespace lz
             }
             else
             {
-                std::cout << "Create frame queue" << std::endl;
+                std::cout << "Create frame queue" << '\n';
                 core_->clear_caches();
                 WindowDesc window_desc = {};
                 window_desc.h_instance = GetModuleHandle(NULL);
@@ -212,10 +223,73 @@ namespace lz
             }
         }
 
-        auto& imguiIO = ImGui::GetIO();
-        imguiIO.DeltaTime = 1.0f / 60.0f;
-        imguiIO.DisplaySize.x = float(in_flight_queue_->get_image_size().width);
-        imguiIO.DisplaySize.y = float(in_flight_queue_->get_image_size().height);
+        auto& imgui_io = ImGui::GetIO();
+        imgui_io.DeltaTime = 1.0f / 60.0f;
+        imgui_io.DisplaySize.x = float(in_flight_queue_->get_image_size().width);
+        imgui_io.DisplaySize.y = float(in_flight_queue_->get_image_size().height);
+
+        if (!ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow))
+        {
+            glm::vec3 dir = glm::vec3(0.0f, 0.0f, 0.0f);
+
+            if (glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_2))
+            {
+                float mouse_speed = 0.01f;
+                if (mouse_pos_ != prev_mouse_pos_)
+                {
+                    renderer_->change_view();
+                }
+                camera_.hor_angle += float((mouse_pos_ - prev_mouse_pos_).x * mouse_speed);
+                camera_.vert_angle += float((mouse_pos_ - prev_mouse_pos_).y * mouse_speed);
+            }
+            glm::mat4 camera_transform = camera_.get_transform_matrix();
+            glm::vec3 camera_forward = glm::vec3(camera_transform * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+            glm::vec3 camera_right = glm::vec3(camera_transform * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
+            glm::vec3 camera_up = glm::vec3(camera_transform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f));
+
+            if (glfwGetKey(window_, GLFW_KEY_W) == GLFW_PRESS)
+            {
+                dir += glm::vec3(0.0f, 0.0f, 1.0f);
+            }
+            if (glfwGetKey(window_, GLFW_KEY_S) == GLFW_PRESS)
+            {
+                dir += glm::vec3(0.0f, 0.0f, -1.0f);
+            }
+            if (glfwGetKey(window_, GLFW_KEY_A) == GLFW_PRESS)
+            {
+                dir += glm::vec3(-1.0f, 0.0f, 0.0f);
+            }
+            if (glfwGetKey(window_, GLFW_KEY_D) == GLFW_PRESS)
+            {
+                dir += glm::vec3(1.0f, 0.0f, 0.0f);
+            }
+            if (glfwGetKey(window_, GLFW_KEY_Q) == GLFW_PRESS)
+            {
+                dir += glm::vec3(0.0f, 1.0f, 0.0f);
+            }
+            if (glfwGetKey(window_, GLFW_KEY_E) == GLFW_PRESS)
+            {
+                dir += glm::vec3(0.0f, -1.0f, 0.0f);
+            }
+
+            if (glm::length(dir) > 0.0f)
+            {
+                renderer_->change_view();
+            }
+
+            float camera_speed = 3.0f;
+            camera_.pos += camera_forward * dir.z * camera_speed * delta_time_;
+            camera_.pos += camera_right * dir.x * camera_speed * delta_time_;
+            camera_.pos += camera_up * dir.y * camera_speed * delta_time_;
+
+            //std::cerr << "camera pos : " << camera_.pos.x << " " << camera_.pos.y << " " << camera_.pos.z << '\n';
+
+            if (glfwGetKey(window_, GLFW_KEY_V) == GLFW_PRESS)
+            {
+				std::cerr << "Reloading shaders..." << '\n';
+                renderer_->reload_shaders();
+            }
+        }
 
         try
         {
@@ -233,7 +307,7 @@ namespace lz
 
                 ImGui::Begin("Demo controls", 0, ImGuiWindowFlags_NoScrollbar);
                 {
-                    ImGui::Text("esdf, c, space: move camera");
+                    ImGui::Text("wasd, q, e: move camera");
                     ImGui::Text("v: live reload shaders");
                 }
                 ImGui::End();
@@ -250,6 +324,8 @@ namespace lz
             in_flight_queue_.reset();
             framebuffer_resized_ = true; // Ensure swapchain recreated
         }
+
+        prev_mouse_pos_ = mouse_pos_;
     }
 
     // Clean up resources

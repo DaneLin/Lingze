@@ -87,6 +87,10 @@ namespace lz
         std::unique_ptr<Scene> scene_;
         std::unique_ptr<render::ImGuiRenderer> imgui_renderer_;
         std::unique_ptr<InFlightQueue> in_flight_queue_;
+
+        float delta_time_;
+        glm::f64vec2 mouse_pos_;
+        glm::f64vec2 prev_mouse_pos_;
         
         Camera camera_;
         Camera light_;

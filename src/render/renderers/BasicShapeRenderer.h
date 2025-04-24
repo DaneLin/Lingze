@@ -19,7 +19,8 @@ namespace lz::render
 
 		virtual void recreate_scene_resources(lz::Scene* scene) override;
 		virtual void recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count) override;
-		virtual void render_frame(const lz::InFlightQueue::FrameInfo& frame_info, const lz::Camera& camera, const lz::Camera& light, lz::Scene* scene, GLFWwindow* window) override;
+		virtual void render_frame(const lz::InFlightQueue::FrameInfo& frame_info, const lz::Camera& camera,
+		                          const lz::Camera& light, lz::Scene* scene, GLFWwindow* window) override;
 		virtual void reload_shaders() override;
 		virtual void change_view() override;
 
@@ -30,17 +31,24 @@ namespace lz::render
 
 		struct BasicShapeShader
 		{
+#pragma pack(push, 1)
+			struct DataBuffer
+			{
+				glm::mat4 viewMatrix;
+				glm::mat4 projMatrix;
+			};
+#pragma pack(pop)
+
 			std::unique_ptr<lz::Shader> vertex_shader;
 			std::unique_ptr<lz::Shader> fragment_shader;
 			std::unique_ptr<lz::ShaderProgram> shader_program;
-		}base_shape_shader_;
+		} base_shape_shader_;
 
 		struct FrameResource
 		{
 			FrameResource(lz::RenderGraph* render_graph, glm::uvec2 screen_size)
-				:depth_stencil_proxy_(render_graph,vk::Format::eD32Sfloat, screen_size, lz::depth_image_usage)
+				: depth_stencil_proxy_(render_graph, vk::Format::eD32Sfloat, screen_size, lz::depth_image_usage)
 			{
-				
 			}
 
 			UnmippedProxy depth_stencil_proxy_;
