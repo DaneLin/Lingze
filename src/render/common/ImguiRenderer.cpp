@@ -15,7 +15,7 @@
 #include "backend/ImageView.h"
 
 
-namespace lz
+namespace lz::render
 {
 	ImGuiRenderer::ImGuiRenderer(lz::Core* core, GLFWwindow* window)
 	{

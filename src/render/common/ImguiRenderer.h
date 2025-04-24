@@ -6,10 +6,23 @@
 #include "backend/PresentQueue.h"
 #include "backend/Core.h"
 
-namespace lz
+namespace lz::render
 {
 	class Sampler;
 	class Core;
+
+    // 帧上下文类，用于自动处理ImGui帧
+    struct ImGuiScopedFrame
+    {
+        ImGuiScopedFrame()
+        {
+            ImGui::NewFrame();
+        }
+        ~ImGuiScopedFrame()
+        {
+            ImGui::EndFrame();
+        }
+    };
 
 	class ImGuiRenderer
     {

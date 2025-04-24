@@ -25,9 +25,23 @@ target_include_directories(deps_include INTERFACE
 )
 
 # 收集依赖库源文件
-file(GLOB_RECURSE DEP_SOURCES 
-    ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/*.cpp 
-    ${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/*.cpp 
-    ${CMAKE_CURRENT_SOURCE_DIR}/imgui/*.cpp
+file(GLOB_RECURSE SPIRV_CROSS_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/*.cpp)
+file(GLOB_RECURSE JSONCPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/*.cpp)
+file(GLOB_RECURSE IMGUI_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/imgui/*.cpp)
+
+# 构建第三方库
+add_library(lingze_deps STATIC 
+    ${SPIRV_CROSS_SOURCES}
+    ${JSONCPP_SOURCES}
+    ${IMGUI_SOURCES}
 )
-set(DEP_SOURCES ${DEP_SOURCES} PARENT_SCOPE) 
+
+# 为第三方库添加正确的包含路径
+target_include_directories(lingze_deps PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross
+    ${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/imgui
+)
+
+# 将库导出到父作用域
+set(LINGZE_DEPS_LIB lingze_deps PARENT_SCOPE) 
