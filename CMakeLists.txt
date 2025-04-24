@@ -89,6 +89,7 @@ set(lingze_backend_sources
     src/backend/Swapchain.cpp
     src/backend/Synchronization.cpp
     src/backend/TimestampQuery.cpp
+    src/backend/tiny_obj_loader_impl.cpp
     src/backend/VertexDeclaration.cpp
 )
 
@@ -137,11 +138,21 @@ set(lingze_render_common_headers
 
 # 渲染器文件
 set(lingze_renderers_sources
-    # render/renderers 目录下没有 .cpp 文件
 )
 
 set(lingze_renderers_headers
     src/render/renderers/BaseRenderer.h
+)
+
+# 场景文件
+set(lingze_scene_sources
+    src/scene/Mesh.cpp
+    src/scene/Scene.cpp
+)
+
+set(lingze_scene_headers
+    src/scene/Mesh.h
+    src/scene/Scene.h
 )
 
 # Shader文件
@@ -157,6 +168,7 @@ set(lingze_sources
     ${lingze_backend_sources}
     ${lingze_render_common_sources}
     ${lingze_renderers_sources}
+    ${lingze_scene_sources}
 )
 
 set(lingze_headers
@@ -164,6 +176,7 @@ set(lingze_headers
     ${lingze_backend_headers}
     ${lingze_render_common_headers}
     ${lingze_renderers_headers}
+    ${lingze_scene_headers}
 )
 
 add_executable(LingzeEngine)

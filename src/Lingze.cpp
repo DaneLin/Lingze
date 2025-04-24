@@ -9,7 +9,6 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtx/transform.hpp>
-#include <tiny_obj_loader.h>
 
 #include <iostream>
 
@@ -27,19 +26,7 @@
 
 #include "backend/Core.h"
 
-glm::vec3 ReadJsonVec3f(Json::Value vectorValue)
-{
-	return glm::vec3(vectorValue[0].asFloat(), vectorValue[1].asFloat(), vectorValue[2].asFloat());
-}
-glm::ivec2 ReadJsonVec2i(Json::Value vectorValue)
-{
-	return glm::ivec2(vectorValue[0].asInt(), vectorValue[1].asInt());
-}
 
-glm::uvec3 ReadJsonVec3u(Json::Value vectorValue)
-{
-	return glm::uvec3(vectorValue[0].asUInt(), vectorValue[1].asUInt(), vectorValue[2].asUInt());
-}
 
 #include "imgui.h"
 #include "backend/ImGuiProfilerRenderer.h"

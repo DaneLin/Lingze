@@ -27,7 +27,6 @@ target_include_directories(deps_include INTERFACE
 # 收集依赖库源文件
 file(GLOB_RECURSE DEP_SOURCES 
     ${CMAKE_CURRENT_SOURCE_DIR}/spirv-cross/*.cpp 
-    ${CMAKE_CURRENT_SOURCE_DIR}/tiny_obj_loader/*.cc 
     ${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/*.cpp 
     ${CMAKE_CURRENT_SOURCE_DIR}/imgui/*.cpp
 )
