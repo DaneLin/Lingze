@@ -6,7 +6,7 @@
 
 ## 简介
 
-Lingze（灵泽）是一个基于Vulkan API的轻量级渲染引擎，专注于提供高效、灵活的图形渲染功能。该引擎封装了Vulkan的复杂底层细节，提供简洁的API接口，简化了渲染管线的构建过程，同时保留了对底层API的直接访问能力，适合图形学习和项目开发。
+Lingze（灵泽）是一个基于Vulkan API的轻量级渲染引擎，专注于提供高效、灵活的图形渲染功能。该引擎封装了Vulkan的复杂底层细节，提供简洁的API接口，简化了渲染管线的构建过程，同时保留了对底层API的直接访问能力，用于个人图形学习和项目开发。
 
 ## 核心功能
 
@@ -27,7 +27,7 @@ Lingze（灵泽）是一个基于Vulkan API的轻量级渲染引擎，专注于�
 
 ## 项目结构
 
-项目采用模块化设计，代码结构清晰，主要包含以下组件：
+项目采用模块化设计，主要包含以下组件：
 
 ```
 Lingze/
@@ -86,33 +86,36 @@ cmake ..
 cmake --build .
 ```
 
-## 未来工作计划
+## 功能实现状态
 
-引擎当前处于开发阶段，计划实现以下功能：
 
-- **高级渲染技术**
-  - [ ] 物理基础渲染(PBR)材质系统
-  - [ ] 实时阴影技术
-  - [ ] 屏幕空间环境光遮蔽(SSAO)
-  - [ ] 延迟渲染管线
+- **渲染特性**
+  - [ ] 渲染图架构
+  - [ ] PBR材质系统
+  - [ ] 实时阴影
+  - [ ] SSAO
+  - [ ] 延迟渲染
+  - [ ] Mesh Shader
+  - [ ] 计算着色器
+  - [ ] 光线追踪
 
-- **性能优化**
-  - [ ] 更智能的同步障碍管理
-  - [ ] 多线程命令缓冲生成
-  - [ ] 自动批处理技术
-  - [ ] 实例化渲染支持
-  - [ ] Mesh Shader集成，提升几何处理性能
+- **资源系统**
+  - [ ] 自动内存管理
+  - [ ] 资源热重载
 
-- **功能扩展**
-  - [ ] 计算着色器和计算管线支持
-  - [ ] 自动内存管理系统
-  - [ ] 光线追踪管线集成
-  - [ ] 高级场景管理和加速结构
+- **工具与性能**
+  - [x] 基础ImGui集成
+  - [ ] 高级性能分析
+  - [ ] 多线程命令生成
 
-- **工具和生态**
-  - [ ] 资源热重载系统
-  - [ ] 可视化调试和分析工具
-  - [ ] 场景编辑器集成
+
+- **场景管理**
+  - [x] 网格加载
+    - [x] OBJ模型导入
+  - [ ] 高级场景图
+  - [ ] 加速结构
+  - [ ] 实例化渲染
+  - [ ] 场景编辑器
 
 ## 贡献
 
@@ -214,33 +217,36 @@ cmake ..
 cmake --build .
 ```
 
-## Future Work
+## Feature Implementation Status
 
-The engine is currently in development, with plans to implement the following features:
 
-- **Advanced Rendering Techniques**
-  - [ ] Physically Based Rendering (PBR) material system
-  - [ ] Real-time shadow techniques
-  - [ ] Screen Space Ambient Occlusion (SSAO)
-  - [ ] Deferred rendering pipeline
+- **Rendering Features**
+  - [ ] Render graph architecture
+  - [ ] PBR material system
+  - [ ] Real-time shadows
+  - [ ] SSAO
+  - [ ] Deferred rendering
+  - [ ] Mesh Shader
+  - [ ] Compute shaders
+  - [ ] Ray tracing
 
-- **Performance Optimizations**
-  - [ ] Smarter synchronization barrier management
-  - [ ] Multi-threaded command buffer generation
-  - [ ] Automatic batching techniques
-  - [ ] Instanced rendering support
-  - [ ] Mesh Shader integration for improved geometry processing performance
+- **Resource System**
+  - [ ] Automatic memory management
+  - [ ] Resource hot reloading
 
-- **Feature Extensions**
-  - [ ] Compute shader and compute pipeline support
-  - [ ] Automatic memory management system
-  - [ ] Ray tracing pipeline integration
-  - [ ] Advanced scene management and acceleration structures
+- **Tools & Performance**
+  - [x] Basic ImGui integration
+  - [ ] Advanced profiling
+  - [ ] Multi-threaded command generation
 
-- **Tools and Ecosystem**
-  - [ ] Resource hot reloading system
-  - [ ] Visual debugging and profiling tools
-  - [ ] Scene editor integration
+
+- **Scene Management**
+  - [x] Mesh loading
+    - [x] OBJ model import
+  - [ ] Advanced scene graph
+  - [ ] Acceleration structures
+  - [ ] Instanced rendering
+  - [ ] Scene editor
 
 ## Contributing
 
