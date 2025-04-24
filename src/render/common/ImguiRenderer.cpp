@@ -401,9 +401,9 @@ namespace lz
 	void ImGuiRenderer::reload_shaders()
 	{
 		imgui_shader_.vertex.reset(new lz::Shader(core_->get_logical_device(),
-		                                          std::string(SHADER_SPIRV_DIR) + "/ImGui/ImGui.vert.spv"));
+		                                          std::string(SHADER_SPIRV_DIR) + "ImGui/ImGui.vert.spv"));
 		imgui_shader_.fragment.reset(new lz::Shader(core_->get_logical_device(),
-		                                            std::string(SHADER_SPIRV_DIR) + "/ImGui/ImGui.frag.spv"));
+		                                            std::string(SHADER_SPIRV_DIR) + "ImGui/ImGui.frag.spv"));
 		imgui_shader_.program.reset(new lz::ShaderProgram(imgui_shader_.vertex.get(), imgui_shader_.fragment.get()));
 	}
 

@@ -1,14 +1,23 @@
 #pragma once
-//
-//class BaseRenderer
-//{
-//public:
-//	BaseRenderer(){}
-//
-//	virtual ~BaseRenderer() {}
-//	virtual void RecreateSceneResources(Scene* scene) {}
-//	virtual void RecreateSwapchainResources(vk::Extent2D viewportExtent, size_t inFlightFramesCount) {}
-//	virtual void RenderFrame(const lz::InFlightQueue::FrameInfo& frameInfo, const Camera& camera, const Camera& light, Scene* scene, GLFWwindow* window) {}
-//	virtual void ReloadShaders() {}
-//	virtual void ChangeView() {}
-//};
+#include "scene/Scene.h"
+#include "backend/PresentQueue.h"
+#include "backend/LingzeVK.h"
+#include "GLFW/glfw3.h"
+
+
+namespace lz::render
+{
+    class BaseRenderer
+    {
+    public:
+        BaseRenderer(){}
+
+        virtual ~BaseRenderer() {}
+        virtual void recreate_scene_resources(lz::Scene* scene) {}
+        virtual void recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count) {}
+        virtual void render_frame(const lz::InFlightQueue::FrameInfo& frame_info, const lz::Camera& camera, const lz::Camera& light, lz::Scene* scene, GLFWwindow* window) {}
+        virtual void reload_shaders() {}
+        virtual void change_view() {}
+    };
+}
+

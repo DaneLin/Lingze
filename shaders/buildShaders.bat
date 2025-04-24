@@ -78,8 +78,5 @@ rem %CompilerExe% -V glsl/fragmentShader.frag -o spirv/fragmentShader.spv
 rem %CompilerExe% -V glsl/frameDescriptorLayout.comp -o spirv/frameDescriptorLayout.spv
 rem %CompilerExe% -V glsl/passDescriptorLayout.comp -o spirv/passDescriptorLayout.spv
 
-@echo.
-@echo ========================================
+
 @echo Shader compilation complete! All modified files have been updated.
-@echo ========================================
-@echo.

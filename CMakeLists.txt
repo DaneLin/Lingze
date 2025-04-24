@@ -11,7 +11,21 @@ endif()
 
 project(LingzeEngineCMake VERSION 0.1.0)
 
+# 设置C++17标准
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
+
+# 启用VS的文件夹和过滤器
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+# 配置VS的CMake设置，使文件添加后自动更新
+if(MSVC)
+  set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
+  set(CMAKE_SUPPRESS_REGENERATION OFF)
+endif()
 
 find_package(Vulkan)
 message(STATUS "Found Vulkan in ${Vulkan_INCLUDE_DIRS}")
@@ -32,9 +46,12 @@ include_directories("${Vulkan_INCLUDE_DIRS}")
 
 # 定义着色器路径，以便于在代码中使用
 add_compile_definitions(
-    SHADER_DIR="${CMAKE_SOURCE_DIR}/shaders"
-    SHADER_SPIRV_DIR="${CMAKE_SOURCE_DIR}/shaders/spirv"
-    SHADER_GLSL_DIR="${CMAKE_SOURCE_DIR}/shaders/glsl"
+    SHADER_DIR="${CMAKE_SOURCE_DIR}/shaders/"
+    SHADER_SPIRV_DIR="${CMAKE_SOURCE_DIR}/shaders/spirv/"
+    SHADER_GLSL_DIR="${CMAKE_SOURCE_DIR}/shaders/glsl/"
+    SCENE_DIR="${CMAKE_SOURCE_DIR}/data/scenes/"
+    # 解决GLFW和Windows头文件宏冲突
+    GLFW_INCLUDE_NONE
 )
 
 # Define shader compilation custom target
@@ -47,120 +64,33 @@ add_custom_target(
     VERBATIM
 )
 
-# 显式列出所有源文件和头文件
+# 使用GLOB_RECURSE自动查找所有源文件和头文件
 # 主目录文件
-set(lingze_main_sources
-    src/Lingze.cpp
-)
-
-set(lingze_main_headers
-    # 主目录下没有.h文件
-)
+file(GLOB lingze_main_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cpp")
+file(GLOB lingze_main_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.h")
 
 # 后端文件
-set(lingze_backend_sources
-    src/backend/Buffer.cpp
-    src/backend/Core.cpp
-    src/backend/CpuProfiler.cpp
-    src/backend/DescriptorSetCache.cpp
-    src/backend/Framebuffer.cpp
-    src/backend/GpuProfiler.cpp
-    src/backend/Handles.cpp
-    src/backend/Image.cpp
-    src/backend/ImageLoader.cpp
-    src/backend/ImageView.cpp
-    src/backend/ImGuiProfilerRenderer.cpp
-    src/backend/LingzeVK.cpp
-    src/backend/Pipeline.cpp
-    src/backend/PipelineCache.cpp
-    src/backend/Pool.cpp
-    src/backend/PresentQueue.cpp
-    src/backend/ProfilerTask.cpp
-    src/backend/QueueIndices.cpp
-    src/backend/RenderGraph.cpp
-    src/backend/RenderPass.cpp
-    src/backend/RenderPassCache.cpp
-    src/backend/Sampler.cpp
-    src/backend/ShaderMemoryPool.cpp
-    src/backend/ShaderModule.cpp
-    src/backend/ShaderProgram.cpp
-    src/backend/StagedResources.cpp
-    src/backend/Surface.cpp
-    src/backend/Swapchain.cpp
-    src/backend/Synchronization.cpp
-    src/backend/TimestampQuery.cpp
-    src/backend/tiny_obj_loader_impl.cpp
-    src/backend/VertexDeclaration.cpp
-)
-
-set(lingze_backend_headers
-    src/backend/Buffer.h
-    src/backend/Core.h
-    src/backend/CpuProfiler.h
-    src/backend/DescriptorSetCache.h
-    src/backend/Framebuffer.h
-    src/backend/GpuProfiler.h
-    src/backend/Handles.h
-    src/backend/Image.h
-    src/backend/ImageLoader.h
-    src/backend/ImageView.h
-    src/backend/ImGuiProfilerRenderer.h
-    src/backend/LingzeVK.h
-    src/backend/Pipeline.h
-    src/backend/PipelineCache.h
-    src/backend/Pool.h
-    src/backend/PresentQueue.h
-    src/backend/ProfilerTask.h
-    src/backend/QueueIndices.h
-    src/backend/RenderGraph.h
-    src/backend/RenderPass.h
-    src/backend/RenderPassCache.h
-    src/backend/Sampler.h
-    src/backend/ShaderMemoryPool.h
-    src/backend/ShaderModule.h
-    src/backend/ShaderProgram.h
-    src/backend/StagedResources.h
-    src/backend/Surface.h
-    src/backend/Swapchain.h
-    src/backend/Synchronization.h
-    src/backend/TimestampQuery.h
-    src/backend/VertexDeclaration.h
-)
+file(GLOB_RECURSE lingze_backend_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/backend/*.cpp")
+file(GLOB_RECURSE lingze_backend_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/backend/*.h")
 
 # 渲染通用文件
-set(lingze_render_common_sources
-    src/render/common/ImguiRenderer.cpp
-)
-
-set(lingze_render_common_headers
-    src/render/common/ImguiRenderer.h
-)
+file(GLOB_RECURSE lingze_render_common_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/render/common/*.cpp")
+file(GLOB_RECURSE lingze_render_common_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/render/common/*.h")
 
 # 渲染器文件
-set(lingze_renderers_sources
-)
-
-set(lingze_renderers_headers
-    src/render/renderers/BaseRenderer.h
-)
+file(GLOB_RECURSE lingze_renderers_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/render/renderers/*.cpp")
+file(GLOB_RECURSE lingze_renderers_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/render/renderers/*.h")
 
 # 场景文件
-set(lingze_scene_sources
-    src/scene/Mesh.cpp
-    src/scene/Scene.cpp
-)
-
-set(lingze_scene_headers
-    src/scene/Mesh.h
-    src/scene/Scene.h
-)
+file(GLOB_RECURSE lingze_scene_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/scene/*.cpp")
+file(GLOB_RECURSE lingze_scene_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/scene/*.h")
 
 # Shader文件
-set(shader_files
-    shaders/glsl/ImGui/ImGui.frag
-    shaders/glsl/ImGui/ImGui.vert
-    shaders/buildShaders.bat
+file(GLOB_RECURSE shader_files CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/shaders/glsl/*.frag"
+    "${CMAKE_SOURCE_DIR}/shaders/glsl/*.vert"
 )
+list(APPEND shader_files "${CMAKE_SOURCE_DIR}/shaders/buildShaders.bat")
 
 # 所有源文件和头文件列表
 set(lingze_sources 
@@ -189,11 +119,15 @@ source_group("Main" FILES ${lingze_main_sources} ${lingze_main_headers})
 source_group("Backend" FILES ${lingze_backend_sources} ${lingze_backend_headers})
 source_group("Render\\Common" FILES ${lingze_render_common_sources} ${lingze_render_common_headers})
 source_group("Render\\Renderers" FILES ${lingze_renderers_sources} ${lingze_renderers_headers})
+source_group("Scene" FILES ${lingze_scene_sources} ${lingze_scene_headers})
 source_group("Shaders" FILES ${shader_files})
 
 target_sources(LingzeEngine PRIVATE ${DEP_SOURCES} ${lingze_sources} ${lingze_headers} ${shader_files})
 target_link_libraries(LingzeEngine ${Vulkan_LIBRARIES} ${GLFW3_LIBRARIES} deps_include)
 set_target_properties(LingzeEngine PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/bin/cmaked")
 set_target_properties(LingzeEngine PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/bin/cmake")
+
+# 确保VS2022正确处理源文件
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT LingzeEngine)
 
 # TODO: 如有需要，请添加测试并安装目标。

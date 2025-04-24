@@ -30,7 +30,11 @@ namespace lz
 
 		std::cout << "Loading mesh :" << file_name << '\n';
 		bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, file_name.c_str(), nullptr);
-		std::cout << "Warning : " << warn << '\n';
+		
+		if (warn.length())
+		{
+			std::cout << "Warning : " << warn << '\n';
+		}
 		if (!ret)
 		{
 			std::cerr << "Error : " << err << '\n';

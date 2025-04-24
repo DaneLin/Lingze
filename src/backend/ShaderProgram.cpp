@@ -603,7 +603,9 @@ namespace lz
 		std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
 		if (!file.is_open())
-			throw std::runtime_error("failed to open file!");
+		{
+			throw std::runtime_error("failed to open file: " + filename);
+		}
 
 		const size_t file_size = (size_t)file.tellg();
 		std::vector<uint32_t> bytecode(file_size / sizeof(uint32_t));
