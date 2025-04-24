@@ -12,7 +12,6 @@
 
 #include <iostream>
 
-#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
@@ -52,10 +51,10 @@ namespace lz
         virtual bool init();
         
         // Load scene
-        virtual bool load_scene();
+        virtual bool load_scene() = 0;
         
         // Create renderer
-        virtual std::unique_ptr<render::BaseRenderer> create_renderer();
+        virtual std::unique_ptr<render::BaseRenderer> create_renderer() = 0;
         
         // Update logic
         virtual void update(float deltaTime);

@@ -129,20 +129,6 @@ namespace lz
         return true;
     }
 
-    // Load scene
-    bool App::load_scene()
-    {
-        // Default implementation uses SimpleScene
-        // Derived classes should override this method to load specific scenes
-        std::string config_file_name = std::string(SCENE_DIR) + "CubeScene.json";
-        Scene::GeometryTypes geo_type = Scene::GeometryTypes::eTriangles;
-
-        Json::Value config_root;
-        Json::Reader reader;
-
-        return load_scene_from_file(config_file_name, geo_type);
-    }
-
     bool App::load_scene_from_file(const std::string& config_file_name, lz::Scene::GeometryTypes geo_type)
     {
         Json::Value config_root;
@@ -166,13 +152,6 @@ namespace lz
         scene_ = std::make_unique<lz::Scene>(config_root["scene"], core_.get(), geo_type);
         
         return true;
-    }
-
-    // Create renderer
-    std::unique_ptr<render::BaseRenderer> App::create_renderer()
-    {
-        // Default creates SimpleRenderer, derived classes can override this method
-        return std::make_unique<render::SimpleRenderer>(core_.get());
     }
 
     // Update logic
