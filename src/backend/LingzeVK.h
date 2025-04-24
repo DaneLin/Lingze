@@ -7,4 +7,4 @@
 // Include GLM for mathematics operations
 #include <glm/glm.hpp>
 
-// 移除TINYOBJLOADER_IMPLEMENTATION，避免多重定义
+// Remove TINYOBJLOADER_IMPLEMENTATION to avoid multiple definitions

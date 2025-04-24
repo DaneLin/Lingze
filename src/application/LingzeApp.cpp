@@ -1,7 +1,7 @@
-// Lingze.cpp: 定义应用程序的入口点。
+// Lingze.cpp: Defines the application entry point.
 //
 #include "LingzeApp.h"
 #include "EntryPoint.h"
 
-// 使用宏定义生成主函数
+// Use macro to generate main function
 LINGZE_MAIN(lz::application::LingzeApp) 

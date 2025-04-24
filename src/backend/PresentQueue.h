@@ -44,7 +44,7 @@ namespace lz
     {
         InFlightQueue(lz::Core* core, lz::WindowDesc window_desc, uint32_t in_flight_count, vk::PresentModeKHR preferred_mode);
 
-        // 重建交换链
+        // Recreate swapchain
         void recreate_swapchain();
 
         void init_frame_resources();

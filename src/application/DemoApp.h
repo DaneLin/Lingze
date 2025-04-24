@@ -5,7 +5,7 @@
 namespace lz {
 namespace application {
 
-// 定义DemoApp类，继承自App基类
+// Define DemoApp class, inherits from App base class
 class DemoApp : public lz::App
 {
 public:
@@ -14,29 +14,29 @@ public:
     virtual ~DemoApp() = default;
     
 protected:
-    // 加载场景
+    // Load scene
     virtual bool load_scene() override
     {
-        // 演示应用可以使用不同的场景
-        std::string config_file_name = std::string(SCENE_DIR) + "CubeScene.json";  // 也可以换成其他场景
+        // Demo application can use different scenes
+        std::string config_file_name = std::string(SCENE_DIR) + "CubeScene.json";  // Can also use other scenes
         lz::Scene::GeometryTypes geo_type = lz::Scene::GeometryTypes::eTriangles;
         
         return load_scene_from_file(config_file_name, geo_type);
     }
     
-    // 处理输入
+    // Process input
     virtual void process_input() override
     {
-        // 调用基类处理
+        // Call base class handling
         lz::App::process_input();
         
-        // 演示应用中可添加特殊的输入处理
+        // Special input processing can be added in demo application
     }
     
-    // 更新逻辑
+    // Update logic
     virtual void update(float deltaTime) override
     {
-        // 演示应用中可添加特殊的更新逻辑
+        // Special update logic can be added in demo application
     }
 };
 

@@ -281,10 +281,10 @@ namespace lz
 	}
 
 	/**
-	 * @brief 判断两个图像使用类型之间是否需要障碍(Barrier)
-	 * @param src_usage_type 源图像使用类型
-	 * @param dst_usage_type 目标图像使用类型
-	 * @return 如果需要障碍返回true，否则返回false
+	 * @brief Determine if a barrier is needed between two image usage types
+	 * @param src_usage_type Source image usage type
+	 * @param dst_usage_type Destination image usage type
+	 * @return Returns true if a barrier is needed, otherwise false
 	 */
 	static bool is_image_barrier_needed(const ImageUsageTypes src_usage_type, const ImageUsageTypes dst_usage_type)
 	{
@@ -294,45 +294,45 @@ namespace lz
 	}
 
 	/**
-	 * @brief 缓冲区访问模式
-	 * 描述在管线的某个阶段如何访问缓冲区以及与之相关的访问掩码和队列类型
+	 * @brief Buffer access pattern
+	 * Describes how a buffer is accessed at a pipeline stage and the associated access masks and queue type
 	 */
 	struct BufferAccessPattern
 	{
-		vk::PipelineStageFlags stage;       // 访问缓冲区的管线阶段
-		vk::AccessFlags access_mask;         // 内存访问标志
-		QueueFamilyTypes queue_family_type;   // 执行访问的队列族类型
+		vk::PipelineStageFlags stage;       // Pipeline stage that accesses the buffer
+		vk::AccessFlags access_mask;         // Memory access flags
+		QueueFamilyTypes queue_family_type;   // Queue family type that performs the access
 	};
 
 	/**
-	 * @brief 缓冲区障碍
-	 * 描述缓冲区从一种访问模式转换到另一种访问模式所需的障碍信息
+	 * @brief Buffer barrier
+	 * Describes barrier information needed to transition from one access pattern to another
 	 */
 	struct BufferBarrier
 	{
-		ImageAccessPattern src_access_pattern;   // 源访问模式
-		ImageAccessPattern dst_access_pattern;   // 目标访问模式
+		ImageAccessPattern src_access_pattern;   // Source access pattern
+		ImageAccessPattern dst_access_pattern;   // Destination access pattern
 	};
 
 	/**
-	 * @brief 缓冲区使用类型枚举
-	 * 定义了缓冲区在Vulkan管线中的不同使用方式
+	 * @brief Buffer usage type enumeration
+	 * Defines different usage types for buffers in Vulkan pipeline
 	 */
 	enum struct BufferUsageTypes : uint8_t
 	{
-		eVertexBuffer,              // 用作顶点缓冲区
-		eGraphicsShaderReadWrite,   // 被图形着色器读写
-		eComputeShaderReadWrite,    // 被计算着色器读写
-		eTransferDst,               // 作为传输操作的目标
-		eTransferSrc,               // 作为传输操作的源
-		eNone,                      // 不使用
-		eUnknown                    // 未知用途
+		eVertexBuffer,              // Used as vertex buffer
+		eGraphicsShaderReadWrite,   // Used by graphics shader for read/write
+		eComputeShaderReadWrite,    // Used by compute shader for read/write
+		eTransferDst,               // Used as transfer destination
+		eTransferSrc,               // Used as transfer source
+		eNone,                      // Not used
+		eUnknown                    // Unknown usage
 	};
 
 	/**
-	 * @brief 获取缓冲区的源访问模式
-	 * @param usage_type 缓冲区使用类型
-	 * @return 源访问模式
+	 * @brief Get source access pattern for a buffer
+	 * @param usage_type Buffer usage type
+	 * @return Source access pattern
 	 */
 	static BufferAccessPattern get_src_buffer_access_pattern(const BufferUsageTypes usage_type)
 	{
@@ -341,7 +341,7 @@ namespace lz
 		{
 		case BufferUsageTypes::eVertexBuffer:
 			{
-				// 缓冲区作为顶点缓冲区使用
+				// Buffer used as vertex buffer
 				access_pattern.stage = vk::PipelineStageFlagBits::eVertexInput;
 				access_pattern.access_mask = vk::AccessFlags();
 				access_pattern.queue_family_type = QueueFamilyTypes::eGraphics;
@@ -349,7 +349,7 @@ namespace lz
 			break;
 		case BufferUsageTypes::eGraphicsShaderReadWrite:
 			{
-				// 缓冲区将由图形着色器读写
+				// Buffer will be read/written by graphics shader
 				access_pattern.stage = vk::PipelineStageFlagBits::eVertexShader |
 					vk::PipelineStageFlagBits::eFragmentShader;
 				access_pattern.access_mask = vk::AccessFlagBits::eShaderWrite;
@@ -358,7 +358,7 @@ namespace lz
 			break;
 		case BufferUsageTypes::eComputeShaderReadWrite:
 			{
-				// 缓冲区将由计算着色器读写
+				// Buffer will be read/written by compute shader
 				access_pattern.stage = vk::PipelineStageFlagBits::eComputeShader;
 				access_pattern.access_mask = vk::AccessFlagBits::eShaderWrite;
 				access_pattern.queue_family_type = QueueFamilyTypes::eCompute;
@@ -366,7 +366,7 @@ namespace lz
 			break;
 		case BufferUsageTypes::eTransferDst:
 			{
-				// 缓冲区将作为传输目标
+				// Buffer will be used as transfer destination
 				access_pattern.stage = vk::PipelineStageFlagBits::eTransfer;
 				access_pattern.access_mask = vk::AccessFlagBits::eTransferWrite;
 				access_pattern.queue_family_type = QueueFamilyTypes::eTransfer;
@@ -374,7 +374,7 @@ namespace lz
 			break;
 		case BufferUsageTypes::eTransferSrc:
 			{
-				// 缓冲区将作为传输源
+				// Buffer will be used as transfer source
 				access_pattern.stage = vk::PipelineStageFlagBits::eTransfer;
 				access_pattern.access_mask = vk::AccessFlags();
 				access_pattern.queue_family_type = QueueFamilyTypes::eTransfer;
@@ -382,7 +382,7 @@ namespace lz
 			break;
 		case BufferUsageTypes::eNone:
 			{
-				// 缓冲区不使用
+				// Buffer not in use
 				access_pattern.stage = vk::PipelineStageFlagBits::eTopOfPipe;
 				access_pattern.access_mask = vk::AccessFlags();
 				access_pattern.queue_family_type = QueueFamilyTypes::eUndefined;
@@ -390,7 +390,7 @@ namespace lz
 			break;
 		case BufferUsageTypes::eUnknown:
 			{
-				// 缓冲区用途未知
+				// Buffer usage unknown
 				access_pattern.stage = vk::PipelineStageFlagBits::eBottomOfPipe;
 				access_pattern.access_mask = vk::AccessFlags();
 				access_pattern.queue_family_type = QueueFamilyTypes::eUndefined;
@@ -401,9 +401,9 @@ namespace lz
 	}
 
 	/**
-	 * @brief 获取缓冲区的目标访问模式
-	 * @param usage_type 缓冲区使用类型
-	 * @return 目标访问模式
+	 * @brief Get destination access pattern for a buffer
+	 * @param usage_type Buffer usage type
+	 * @return Destination access pattern
 	 */
 	static BufferAccessPattern get_dst_buffer_access_pattern(const BufferUsageTypes usage_type)
 	{
@@ -412,7 +412,7 @@ namespace lz
 		{
 		case BufferUsageTypes::eVertexBuffer:
 			{
-				// 缓冲区作为顶点缓冲区使用
+				// Buffer used as vertex buffer
 				access_pattern.stage = vk::PipelineStageFlagBits::eVertexInput;
 				access_pattern.access_mask = vk::AccessFlagBits::eVertexAttributeRead;
 				access_pattern.queue_family_type = QueueFamilyTypes::eGraphics;
@@ -420,7 +420,7 @@ namespace lz
 			break;
 		case BufferUsageTypes::eGraphicsShaderReadWrite:
 			{
-				// 缓冲区将由图形着色器读写
+				// Buffer will be read/written by graphics shader
 				access_pattern.stage = vk::PipelineStageFlagBits::eVertexShader |
 					vk::PipelineStageFlagBits::eFragmentShader;
 				access_pattern.access_mask = vk::AccessFlagBits::eShaderWrite | vk::AccessFlagBits::eShaderRead;
@@ -429,7 +429,7 @@ namespace lz
 			break;
 		case BufferUsageTypes::eComputeShaderReadWrite:
 			{
-				// 缓冲区将由计算着色器读写
+				// Buffer will be read/written by compute shader
 				access_pattern.stage = vk::PipelineStageFlagBits::eComputeShader;
 				access_pattern.access_mask = vk::AccessFlagBits::eShaderWrite | vk::AccessFlagBits::eShaderRead;
 				access_pattern.queue_family_type = QueueFamilyTypes::eCompute;
@@ -437,7 +437,7 @@ namespace lz
 			break;
 		case BufferUsageTypes::eTransferDst:
 			{
-				// 缓冲区将作为传输目标
+				// Buffer will be used as transfer destination
 				access_pattern.stage = vk::PipelineStageFlagBits::eTransfer;
 				access_pattern.access_mask = vk::AccessFlagBits::eTransferWrite;
 				access_pattern.queue_family_type = QueueFamilyTypes::eTransfer;
@@ -445,7 +445,7 @@ namespace lz
 			break;
 		case BufferUsageTypes::eTransferSrc:
 			{
-				// 缓冲区将作为传输源
+				// Buffer will be used as transfer source
 				access_pattern.stage = vk::PipelineStageFlagBits::eTransfer;
 				access_pattern.access_mask = vk::AccessFlagBits::eTransferRead;
 				access_pattern.queue_family_type = QueueFamilyTypes::eTransfer;
@@ -453,7 +453,7 @@ namespace lz
 			break;
 		case BufferUsageTypes::eNone:
 			{
-				// 缓冲区不使用
+				// Buffer not in use
 				access_pattern.stage = vk::PipelineStageFlagBits::eBottomOfPipe;
 				access_pattern.access_mask = vk::AccessFlags();
 				access_pattern.queue_family_type = QueueFamilyTypes::eUndefined;
@@ -461,7 +461,7 @@ namespace lz
 			break;
 		case BufferUsageTypes::eUnknown:
 			{
-				// 缓冲区用途未知
+				// Buffer usage unknown
 				access_pattern.stage = vk::PipelineStageFlagBits::eBottomOfPipe;
 				access_pattern.access_mask = vk::AccessFlags();
 				access_pattern.queue_family_type = QueueFamilyTypes::eUndefined;
@@ -472,11 +472,11 @@ namespace lz
 	}
 
 	/**
-	 * @brief 判断两个缓冲区使用类型之间是否需要障碍(Barrier)
-	 * @param src_usage_type 源缓冲区使用类型
-	 * @param dst_usage_type 目标缓冲区使用类型
-	 * @return 如果需要障碍返回true，否则返回false
-	 * @note 当前实现较为保守，总是返回true
+	 * @brief Determine if a barrier is needed between two buffer usage types
+	 * @param src_usage_type Source buffer usage type
+	 * @param dst_usage_type Destination buffer usage type
+	 * @return Returns true if a barrier is needed, otherwise false
+	 * @note Current implementation is conservative, always returns true
 	 */
 	static bool is_buffer_barrier_needed(const BufferUsageTypes src_usage_type, const BufferUsageTypes dst_usage_type)
 	{

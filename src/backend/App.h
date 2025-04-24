@@ -34,48 +34,48 @@
 
 namespace lz
 {
-    // 应用程序基类，包含所有引擎应用的共同功能
+    // Base application class, contains common functionality for all engine applications
     class App
     {
     public:
-        // 构造函数
+        // Constructor
         App(const std::string& appName = "Lingze App", int width = 1280, int height = 760);
         
-        // 析构函数
+        // Destructor
         virtual ~App();
         
-        // 运行应用程序
+        // Run the application
         int run();
         
     protected:
-        // 初始化应用程序
+        // Initialize the application
         virtual bool init();
         
-        // 加载场景
+        // Load scene
         virtual bool load_scene();
         
-        // 创建渲染器
+        // Create renderer
         virtual std::unique_ptr<render::BaseRenderer> create_renderer();
         
-        // 更新逻辑
+        // Update logic
         virtual void update(float deltaTime);
         
-        // 渲染一帧
+        // Render a frame
         virtual void render_frame();
         
-        // 处理输入
+        // Process input
         virtual void process_input();
         
-        // 清理资源
+        // Clean up resources
         virtual void cleanup();
         
-        // GLFW回调静态函数
+        // GLFW callback static functions
         static void framebuffer_resize_callback(GLFWwindow* window, int width, int height);
 
-        // 从文件加载场景的辅助函数
+        // Helper function to load scene from file
         bool load_scene_from_file(const std::string& config_file_name, lz::Scene::GeometryTypes geo_type);
         
-        // 成员变量
+        // Member variables
         std::string app_name_;
         int window_width_;
         int window_height_;

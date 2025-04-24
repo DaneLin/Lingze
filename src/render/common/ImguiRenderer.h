@@ -11,7 +11,7 @@ namespace lz::render
 	class Sampler;
 	class Core;
 
-    // 帧上下文类，用于自动处理ImGui帧
+    // Frame context class for automatic ImGui frame handling
     struct ImGuiScopedFrame
     {
         ImGuiScopedFrame()

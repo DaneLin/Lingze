@@ -2,19 +2,19 @@
 
 #include <iostream>
 
-// 定义入口点宏，用于快速生成应用程序入口点
-// 使用方法：LINGZE_MAIN(AppClassName)
-// 其中AppClassName是继承自lz::App的应用程序类名
+// Define entry point macro for quick application entry point generation
+// Usage: LINGZE_MAIN(AppClassName)
+// Where AppClassName is the name of a class that inherits from lz::App
 
 #define LINGZE_MAIN(AppClass) int main() { \
     try { \
         AppClass app; \
         return app.run(); \
     } catch (const std::exception& e) { \
-        std::cerr << "程序异常: " << e.what() << std::endl; \
+        std::cerr << "Program exception: " << e.what() << std::endl; \
         return -1; \
     } catch (...) { \
-        std::cerr << "程序发生未知异常！" << std::endl; \
+        std::cerr << "Unknown program exception occurred!" << std::endl; \
         return -1; \
     } \
 }

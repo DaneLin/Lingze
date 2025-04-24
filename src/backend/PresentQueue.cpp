@@ -20,10 +20,10 @@ namespace lz
 
 	void PresentQueue::recreate_swapchain()
 	{
-		// 完全重新创建交换链，而不是重用现有的交换链
+		// Completely recreate the swapchain, instead of reusing the existing one
 		if (this->swapchain_)
 		{
-			// 首先尝试使用更优雅的方式重建交换链
+			// First try to rebuild the swapchain in a more elegant way
 			RECT rect;
 			GetClientRect(window_desc_.h_wnd, &rect);
 			int width = rect.right - rect.left;
@@ -35,7 +35,7 @@ namespace lz
 				const bool recreate_success = swapchain_->recreate(new_size);
 				if (recreate_success)
 				{
-					// 重建成功
+					// Rebuild successful
 					this->swapchain_image_views_ = swapchain_->get_image_views();
 					this->swapchain_rect_ = vk::Rect2D(vk::Offset2D(), swapchain_->get_size());
 					this->image_index_ = -1;
@@ -43,11 +43,11 @@ namespace lz
 				}
 			}
 
-			// 如果重建失败，则释放旧的交换链，创建新的
+			// If rebuild fails, release the old swapchain and create a new one
 			this->swapchain_.reset();
 		}
 
-		// 创建全新的交换链
+		// Create a brand new swapchain
 		this->swapchain_ = core_->create_swapchain(window_desc_, images_count_, preferred_mode_);
 		this->swapchain_image_views_ = swapchain_->get_image_views();
 		this->swapchain_rect_ = vk::Rect2D(vk::Offset2D(), swapchain_->get_size());
@@ -95,13 +95,13 @@ namespace lz
 
 	void InFlightQueue::recreate_swapchain()
 	{
-		// 等待设备空闲
+		// Wait for the device to be idle
 		core_->wait_idle();
 
-		// 删除所有与旧交换链相关的资源
+		// Delete all resources related to the old swapchain
 		swapchain_image_view_proxies_.clear();
 
-		// 重新创建交换链
+		// Recreate the swapchain
 		present_queue_->recreate_swapchain();
 	}
 

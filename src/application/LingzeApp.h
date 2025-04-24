@@ -6,7 +6,7 @@
 namespace lz {
 namespace application {
 
-// 定义LingzeApp类，继承自App基类
+// Define LingzeApp class, inherits from App base class
 class LingzeApp : public lz::App
 {
 public:
@@ -15,20 +15,20 @@ public:
     virtual ~LingzeApp() = default;
     
 protected:
-    // 加载场景
+    // Load scene
     virtual bool load_scene() override
     {
-        // 使用立方体场景
+        // Use cube scene
         std::string config_file_name = std::string(SCENE_DIR) + "CubeScene.json";
         lz::Scene::GeometryTypes geo_type = lz::Scene::GeometryTypes::eTriangles;
         
         return load_scene_from_file(config_file_name, geo_type);
     }
     
-    // 创建渲染器
+    // Create renderer
     virtual std::unique_ptr<lz::render::BaseRenderer> create_renderer() override
     {
-        // 使用简单渲染器
+        // Use simple renderer
         return std::make_unique<lz::render::SimpleRenderer>(core_.get());
     }
 };

@@ -10,44 +10,44 @@
 
 namespace lz
 {
-    // 初始化静态成员变量
+    // Initialize static member variables
     bool App::framebuffer_resized_ = false;
 
-    // 窗口大小变化回调实现
+    // Window resize callback implementation
     void App::framebuffer_resize_callback(GLFWwindow* window, int width, int height)
     {
         framebuffer_resized_ = true;
     }
 
-    // 构造函数
+    // Constructor
     App::App(const std::string& app_name, int width, int height)
         : app_name_(app_name)
         , window_width_(width)
         , window_height_(height)
     {
-        // 初始化相机和灯光默认位置
+        // Initialize default camera and light positions
         camera_.pos = glm::vec3(0.0f, 0.5f, -2.0f);
         light_.pos = glm::vec3(0.0f, 0.5f, -2.0f);
     }
 
-    // 析构函数
+    // Destructor
     App::~App()
     {
         cleanup();
     }
 
-    // 运行应用程序
+    // Run the application
     int App::run()
     {
         try
         {
             if (!init())
             {
-                std::cerr << "应用程序初始化失败！" << std::endl;
+                std::cerr << "Application initialization failed!" << std::endl;
                 return -1;
             }
 
-            // 主循环
+            // Main loop
             while (!glfwWindowShouldClose(window_))
             {
                 glfwPollEvents();
@@ -55,7 +55,7 @@ namespace lz
                 render_frame();
             }
 
-            // 等待设备空闲后退出
+            // Wait for the device to be idle before exiting
             if (core_)
             {
                 core_->wait_idle();
@@ -63,37 +63,37 @@ namespace lz
         }
         catch (const std::exception& e)
         {
-            std::cerr << "错误: " << e.what() << std::endl;
+            std::cerr << "Error: " << e.what() << std::endl;
             return -1;
         }
 
         return 0;
     }
 
-    // 初始化应用程序
+    // Initialize the application
     bool App::init()
     {
-        // 初始化GLFW
+        // Initialize GLFW
         if (!glfwInit())
         {
-            std::cerr << "GLFW初始化失败" << std::endl;
+            std::cerr << "GLFW initialization failed" << std::endl;
             return false;
         }
 
-        // 设置GLFW窗口
+        // Setup GLFW window
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         window_ = glfwCreateWindow(window_width_, window_height_, app_name_.c_str(), nullptr, nullptr);
         if (!window_)
         {
-            std::cerr << "GLFW窗口创建失败" << std::endl;
+            std::cerr << "GLFW window creation failed" << std::endl;
             glfwTerminate();
             return false;
         }
 
-        // 设置窗口大小变化的回调函数
+        // Set window resize callback function
         glfwSetFramebufferSizeCallback(window_, framebuffer_resize_callback);
 
-        // 设置Vulkan实例和窗口
+        // Set up Vulkan instance and window
         const char* glfw_extensions[] = { "VK_KHR_surface", "VK_KHR_win32_surface" };
         uint32_t glfw_extension_count = sizeof(glfw_extensions) / sizeof(glfw_extensions[0]);
 
@@ -101,39 +101,39 @@ namespace lz
         window_desc.h_instance = GetModuleHandle(NULL);
         window_desc.h_wnd = glfwGetWin32Window(window_);
 
-        // 创建Vulkan核心
+        // Create Vulkan core
         bool enable_debugging = true;
         core_ = std::make_unique<Core>(glfw_extensions, glfw_extension_count, &window_desc, enable_debugging);
 
-        // 加载场景
+        // Load scene
         if (!load_scene())
         {
-            std::cerr << "场景加载失败" << std::endl;
+            std::cerr << "Scene loading failed" << std::endl;
             return false;
         }
 
-        // 创建渲染器
+        // Create renderer
         renderer_ = create_renderer();
         if (!renderer_)
         {
-            std::cerr << "渲染器创建失败" << std::endl;
+            std::cerr << "Renderer creation failed" << std::endl;
             return false;
         }
 
-        // 创建场景资源
+        // Create scene resources
         renderer_->recreate_scene_resources(scene_.get());
 
-        // 初始化ImGui渲染器
+        // Initialize ImGui renderer
         imgui_renderer_ = std::make_unique<render::ImGuiRenderer>(core_.get(), window_);
 
         return true;
     }
 
-    // 加载场景
+    // Load scene
     bool App::load_scene()
     {
-        // 默认实现使用SimpleScene
-        // 派生类应重写此方法以加载特定场景
+        // Default implementation uses SimpleScene
+        // Derived classes should override this method to load specific scenes
         std::string config_file_name = std::string(SCENE_DIR) + "CubeScene.json";
         Scene::GeometryTypes geo_type = Scene::GeometryTypes::eTriangles;
 
@@ -151,37 +151,37 @@ namespace lz
         std::ifstream file_stream(config_file_name);
         if (!file_stream.is_open())
         {
-            std::cerr << "无法打开场景文件！" << std::endl;
+            std::cerr << "Unable to open scene file!" << std::endl;
             return false;
         }
         
         bool result = reader.parse(file_stream, config_root);
         if (!result)
         {
-            std::cerr << "错误：文件 " << config_file_name << " 解析失败: " << reader.getFormattedErrorMessages() << std::endl;
+            std::cerr << "Error: Failed to parse file " << config_file_name << ": " << reader.getFormattedErrorMessages() << std::endl;
             return false;
         }
 
-        std::cerr << "文件 " << config_file_name << " 解析成功" << std::endl;
+        std::cerr << "File " << config_file_name << " parsed successfully" << std::endl;
         scene_ = std::make_unique<lz::Scene>(config_root["scene"], core_.get(), geo_type);
         
         return true;
     }
 
-    // 创建渲染器
+    // Create renderer
     std::unique_ptr<render::BaseRenderer> App::create_renderer()
     {
-        // 默认创建SimpleRenderer，派生类可以重写此方法
+        // Default creates SimpleRenderer, derived classes can override this method
         return std::make_unique<render::SimpleRenderer>(core_.get());
     }
 
-    // 更新逻辑
+    // Update logic
     void App::update(float deltaTime)
     {
-        // 基类中留空，由派生类实现具体逻辑
+        // Empty in base class, implemented by derived classes
     }
 
-    // 处理输入
+    // Process input
     void App::process_input()
     {
         if (imgui_renderer_)
@@ -190,27 +190,27 @@ namespace lz
         }
     }
 
-    // 渲染一帧
+    // Render a frame
     void App::render_frame()
     {
-        // 检查是否需要重建交换链 (窗口大小改变或初始化)
+        // Check if swapchain needs to be rebuilt (window resized or initializing)
         if (!in_flight_queue_ || framebuffer_resized_)
         {
             if (framebuffer_resized_)
             {
-                std::cout << "窗口大小改变，重新创建交换链" << std::endl;
+                std::cout << "Window resized, recreate swapchain" << std::endl;
                 framebuffer_resized_ = false;
                 
                 if (in_flight_queue_)
                 {
-                    // 如果已存在交换链，只需重建交换链
+                    // If swapchain already exists, just recreate swapchain
                     in_flight_queue_->recreate_swapchain();
                     renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(), in_flight_queue_->get_in_flight_frames_count());
                     imgui_renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(), in_flight_queue_->get_in_flight_frames_count());
                 }
                 else
                 {
-                    // 如果还没有创建交换链，则创建整个队列
+                    // If swapchain hasn't been created yet, create the entire queue
                     core_->clear_caches();
                     WindowDesc window_desc = {};
                     window_desc.h_instance = GetModuleHandle(NULL);
@@ -222,7 +222,7 @@ namespace lz
             }
             else
             {
-                std::cout << "创建帧队列" << std::endl;
+                std::cout << "Create frame queue" << std::endl;
                 core_->clear_caches();
                 WindowDesc window_desc = {};
                 window_desc.h_instance = GetModuleHandle(NULL);
@@ -266,14 +266,14 @@ namespace lz
         }
         catch (vk::OutOfDateKHRError err)
         {
-            // 交换链过时，需要重新创建
+            // Swapchain outdated, need to recreate
             core_->wait_idle();
             in_flight_queue_.reset();
-            framebuffer_resized_ = true; // 确保重新创建交换链
+            framebuffer_resized_ = true; // Ensure swapchain recreated
         }
     }
 
-    // 清理资源
+    // Clean up resources
     void App::cleanup()
     {
         if (core_)
