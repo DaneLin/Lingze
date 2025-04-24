@@ -10,7 +10,7 @@ namespace lz::render
     class BaseRenderer
     {
     public:
-        BaseRenderer(){}
+        BaseRenderer() = default;
 
         virtual ~BaseRenderer() {}
         virtual void recreate_scene_resources(lz::Scene* scene) {}
