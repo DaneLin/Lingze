@@ -1,11 +1,13 @@
 #include "SimpleRenderer.h"
 
+#include "backend/Core.h"
+
+
 namespace lz::render
 {
 	SimpleRenderer::SimpleRenderer(lz::Core* core)
 		: core_(core)
 	{
-		vertex_decl_ = Mesh::get_vertex_declaration();
 
 		reload_shaders();
 	}
@@ -30,7 +32,7 @@ namespace lz::render
 			.set_render_area_extent(viewport_extent_)
 			.set_record_func([this](lz::RenderGraph::RenderPassContext context)
 			{
-				auto shader_program = program.get();
+				auto shader_program = shader_program_.get();
 				auto pipeline_info = this->core_->get_pipeline_cache()->bind_graphics_pipeline(
 					context.get_command_buffer(),
 					context.get_render_pass()->get_handle(),
@@ -47,9 +49,9 @@ namespace lz::render
 	}
 	void SimpleRenderer::reload_shaders() 
 	{
-		vertex_shader.reset(new lz::Shader(core_->get_logical_device(), std::string(SHADER_SPIRV_DIR) + "Simple/Simple.vert.spv"));
-		fragment_shader.reset(new lz::Shader(core_->get_logical_device(), std::string(SHADER_SPIRV_DIR) + "Simple/Simple.frag.spv"));
-		program.reset(new lz::ShaderProgram( vertex_shader.get(), fragment_shader.get()));
+		vertex_shader_.reset(new lz::Shader(core_->get_logical_device(), std::string(SHADER_SPIRV_DIR) + "Simple/Simple.vert.spv"));
+		fragment_shader_.reset(new lz::Shader(core_->get_logical_device(), std::string(SHADER_SPIRV_DIR) + "Simple/Simple.frag.spv"));
+		shader_program_.reset(new lz::ShaderProgram( vertex_shader_.get(), fragment_shader_.get()));
 	 }
 	void SimpleRenderer::change_view() 
 	{

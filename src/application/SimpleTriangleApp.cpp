@@ -7,10 +7,10 @@ namespace lz::application {
     bool SimpleTriangleApp::load_scene()
     {
         // Demo application can use different scenes
-        std::string config_file_name = std::string(SCENE_DIR) + "CubeScene.json";  // Can also use other scenes
-        lz::Scene::GeometryTypes geo_type = lz::Scene::GeometryTypes::eTriangles;
+        //std::string config_file_name = std::string(SCENE_DIR) + "CubeScene.json";  // Can also use other scenes
+        //lz::Scene::GeometryTypes geo_type = lz::Scene::GeometryTypes::eTriangles;
         
-        return load_scene_from_file(config_file_name, geo_type);
+        return true;
     }
 
     std::unique_ptr<lz::render::BaseRenderer> SimpleTriangleApp::create_renderer()
