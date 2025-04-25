@@ -148,7 +148,7 @@ namespace ImGuiUtils
 		float marker_rigth_rect_margin = 3.0f;
 		float marker_right_rect_height = 10.0f;
 		float marker_right_rect_spacing = 4.0f;
-		float name_offset = 30.0f;
+		float name_offset = 40.0f;
 		glm::vec2 text_margin = glm::vec2(5.0f, -3.0f);
 
 		auto& curr_frame = frames_[(curr_frame_index_ - frame_index_offset - 1 + 2 * frames_.size()) % frames_.size()];
@@ -333,7 +333,7 @@ namespace ImGuiUtils
 
 		std::stringstream title;
 		title.precision(2);
-		title << std::fixed << "Legit profiler [" << 1.0f / avg_frame_time << "fps\t" << avg_frame_time * 1000.0f <<
+		title << std::fixed << "Lingze profiler [" << 1.0f / avg_frame_time << "fps\t" << avg_frame_time * 1000.0f <<
 			"ms]###ProfilerWindow";
 		//###AnimatedTitle
 		ImGui::Begin(title.str().c_str(), 0, ImGuiWindowFlags_NoScrollbar);
@@ -343,7 +343,7 @@ namespace ImGuiUtils
 		int max_graph_height = 300;
 		int available_graph_height = (int(canvas_size.y) - size_margin) / 2;
 		int graph_height = std::min(max_graph_height, available_graph_height);
-		int legend_width = 200;
+		int legend_width = 300;
 		int graph_width = int(canvas_size.x) - legend_width;
 		gpu_graph.render_timings(graph_width, legend_width, graph_height, frame_offset);
 		cpu_graph.render_timings(graph_width, legend_width, graph_height, frame_offset);

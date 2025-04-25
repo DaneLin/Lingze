@@ -86,7 +86,11 @@ namespace lz
         std::unique_ptr<render::BaseRenderer> renderer_;
         std::unique_ptr<Scene> scene_;
         std::unique_ptr<render::ImGuiRenderer> imgui_renderer_;
+         
         std::unique_ptr<InFlightQueue> in_flight_queue_;
+
+        bool show_performance = false;
+        ImGuiUtils::ProfilersWindow profiler_window_;
 
         float delta_time_;
         glm::f64vec2 mouse_pos_;
