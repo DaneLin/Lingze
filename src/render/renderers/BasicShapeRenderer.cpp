@@ -37,11 +37,9 @@ namespace lz::render
 			frame_resource.reset(new FrameResource(render_graph, size));
 		}
 
-		vk::ClearValue clear_value;
-		clear_value.color = {0.0f, 0.0f, 0.0f, 1.0f};
 		render_graph->add_pass(lz::RenderGraph::RenderPassDesc()
                        .set_color_attachments({
-	                       {frame_info.swapchain_image_view_proxy_id, vk::AttachmentLoadOp::eClear, clear_value}
+	                       {frame_info.swapchain_image_view_proxy_id, vk::AttachmentLoadOp::eClear}
                        })
                        .set_depth_attachment(frame_resource->depth_stencil_proxy_.image_view_proxy.get().id(),
                                              vk::AttachmentLoadOp::eClear)

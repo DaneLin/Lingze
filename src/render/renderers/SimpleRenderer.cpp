@@ -19,16 +19,11 @@ namespace lz::render
 	void SimpleRenderer::recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count) 
 	{
 		viewport_extent_ = viewport_extent;
-		//std::cout << "viewport_extent: " << viewport_extent_.width << " " << viewport_extent_.height << std::endl;
 	 }
 	void SimpleRenderer::render_frame(const lz::InFlightQueue::FrameInfo& frame_info, const lz::Camera& camera, const lz::Camera& light, lz::Scene* scene, GLFWwindow* window) 
 	{
-		// SimpleRenderer only renders a triangle
-		vk::ClearValue clear_value;
-		clear_value.color = {0.0f, 0.0f, 0.0f, 1.0f};
-		//std::cout << "extent: " << viewport_extent_.width << " " << viewport_extent_.height << std::endl;
 		core_->get_render_graph()->add_pass(lz::RenderGraph::RenderPassDesc()
-			.set_color_attachments({{frame_info.swapchain_image_view_proxy_id,vk::AttachmentLoadOp::eClear,clear_value}})
+			.set_color_attachments({{frame_info.swapchain_image_view_proxy_id,vk::AttachmentLoadOp::eClear}})
 			.set_render_area_extent(viewport_extent_)
 			.set_record_func([this](lz::RenderGraph::RenderPassContext context)
 			{

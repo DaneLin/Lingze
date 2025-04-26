@@ -36,9 +36,9 @@ namespace lz
 			vk::RenderPass render_pass,
 			lz::DepthSettings depth_settings,
 			const std::vector<lz::BlendSettings>& attachment_blend_settings,
-			lz::VertexDeclaration vertex_declaration,
+			const lz::VertexDeclaration& vertex_declaration,
 			vk::PrimitiveTopology topology,
-			lz::ShaderProgram* shader_program);
+			const lz::ShaderProgram* shader_program);
 
 
 		PipelineInfo bind_compute_pipeline(

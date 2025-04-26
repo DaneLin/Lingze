@@ -18,13 +18,13 @@ namespace lz
 	                                                                  lz::DepthSettings depth_settings,
 	                                                                  const std::vector<lz::BlendSettings>&
 	                                                                  attachment_blend_settings,
-	                                                                  lz::VertexDeclaration vertex_declaration,
+	                                                                  const lz::VertexDeclaration& vertex_declaration,
 	                                                                  vk::PrimitiveTopology topology,
-	                                                                  lz::ShaderProgram* shader_program)
+	                                                                  const lz::ShaderProgram* shader_program)
 	{
 		GraphicsPipelineKey pipeline_key;
 
-		for (auto shader : shader_program->shaders)
+		for (const auto shader : shader_program->shaders)
 		{
 			ShaderStageInfo stage_info;
 			stage_info.stage = shader->get_stage_bits();

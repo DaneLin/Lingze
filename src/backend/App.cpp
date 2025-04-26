@@ -318,7 +318,7 @@ namespace lz
 					if (!profiler_window_.stop_profiling)
 					{
 						auto profilers_task = in_flight_queue_->get_cpu_profiler().start_scoped_task(
-							"Peformance processing", lz::Colors::sun_flower);
+							"Performance processing", lz::Colors::sun_flower);
 
 						profiler_window_.cpu_graph.load_frame_data(cpu_profiler_data.data(), cpu_profiler_data.size());
 						profiler_window_.gpu_graph.load_frame_data(gpu_profiler_data.data(), gpu_profiler_data.size());
@@ -326,7 +326,7 @@ namespace lz
 
 					{
 						auto profilers_task = in_flight_queue_->get_cpu_profiler().start_scoped_task(
-							"Peformance rendering", lz::Colors::belize_hole);
+							"Performance rendering", lz::Colors::belize_hole);
 						profiler_window_.render();
 					}
 				}

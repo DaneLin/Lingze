@@ -150,28 +150,6 @@ namespace lz
 		vk::PipelineLayout get_layout() const;
 
 		// Constructor: Creates a new graphics pipeline with the specified parameters
-		// Parameters:
-		// - logicalDevice: Logical device for creating the pipeline
-		// - vertexShader: Vertex shader module
-		// - fragmentShader: Fragment shader module
-		// - vertexDecl: Vertex declaration describing input vertex data
-		// - pipelineLayout: Pipeline layout for uniform and push constant access
-		// - depthSettings: Depth testing and writing configuration
-		// - attachmentBlendSettings: Blend settings for each color attachment
-		// - primitiveTopology: Type of primitives to render
-		// - renderPass: Render pass the pipeline is compatible with
-		GraphicsPipeline(
-			vk::Device logical_device,
-			vk::ShaderModule vertex_shader,
-			vk::ShaderModule fragment_shader,
-			const lz::VertexDeclaration& vertex_decl,
-			vk::PipelineLayout pipeline_layout,
-			DepthSettings depth_settings,
-			const std::vector<BlendSettings>& attachment_blend_settings,
-			vk::PrimitiveTopology primitive_topology,
-			vk::RenderPass render_pass
-		);
-
 		GraphicsPipeline(
 			vk::Device logical_device,
 			const std::vector<ShaderStageInfo>& shader_stages,
