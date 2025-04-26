@@ -23,16 +23,21 @@ namespace lz
 	                                                                  lz::ShaderProgram* shader_program)
 	{
 		GraphicsPipelineKey pipeline_key;
-		pipeline_key.vertex_shader = shader_program->vertex_shader->get_module()->get_handle();
-		pipeline_key.fragment_shader = shader_program->fragment_shader->get_module()->get_handle();
+
+		for (auto shader : shader_program->shaders)
+		{
+			ShaderStageInfo stage_info;
+			stage_info.stage = shader->get_stage_bits();
+			stage_info.module = shader->get_module()->get_handle();
+			pipeline_key.shader_stages.push_back(stage_info);
+		}
+
 		pipeline_key.vertex_decl = vertex_declaration;
 		pipeline_key.depth_settings = depth_settings;
 		pipeline_key.attachment_blend_settings = attachment_blend_settings;
 		pipeline_key.topology = topology;
 
 		PipelineInfo pipeline_info;
-
-		lz::Shader* target_shader = shader_program->vertex_shader;
 
 		PipelineLayoutKey pipeline_layout_key;
 		for (auto& set_layout_key : shader_program->combined_descriptor_set_layout_keys)
@@ -117,17 +122,15 @@ namespace lz
 
 	PipelineCache::GraphicsPipelineKey::GraphicsPipelineKey()
 	{
-		vertex_shader = nullptr;
-		fragment_shader = nullptr;
 		render_pass = nullptr;
 	}
 
 	bool PipelineCache::GraphicsPipelineKey::operator<(const GraphicsPipelineKey& other) const
 	{
 		return
-			std::tie(vertex_shader, fragment_shader, vertex_decl, pipeline_layout, render_pass, depth_settings,
+			std::tie(shader_stages, vertex_decl, pipeline_layout, render_pass, depth_settings,
 			         attachment_blend_settings, topology) <
-			std::tie(other.vertex_shader, other.fragment_shader, other.vertex_decl, other.pipeline_layout,
+			std::tie(shader_stages, other.vertex_decl, other.pipeline_layout,
 			         other.render_pass, other.depth_settings, other.attachment_blend_settings, topology);
 	}
 
@@ -136,7 +139,7 @@ namespace lz
 		auto& pipeline = graphics_pipeline_cache_[key];
 		if (!pipeline)
 			pipeline = std::make_unique<lz::GraphicsPipeline>(
-				logical_device_, key.vertex_shader, key.fragment_shader, key.vertex_decl, key.pipeline_layout,
+				logical_device_, key.shader_stages, key.vertex_decl, key.pipeline_layout,
 				key.depth_settings, key.attachment_blend_settings, key.topology, key.render_pass);
 		return pipeline.get();
 	}

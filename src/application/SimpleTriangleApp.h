@@ -6,12 +6,12 @@ namespace lz {
 namespace application {
 
 // Define DemoApp class, inherits from App base class
-class SimpleTriangleApp : public lz::App
+class SimpleMeshShadingApp : public lz::App
 {
 public:
-    SimpleTriangleApp() : lz::App("Lingze Simple Triangle", 1280, 760) {}
+    SimpleMeshShadingApp() : lz::App("Lingze Simple Triangle", 1280, 760) {}
     
-    virtual ~SimpleTriangleApp() = default;
+    virtual ~SimpleMeshShadingApp() = default;
     
 protected:
     // Load scene

@@ -3,7 +3,6 @@ setlocal EnableExtensions EnableDelayedExpansion
 set CompilerExe="%VULKAN_SDK%\Bin\glslangValidator.exe"
 set OptimizerExe="%VULKAN_SDK%\Bin\spirv-opt.exe"
 set OptimizerConfig="OptimizerConfig.cfg"
-
 @echo Creating spirv files...
 if not exist "%~dp0spirv" mkdir "%~dp0spirv"
 for /d /r "%~dp0glsl/" %%D in (*) do (
@@ -12,6 +11,7 @@ for /d /r "%~dp0glsl/" %%D in (*) do (
   if not exist "!outdir!" mkdir "!outdir!"
 )
 
+rem 处理顶点着色器
 for /r "%~dp0glsl/" %%I in (*.vert) do (
   set outname=%%I
   set outname=!outname:%~dp0glsl=%~dp0spirv!
@@ -32,6 +32,7 @@ for /r "%~dp0glsl/" %%I in (*.vert) do (
   )
 )
 
+rem 处理片段着色器
 for /r "%~dp0glsl/" %%I in (*.frag) do (
   set outname=%%I
   set outname=!outname:%~dp0glsl=%~dp0spirv!
@@ -52,6 +53,7 @@ for /r "%~dp0glsl/" %%I in (*.frag) do (
   )
 )
 
+rem 处理计算着色器
 for /r "%~dp0glsl/" %%I in (*.comp) do (
   set outname=%%I
   set outname=!outname:%~dp0glsl=%~dp0spirv!
@@ -71,12 +73,47 @@ for /r "%~dp0glsl/" %%I in (*.comp) do (
     )
   )
 )
-rem pause
 
-rem 
-rem %CompilerExe% -V glsl/fragmentShader.frag -o spirv/fragmentShader.spv
-rem %CompilerExe% -V glsl/frameDescriptorLayout.comp -o spirv/frameDescriptorLayout.spv
-rem %CompilerExe% -V glsl/passDescriptorLayout.comp -o spirv/passDescriptorLayout.spv
+rem 处理mesh着色器
+for /r "%~dp0glsl/" %%I in (*.mesh) do (
+  set outname=%%I
+  set outname=!outname:%~dp0glsl=%~dp0spirv!
+  set outdir=%%~dpI
+  set outdir=!outdir:%~dp0glsl=%~dp0spirv!
+  if not exist "!outdir!" mkdir "!outdir!"
+  set spvfile="!outname!.spv"
+  if not exist !spvfile! (
+    @echo Compiling new file %%I
+    %CompilerExe% -V "%%I" -l --target-env vulkan1.2 -o !spvfile!
+  ) else (
+    for %%J in ("%%I") do set glslTime=%%~tJ
+    for %%K in (!spvfile!) do set spvTime=%%~tK
+    if "!glslTime!" gtr "!spvTime!" (
+      @echo Updating file %%I
+      %CompilerExe% -V "%%I" -l --target-env vulkan1.2 -o !spvfile!
+    )
+  )
+)
 
+rem 处理task着色器
+for /r "%~dp0glsl/" %%I in (*.task) do (
+  set outname=%%I
+  set outname=!outname:%~dp0glsl=%~dp0spirv!
+  set outdir=%%~dpI
+  set outdir=!outdir:%~dp0glsl=%~dp0spirv!
+  if not exist "!outdir!" mkdir "!outdir!"
+  set spvfile="!outname!.spv"
+  if not exist !spvfile! (
+    @echo Compiling new file %%I
+    %CompilerExe% -V "%%I" -l --target-env vulkan1.2 -o !spvfile!
+  ) else (
+    for %%J in ("%%I") do set glslTime=%%~tJ
+    for %%K in (!spvfile!) do set spvTime=%%~tK
+    if "!glslTime!" gtr "!spvTime!" (
+      @echo Updating file %%I
+      %CompilerExe% -V "%%I" -l --target-env vulkan1.2 -o !spvfile!
+    )
+  )
+)
 
 @echo Shader compilation complete! All modified files have been updated.

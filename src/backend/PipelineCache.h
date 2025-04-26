@@ -8,6 +8,18 @@
 
 namespace lz
 {
+
+	struct ShaderStageInfo
+	{
+		vk::ShaderStageFlagBits stage;
+		vk::ShaderModule module;
+
+		bool operator<(const ShaderStageInfo& other) const
+		{
+			return std::tie(stage, module) < std::tie(other.stage, other.module);
+		}
+	};
+
 	class PipelineCache
 	{
 	public:
@@ -48,12 +60,13 @@ namespace lz
 
 		vk::PipelineLayout get_pipeline_layout(const PipelineLayoutKey& key);
 
+		
+
 		struct GraphicsPipelineKey
 		{
 			GraphicsPipelineKey();
 
-			vk::ShaderModule vertex_shader;
-			vk::ShaderModule fragment_shader;
+			std::vector<ShaderStageInfo> shader_stages;
 			lz::VertexDeclaration vertex_decl;
 			vk::PipelineLayout pipeline_layout;
 			vk::Extent2D extent;

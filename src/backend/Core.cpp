@@ -186,6 +186,16 @@ namespace lz
 		return pipeline_cache_.get();
 	}
 
+	bool Core::mesh_shader_supported() const
+	{
+		return mesh_shader_supported_;
+	}
+
+	vk::DispatchLoaderDynamic Core::get_dynamic_loader() const
+	{
+		return loader_;
+	}
+
 	vk::UniqueInstance Core::create_instance(const std::vector<const char*>& instance_extensions,
 	                                         const std::vector<const char*>& validation_layers)
 	{
@@ -247,6 +257,27 @@ namespace lz
 			std::cout << "  Physical device found: " << device_properties.deviceName;
 			vk::PhysicalDeviceFeatures device_features = device.getFeatures();
 
+			// check if the device supports mesh shader extension
+			bool mesh_shader_supported = false;
+			auto extensions = device.enumerateDeviceExtensionProperties();
+			for (const auto& extension : extensions)
+			{
+				if (strcmp(extension.extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME) == 0)
+				{
+					mesh_shader_supported_ = true;
+					break;
+				}
+			}
+			
+			if (mesh_shader_supported_)
+			{
+				std::cout << " (Mesh Shader Supported)";
+			}
+			else
+			{
+				std::cout << " (Mesh Shader NOT Supported)";
+			}
+
 			if (device_properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
 			{
 				physical_device = device;
@@ -303,6 +334,20 @@ namespace lz
 			queue_create_infos.push_back(queue_create_info);
 		}
 
+		// check if the device supports mesh shader extension
+		auto extensions = physical_device.enumerateDeviceExtensionProperties();
+		for (const auto& extension : extensions)
+		{
+			if (strcmp(extension.extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME) == 0)
+			{
+				mesh_shader_supported_ = true;
+				// only add the extension if the device supports it
+				device_extensions.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
+				std::cout << "Mesh Shader extension supported, adding to device extensions\n";
+				break;
+			}
+		}
+
 		auto device_features = vk::PhysicalDeviceFeatures()
 		                       .setFragmentStoresAndAtomics(true)
 		                       .setVertexPipelineStoresAndAtomics(true);
@@ -319,11 +364,29 @@ namespace lz
 		auto device_features12 = vk::PhysicalDeviceVulkan12Features()
 			.setScalarBlockLayout(true);
 
-		vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceVulkan12Features> chain = {
-			device_create_info, device_features12
-		};
+		if (mesh_shader_supported_)
+		{
+			// create mesh shader feature structure
+			auto mesh_shader_features = vk::PhysicalDeviceMeshShaderFeaturesEXT()
+				.setTaskShader(true)
+				.setMeshShader(true);
 
-		return physical_device.createDeviceUnique(chain.get<vk::DeviceCreateInfo>());
+			// build the structure chain, add mesh shader features
+			vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceMeshShaderFeaturesEXT> chain = {
+				device_create_info, device_features12, mesh_shader_features
+			};
+
+			return physical_device.createDeviceUnique(chain.get<vk::DeviceCreateInfo>());
+		}
+		else
+		{
+			// not supported mesh shader, use the original feature chain
+			vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceVulkan12Features> chain = {
+				device_create_info, device_features12
+			};
+
+			return physical_device.createDeviceUnique(chain.get<vk::DeviceCreateInfo>());
+		}
 	}
 
 	vk::Queue Core::get_device_queue(const vk::Device logical_device, const uint32_t queue_family_index)

@@ -2,9 +2,11 @@
 
 #include "LingzeVK.h"
 #include "VertexDeclaration.h"
+#include "ShaderProgram.h"
 
 namespace lz
 {
+	struct ShaderStageInfo;
 	class Core;
 
 	// DepthSettings: Structure for configuring depth testing and writing
@@ -162,6 +164,17 @@ namespace lz
 			vk::Device logical_device,
 			vk::ShaderModule vertex_shader,
 			vk::ShaderModule fragment_shader,
+			const lz::VertexDeclaration& vertex_decl,
+			vk::PipelineLayout pipeline_layout,
+			DepthSettings depth_settings,
+			const std::vector<BlendSettings>& attachment_blend_settings,
+			vk::PrimitiveTopology primitive_topology,
+			vk::RenderPass render_pass
+		);
+
+		GraphicsPipeline(
+			vk::Device logical_device,
+			const std::vector<ShaderStageInfo>& shader_stages,
 			const lz::VertexDeclaration& vertex_decl,
 			vk::PipelineLayout pipeline_layout,
 			DepthSettings depth_settings,
