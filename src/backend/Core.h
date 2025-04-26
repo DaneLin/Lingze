@@ -119,9 +119,14 @@ namespace lz
 		// GetPipelineCache: Returns the pipeline cache
 		lz::PipelineCache* get_pipeline_cache() const;
 
+		// check if the device supports mesh shader extension
+		bool mesh_shader_supported() const;
+
+		vk::DispatchLoaderDynamic get_dynamic_loader() const;
+
 	private:
 		// CreateInstance: Creates a Vulkan instance with specified extensions and layers
-		static vk::UniqueInstance create_instance(const std::vector<const char*>& instance_extensions,
+		vk::UniqueInstance create_instance(const std::vector<const char*>& instance_extensions,
 		                                          const std::vector<const char*>& validation_layers);
 
 		// CreateDebugUtilsMessenger: Sets up the debug messenger for validation layers
@@ -139,22 +144,25 @@ namespace lz
 		friend class Swapchain;
 
 		// FindPhysicalDevice: Selects an appropriate physical device
-		static vk::PhysicalDevice find_physical_device(vk::Instance instance);
+		vk::PhysicalDevice find_physical_device(vk::Instance instance);
 
 		// FindQueueFamilyIndices: Finds queue families for graphics and presentation
-		static QueueFamilyIndices find_queue_family_indices(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface);
+		QueueFamilyIndices find_queue_family_indices(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface);
 
 		// CreateLogicalDevice: Creates a logical device with required features and queues
-		static vk::UniqueDevice create_logical_device(vk::PhysicalDevice physical_device,
+		vk::UniqueDevice create_logical_device(vk::PhysicalDevice physical_device,
 		                                              QueueFamilyIndices family_indices,
 		                                              std::vector<const char*> device_extensions,
 		                                              std::vector<const char*> validation_layers);
 
 		// GetDeviceQueue: Retrieves a queue from the logical device
-		static vk::Queue get_device_queue(vk::Device logical_device, uint32_t queue_family_index);
+		vk::Queue get_device_queue(vk::Device logical_device, uint32_t queue_family_index);
 
 		// CreateCommandPool: Creates a command pool for allocating command buffers
-		static vk::UniqueCommandPool create_command_pool(vk::Device logical_device, uint32_t family_index);
+		vk::UniqueCommandPool create_command_pool(vk::Device logical_device, uint32_t family_index);
+
+		// check if the device supports mesh shader extension
+		bool mesh_shader_supported_;
 
 		// Core Vulkan objects
 		vk::UniqueInstance instance_;

@@ -8,7 +8,9 @@ namespace lz
 	{
 	}
 
-	ImageSamplerBinding::ImageSamplerBinding(lz::ImageView* image_view, lz::Sampler* sampler, uint32_t shader_binding_id): image_view(image_view), sampler(sampler), shader_binding_id(shader_binding_id)
+	ImageSamplerBinding::ImageSamplerBinding(lz::ImageView* image_view, lz::Sampler* sampler,
+	                                         uint32_t shader_binding_id): image_view(image_view), sampler(sampler),
+	                                                                      shader_binding_id(shader_binding_id)
 	{
 		assert(image_view);
 		assert(sampler);
@@ -25,7 +27,9 @@ namespace lz
 	}
 
 	UniformBufferBinding::UniformBufferBinding(lz::Buffer* buffer, uint32_t shader_binding_id, vk::DeviceSize offset,
-		vk::DeviceSize size): buffer(buffer), shader_binding_id(shader_binding_id), offset(offset), size(size)
+	                                           vk::DeviceSize size): buffer(buffer),
+	                                                                 shader_binding_id(shader_binding_id),
+	                                                                 offset(offset), size(size)
 	{
 		assert(buffer);
 	}
@@ -41,8 +45,9 @@ namespace lz
 	}
 
 	StorageBufferBinding::StorageBufferBinding(lz::Buffer* buffer, uint32_t shader_binding_id, vk::DeviceSize offset,
-		vk::DeviceSize size): buffer(buffer), shader_binding_id(shader_binding_id),
-		                       offset(offset), size(size)
+	                                           vk::DeviceSize size): buffer(buffer),
+	                                                                 shader_binding_id(shader_binding_id),
+	                                                                 offset(offset), size(size)
 	{
 		assert(buffer);
 	}
@@ -57,7 +62,8 @@ namespace lz
 	{
 	}
 
-	StorageImageBinding::StorageImageBinding(lz::ImageView* image_view, uint32_t shader_binding_id): image_view(image_view),
+	StorageImageBinding::StorageImageBinding(lz::ImageView* image_view, uint32_t shader_binding_id):
+		image_view(image_view),
 		shader_binding_id(shader_binding_id)
 	{
 		assert(image_view);
@@ -101,7 +107,7 @@ namespace lz
 	}
 
 	void DescriptorSetLayoutKey::get_uniform_buffer_ids(UniformBufferId* dst_uniform_buffer_ids, size_t count,
-		size_t offset) const
+	                                                    size_t offset) const
 	{
 		if (count == -1)
 		{
@@ -124,7 +130,8 @@ namespace lz
 		return it->second;
 	}
 
-	DescriptorSetLayoutKey::UniformBufferId DescriptorSetLayoutKey::get_uniform_buffer_id(uint32_t buffer_binding_id) const
+	DescriptorSetLayoutKey::UniformBufferId DescriptorSetLayoutKey::get_uniform_buffer_id(
+		uint32_t buffer_binding_id) const
 	{
 		auto it = uniform_buffer_binding_to_ids_.find(buffer_binding_id);
 		if (it == uniform_buffer_binding_to_ids_.end())
@@ -140,7 +147,8 @@ namespace lz
 		return uniform_buffer_datum_[uniform_buffer_id.id_];
 	}
 
-	UniformBufferBinding DescriptorSetLayoutKey::make_uniform_buffer_binding(std::string buffer_name, lz::Buffer* buffer,
+	UniformBufferBinding DescriptorSetLayoutKey::make_uniform_buffer_binding(
+		std::string buffer_name, lz::Buffer* buffer,
 		vk::DeviceSize offset, vk::DeviceSize size) const
 	{
 		const auto uniform_buffer_id = get_uniform_buffer_id(buffer_name);
@@ -155,7 +163,7 @@ namespace lz
 	}
 
 	void DescriptorSetLayoutKey::get_storage_buffer_ids(StorageBufferId* dst_storage_buffer_ids, size_t count,
-		size_t offset) const
+	                                                    size_t offset) const
 	{
 		if (count == -1)
 			count = storage_buffer_datum_.size();
@@ -173,7 +181,8 @@ namespace lz
 		return it->second;
 	}
 
-	DescriptorSetLayoutKey::StorageBufferId DescriptorSetLayoutKey::get_storage_buffer_id(uint32_t buffer_binding_id) const
+	DescriptorSetLayoutKey::StorageBufferId DescriptorSetLayoutKey::get_storage_buffer_id(
+		uint32_t buffer_binding_id) const
 	{
 		auto it = storage_buffer_binding_to_ids_.find(buffer_binding_id);
 		if (it == storage_buffer_binding_to_ids_.end())
@@ -187,7 +196,8 @@ namespace lz
 		return storage_buffer_datum_[storage_buffer_id.id_];
 	}
 
-	StorageBufferBinding DescriptorSetLayoutKey::make_storage_buffer_binding(std::string buffer_name, lz::Buffer* buffer,
+	StorageBufferBinding DescriptorSetLayoutKey::make_storage_buffer_binding(
+		std::string buffer_name, lz::Buffer* buffer,
 		vk::DeviceSize offset, vk::DeviceSize size) const
 	{
 		const auto storage_buffer_id = get_storage_buffer_id(buffer_name);
@@ -196,7 +206,6 @@ namespace lz
 		return StorageBufferBinding(buffer, storage_buffer_info.shader_binding_index, offset, size);
 	}
 
-	
 
 	size_t DescriptorSetLayoutKey::get_uniforms_count() const
 	{
@@ -235,7 +244,7 @@ namespace lz
 	}
 
 	void DescriptorSetLayoutKey::get_image_sampler_ids(ImageSamplerId* dst_image_sampler_ids, size_t count,
-		size_t offset) const
+	                                                   size_t offset) const
 	{
 		if (count == -1)
 			count = image_sampler_datum_.size();
@@ -250,7 +259,8 @@ namespace lz
 		return image_sampler_datum_[image_sampler_id.id_];
 	}
 
-	DescriptorSetLayoutKey::ImageSamplerId DescriptorSetLayoutKey::get_image_sampler_id(std::string image_sampler_name) const
+	DescriptorSetLayoutKey::ImageSamplerId DescriptorSetLayoutKey::get_image_sampler_id(
+		std::string image_sampler_name) const
 	{
 		auto it = image_sampler_name_to_ids_.find(image_sampler_name);
 		if (it == image_sampler_name_to_ids_.end())
@@ -258,7 +268,8 @@ namespace lz
 		return it->second;
 	}
 
-	DescriptorSetLayoutKey::ImageSamplerId DescriptorSetLayoutKey::get_image_sampler_id(uint32_t shader_binding_index) const
+	DescriptorSetLayoutKey::ImageSamplerId DescriptorSetLayoutKey::get_image_sampler_id(
+		uint32_t shader_binding_index) const
 	{
 		auto it = image_sampler_binding_to_ids_.find(shader_binding_index);
 		if (it == image_sampler_binding_to_ids_.end())
@@ -267,7 +278,8 @@ namespace lz
 	}
 
 	ImageSamplerBinding DescriptorSetLayoutKey::make_image_sampler_binding(std::string image_sampler_name,
-		lz::ImageView* image_view, lz::Sampler* sampler) const
+	                                                                       lz::ImageView* image_view,
+	                                                                       lz::Sampler* sampler) const
 	{
 		const auto image_sampler_id = get_image_sampler_id(image_sampler_name);
 		assert(image_sampler_id.is_valid());
@@ -281,7 +293,7 @@ namespace lz
 	}
 
 	void DescriptorSetLayoutKey::get_storage_image_ids(StorageImageId* dst_storage_image_ids, size_t count,
-		size_t offset) const
+	                                                   size_t offset) const
 	{
 		if (count == -1)
 			count = storage_image_datum_.size();
@@ -290,7 +302,8 @@ namespace lz
 			dst_storage_image_ids[index] = StorageImageId(index);
 	}
 
-	DescriptorSetLayoutKey::StorageImageId DescriptorSetLayoutKey::get_storage_image_id(std::string storage_image_name) const
+	DescriptorSetLayoutKey::StorageImageId DescriptorSetLayoutKey::get_storage_image_id(
+		std::string storage_image_name) const
 	{
 		auto it = storage_image_name_to_ids_.find(storage_image_name);
 		if (it == storage_image_name_to_ids_.end())
@@ -298,7 +311,8 @@ namespace lz
 		return it->second;
 	}
 
-	DescriptorSetLayoutKey::StorageImageId DescriptorSetLayoutKey::get_storage_image_id(uint32_t buffer_binding_id) const
+	DescriptorSetLayoutKey::StorageImageId DescriptorSetLayoutKey::get_storage_image_id(
+		uint32_t buffer_binding_id) const
 	{
 		auto it = storage_image_binding_to_ids_.find(buffer_binding_id);
 		if (it == storage_image_binding_to_ids_.end())
@@ -313,7 +327,7 @@ namespace lz
 	}
 
 	StorageImageBinding DescriptorSetLayoutKey::make_storage_image_binding(std::string image_name,
-		lz::ImageView* image_view) const
+	                                                                       lz::ImageView* image_view) const
 	{
 		const auto image_id = get_storage_image_id(image_name);
 		assert(image_id.is_valid());
@@ -334,7 +348,8 @@ namespace lz
 
 	bool DescriptorSetLayoutKey::operator<(const DescriptorSetLayoutKey& other) const
 	{
-		return std::tie(uniform_datum_, uniform_buffer_datum_, image_sampler_datum_, storage_buffer_datum_, storage_image_datum_)
+		return std::tie(uniform_datum_, uniform_buffer_datum_, image_sampler_datum_, storage_buffer_datum_,
+		                storage_image_datum_)
 			< std::tie(other.uniform_datum_, other.uniform_buffer_datum_, other.image_sampler_datum_,
 			           other.storage_buffer_datum_, other.storage_image_datum_);
 	}
@@ -429,7 +444,7 @@ namespace lz
 		for (auto& image_sampler_binding : image_sampler_bindings)
 		{
 			ImageSamplerId dst_image_sampler_id;
-			for (size_t set_index = 0; set_index < sets_count; set_index++)
+			for (size_t set_index = 0; set_index < sets_count; ++set_index)
 			{
 				auto& src_layout = set_layouts[set_index];
 				auto src_image_sampler_id = src_layout.get_image_sampler_id(image_sampler_binding);
@@ -459,7 +474,7 @@ namespace lz
 		for (auto& storage_buffer_binding : storage_buffer_bindings)
 		{
 			StorageBufferId dst_storage_buffer_id;
-			for (size_t set_index = 0; set_index < sets_count; set_index++)
+			for (size_t set_index = 0; set_index < sets_count; ++set_index)
 			{
 				auto& src_layout = set_layouts[set_index];
 				auto src_storage_buffer_id = src_layout.get_storage_buffer_id(storage_buffer_binding);
@@ -522,7 +537,6 @@ namespace lz
 			}
 		}
 
-
 		res.rebuild_index();
 		return res;
 	}
@@ -551,7 +565,7 @@ namespace lz
 
 		image_sampler_name_to_ids_.clear();
 		image_sampler_binding_to_ids_.clear();
-		for (size_t image_sampler_index = 0; image_sampler_index < image_sampler_datum_.size(); image_sampler_index++)
+		for (size_t image_sampler_index = 0; image_sampler_index < image_sampler_datum_.size(); ++image_sampler_index)
 		{
 			const ImageSamplerId image_sampler_id = ImageSamplerId(image_sampler_index);
 			auto& image_sampler_data = image_sampler_datum_[image_sampler_index];
@@ -561,7 +575,7 @@ namespace lz
 
 		storage_buffer_name_to_ids_.clear();
 		storage_buffer_binding_to_ids_.clear();
-		for (size_t storage_buffer_index = 0; storage_buffer_index < storage_buffer_datum_.size(); storage_buffer_index++)
+		for (size_t storage_buffer_index = 0; storage_buffer_index < storage_buffer_datum_.size(); ++storage_buffer_index)
 		{
 			const StorageBufferId storage_buffer_id = StorageBufferId(storage_buffer_index);
 			auto& storage_buffer_data = storage_buffer_datum_[storage_buffer_index];
@@ -571,7 +585,7 @@ namespace lz
 
 		storage_image_name_to_ids_.clear();
 		storage_image_binding_to_ids_.clear();
-		for (size_t storage_image_index = 0; storage_image_index < storage_image_datum_.size(); storage_image_index++)
+		for (size_t storage_image_index = 0; storage_image_index < storage_image_datum_.size(); ++storage_image_index)
 		{
 			const StorageImageId storage_image_id = StorageImageId(storage_image_index);
 			auto& storage_image_data = storage_image_datum_[storage_image_index];
@@ -583,13 +597,6 @@ namespace lz
 	Shader::Shader(vk::Device logical_device, std::string shader_file)
 	{
 		const auto bytecode = get_bytecode(shader_file);
-		/*vk::ShaderStageFlagBits shaderStage;
-			if (shaderFile.find(".vert.spv") != std::string::npos)
-			  shaderStage = vk::ShaderStageFlagBits::eVertex;
-			if (shaderFile.find(".frag.spv") != std::string::npos)
-			  shaderStage = vk::ShaderStageFlagBits::eFragment;
-			if (shaderFile.find(".comp.spv") != std::string::npos)
-			  shaderStage = vk::ShaderStageFlagBits::eCompute;*/
 		init(logical_device, bytecode);
 	}
 
@@ -621,6 +628,13 @@ namespace lz
 		return shader_module_.get();
 	}
 
+	vk::ShaderStageFlagBits Shader::get_stage_bits() const
+	{
+		return stage_flag_bits_;
+	}
+
+
+
 	size_t Shader::get_sets_count()
 	{
 		return descriptor_set_layout_keys_.size();
@@ -642,29 +656,43 @@ namespace lz
 		local_size_ = glm::uvec3(0);
 		spirv_cross::Compiler compiler(bytecode.data(), bytecode.size());
 
-		std::vector<spirv_cross::EntryPoint> entry_points = compiler.get_entry_points_and_stages();
+		auto entry_points = compiler.get_entry_points_and_stages();
 		assert(entry_points.size() == 1);
-		vk::ShaderStageFlags stage_flags;
 		switch (entry_points[0].execution_model)
 		{
 		case spv::ExecutionModel::ExecutionModelVertex:
 			{
-				stage_flags |= vk::ShaderStageFlagBits::eVertex;
+				stage_flag_bits_ = vk::ShaderStageFlagBits::eVertex;
 			}
 			break;
 		case spv::ExecutionModel::ExecutionModelFragment:
 			{
-				stage_flags |= vk::ShaderStageFlagBits::eFragment;
+				stage_flag_bits_ = vk::ShaderStageFlagBits::eFragment;
 			}
 			break;
 		case spv::ExecutionModel::ExecutionModelGLCompute:
 			{
-				stage_flags |= vk::ShaderStageFlagBits::eCompute;
+				stage_flag_bits_ = vk::ShaderStageFlagBits::eCompute;
 				local_size_.x = compiler.get_execution_mode_argument(spv::ExecutionMode::ExecutionModeLocalSize, 0);
 				local_size_.y = compiler.get_execution_mode_argument(spv::ExecutionMode::ExecutionModeLocalSize, 1);
 				local_size_.z = compiler.get_execution_mode_argument(spv::ExecutionMode::ExecutionModeLocalSize, 2);
 			}
 			break;
+
+		case spv::ExecutionModel::ExecutionModelMeshEXT:
+			{
+				stage_flag_bits_ = vk::ShaderStageFlagBits::eMeshEXT;
+				local_size_.x = compiler.get_execution_mode_argument(spv::ExecutionMode::ExecutionModeLocalSize, 0);
+				local_size_.y = compiler.get_execution_mode_argument(spv::ExecutionMode::ExecutionModeLocalSize, 1);
+				local_size_.z = compiler.get_execution_mode_argument(spv::ExecutionMode::ExecutionModeLocalSize, 2);
+			}
+			break;
+
+		default:
+			{
+				throw std::runtime_error("Unsupported shader stage");
+				break;
+			}
 		}
 
 		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
@@ -672,10 +700,10 @@ namespace lz
 
 		struct SetResources
 		{
-			std::vector<spirv_cross::Resource> uniformBuffers;
-			std::vector<spirv_cross::Resource> imageSamplers;
-			std::vector<spirv_cross::Resource> storageBuffers;
-			std::vector<spirv_cross::Resource> storageImages;
+			std::vector<spirv_cross::Resource> uniform_buffers;
+			std::vector<spirv_cross::Resource> image_samplers;
+			std::vector<spirv_cross::Resource> storage_buffers;
+			std::vector<spirv_cross::Resource> storage_images;
 		};
 		std::vector<SetResources> set_resources;
 		for (const auto& buffer : resources.uniform_buffers)
@@ -683,7 +711,7 @@ namespace lz
 			uint32_t set_shader_id = compiler.get_decoration(buffer.id, spv::DecorationDescriptorSet);
 			if (set_shader_id >= set_resources.size())
 				set_resources.resize(set_shader_id + 1);
-			set_resources[set_shader_id].uniformBuffers.push_back(buffer);
+			set_resources[set_shader_id].uniform_buffers.push_back(buffer);
 		}
 
 		for (const auto& image_sampler : resources.sampled_images)
@@ -691,7 +719,7 @@ namespace lz
 			uint32_t set_shader_id = compiler.get_decoration(image_sampler.id, spv::DecorationDescriptorSet);
 			if (set_shader_id >= set_resources.size())
 				set_resources.resize(set_shader_id + 1);
-			set_resources[set_shader_id].imageSamplers.push_back(image_sampler);
+			set_resources[set_shader_id].image_samplers.push_back(image_sampler);
 		}
 
 		for (const auto& buffer : resources.storage_buffers)
@@ -699,7 +727,7 @@ namespace lz
 			uint32_t set_shader_id = compiler.get_decoration(buffer.id, spv::DecorationDescriptorSet);
 			if (set_shader_id >= set_resources.size())
 				set_resources.resize(set_shader_id + 1);
-			set_resources[set_shader_id].storageBuffers.push_back(buffer);
+			set_resources[set_shader_id].storage_buffers.push_back(buffer);
 		}
 
 		for (const auto& image : resources.storage_images)
@@ -707,7 +735,7 @@ namespace lz
 			uint32_t set_shader_id = compiler.get_decoration(image.id, spv::DecorationDescriptorSet);
 			if (set_shader_id >= set_resources.size())
 				set_resources.resize(set_shader_id + 1);
-			set_resources[set_shader_id].storageImages.push_back(image);
+			set_resources[set_shader_id].storage_images.push_back(image);
 		}
 
 		this->descriptor_set_layout_keys_.resize(set_resources.size());
@@ -717,7 +745,7 @@ namespace lz
 			descriptor_set_layout_key = DescriptorSetLayoutKey();
 			descriptor_set_layout_key.set_shader_id_ = uint32_t(set_index);
 
-			for (auto buffer : set_resources[set_index].uniformBuffers)
+			for (auto& buffer : set_resources[set_index].uniform_buffers)
 			{
 				uint32_t shader_binding_index = compiler.get_decoration(buffer.id, spv::DecorationBinding);
 
@@ -733,7 +761,7 @@ namespace lz
 
 					buffer_data.shader_binding_index = shader_binding_index;
 					buffer_data.name = buffer.name;
-					buffer_data.stage_flags = stage_flags;
+					buffer_data.stage_flags = stage_flag_bits_;
 
 					uint32_t declared_size = uint32_t(compiler.get_declared_struct_size(buffer_type));
 
@@ -771,7 +799,7 @@ namespace lz
 				}
 			}
 
-			for (auto image_sampler : set_resources[set_index].imageSamplers)
+			for (auto image_sampler : set_resources[set_index].image_samplers)
 			{
 				auto image_sampler_id = DescriptorSetLayoutKey::ImageSamplerId(
 					descriptor_set_layout_key.image_sampler_datum_.size());
@@ -780,11 +808,11 @@ namespace lz
 				descriptor_set_layout_key.image_sampler_datum_.push_back(DescriptorSetLayoutKey::ImageSamplerData());
 				auto& image_sampler_data = descriptor_set_layout_key.image_sampler_datum_.back();
 				image_sampler_data.shader_binding_index = shader_binding_index;
-				image_sampler_data.stage_flags = stage_flags;
+				image_sampler_data.stage_flags = stage_flag_bits_;
 				image_sampler_data.name = image_sampler.name;
 			}
 
-			for (auto buffer : set_resources[set_index].storageBuffers)
+			for (auto buffer : set_resources[set_index].storage_buffers)
 			{
 				uint32_t shader_binding_index = compiler.get_decoration(buffer.id, spv::DecorationBinding);
 
@@ -799,7 +827,7 @@ namespace lz
 					auto& buffer_data = descriptor_set_layout_key.storage_buffer_datum_.back();
 
 					buffer_data.shader_binding_index = shader_binding_index;
-					buffer_data.stage_flags = stage_flags;
+					buffer_data.stage_flags = stage_flag_bits_;
 					buffer_data.name = buffer.name;
 					buffer_data.pod_part_size = 0;
 					buffer_data.array_member_size = 0;
@@ -820,7 +848,7 @@ namespace lz
 				}
 			}
 
-			for (auto image : set_resources[set_index].storageImages)
+			for (auto image : set_resources[set_index].storage_images)
 			{
 				auto image_sampler_id = DescriptorSetLayoutKey::ImageSamplerId(
 					descriptor_set_layout_key.image_sampler_datum_.size());
@@ -829,7 +857,7 @@ namespace lz
 				descriptor_set_layout_key.storage_image_datum_.push_back(DescriptorSetLayoutKey::StorageImageData());
 				auto& storage_image_data = descriptor_set_layout_key.storage_image_datum_.back();
 				storage_image_data.shader_binding_index = shader_binding_index;
-				storage_image_data.stage_flags = stage_flags;
+				storage_image_data.stage_flags = stage_flag_bits_;
 				storage_image_data.name = image.name;
 				//type?
 			}
@@ -837,10 +865,11 @@ namespace lz
 		}
 	}
 
-	ShaderProgram::ShaderProgram(Shader* vertex_shader, Shader* fragment_shader): vertex_shader(vertex_shader), fragment_shader(fragment_shader)
+	ShaderProgram::ShaderProgram(Shader* vertex_shader, Shader* fragment_shader): vertex_shader(vertex_shader),
+		fragment_shader(fragment_shader)
 	{
 		combined_descriptor_set_layout_keys.resize(std::max(vertex_shader->get_sets_count(),
-		                                                fragment_shader->get_sets_count()));
+		                                                    fragment_shader->get_sets_count()));
 		for (size_t set_index = 0; set_index < combined_descriptor_set_layout_keys.size(); set_index++)
 		{
 			vk::DescriptorSetLayout set_layout_handle = nullptr;
@@ -865,6 +894,35 @@ namespace lz
 			this->combined_descriptor_set_layout_keys[set_index] = DescriptorSetLayoutKey::merge(
 				set_layout_stage_keys.data(), set_layout_stage_keys.size());
 		}
+	}
+
+	ShaderProgram::ShaderProgram(std::initializer_list<Shader*> shaders)
+	{
+		size_t max_sets_count = 0;
+		for (auto& shader:shaders)
+		{
+			max_sets_count = std::max(max_sets_count, shader->get_sets_count());
+		}
+
+		for (size_t set_index = 0; set_index  < combined_descriptor_set_layout_keys.size(); ++set_index)
+		{
+			vk::DescriptorSetLayout set_layout_handle = nullptr;
+			std::vector<lz::DescriptorSetLayoutKey> set_layout_stage_keys;
+			for (auto& shader : shaders)
+			{
+				if (set_index < shader->get_sets_count())
+				{
+					auto set_info = shader->get_set_info(set_index);
+					if (!set_info->is_empty())
+					{
+						set_layout_stage_keys.push_back(*set_info);
+					}
+				}
+			}
+			this->combined_descriptor_set_layout_keys[set_index] = DescriptorSetLayoutKey::merge(
+				set_layout_stage_keys.data(), set_layout_stage_keys.size());
+		}
+
 	}
 
 	size_t ShaderProgram::get_sets_count()

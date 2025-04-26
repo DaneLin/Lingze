@@ -344,6 +344,7 @@ namespace lz
 
 		lz::ShaderModule* get_module();
 
+		vk::ShaderStageFlagBits get_stage_bits() const;
 
 		size_t get_sets_count();
 
@@ -355,6 +356,7 @@ namespace lz
 		void init(vk::Device logical_device, const std::vector<uint32_t>& bytecode);
 
 		std::vector<DescriptorSetLayoutKey> descriptor_set_layout_keys_;
+		vk::ShaderStageFlagBits stage_flag_bits_;
 
 		std::unique_ptr<lz::ShaderModule> shader_module_;
 		glm::uvec3 local_size_;
@@ -364,6 +366,7 @@ namespace lz
 	{
 	public:
 		ShaderProgram(Shader* vertex_shader, Shader* fragment_shader);
+		ShaderProgram(std::initializer_list<Shader*> shaders);
 
 		size_t get_sets_count();
 
@@ -372,5 +375,7 @@ namespace lz
 		std::vector<DescriptorSetLayoutKey> combined_descriptor_set_layout_keys;
 		Shader* vertex_shader;
 		Shader* fragment_shader;
+
+		std::vector<Shader*> shaders;
 	};
 }

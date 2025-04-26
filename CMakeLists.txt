@@ -38,6 +38,7 @@ add_subdirectory(deps)
 include_directories("${CMAKE_SOURCE_DIR}/src")
 include_directories("${Vulkan_INCLUDE_DIRS}")
 
+
 # Define shader paths for use in code
 add_compile_definitions(
     SHADER_DIR="${CMAKE_SOURCE_DIR}/shaders/"
