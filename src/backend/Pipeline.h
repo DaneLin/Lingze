@@ -6,6 +6,7 @@
 
 namespace lz
 {
+	struct ShaderStageInfo;
 	class Core;
 
 	// DepthSettings: Structure for configuring depth testing and writing
@@ -173,7 +174,7 @@ namespace lz
 
 		GraphicsPipeline(
 			vk::Device logical_device,
-			ShaderProgram& shader_program,
+			const std::vector<ShaderStageInfo>& shader_stages,
 			const lz::VertexDeclaration& vertex_decl,
 			vk::PipelineLayout pipeline_layout,
 			DepthSettings depth_settings,

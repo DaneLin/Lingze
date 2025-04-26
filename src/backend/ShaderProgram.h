@@ -365,7 +365,6 @@ namespace lz
 	class ShaderProgram
 	{
 	public:
-		ShaderProgram(Shader* vertex_shader, Shader* fragment_shader);
 		ShaderProgram(std::initializer_list<Shader*> shaders);
 
 		size_t get_sets_count();
@@ -373,8 +372,7 @@ namespace lz
 		const DescriptorSetLayoutKey* get_set_info(size_t set_index);
 
 		std::vector<DescriptorSetLayoutKey> combined_descriptor_set_layout_keys;
-		Shader* vertex_shader;
-		Shader* fragment_shader;
+		
 
 		std::vector<Shader*> shaders;
 	};

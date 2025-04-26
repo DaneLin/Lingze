@@ -93,7 +93,7 @@ namespace lz::render
 	{
 		base_shape_shader_.vertex_shader.reset(new lz::Shader(core_->get_logical_device(),SHADER_SPIRV_DIR"BasicShape/BasicShape.vert.spv"));
 		base_shape_shader_.fragment_shader.reset(new lz::Shader(core_->get_logical_device(),SHADER_SPIRV_DIR"BasicShape/BasicShape.frag.spv"));
-		base_shape_shader_.shader_program.reset(new lz::ShaderProgram(base_shape_shader_.vertex_shader.get(), base_shape_shader_.fragment_shader.get() ));
+		base_shape_shader_.shader_program.reset(new lz::ShaderProgram({ base_shape_shader_.vertex_shader.get(), base_shape_shader_.fragment_shader.get() }));
 	}
 
 	void BasicShapeRenderer::change_view()

@@ -404,7 +404,7 @@ namespace lz::render
 		                                          SHADER_SPIRV_DIR "ImGui/ImGui.vert.spv"));
 		imgui_shader_.fragment.reset(new lz::Shader(core_->get_logical_device(),
 		                                            SHADER_SPIRV_DIR "ImGui/ImGui.frag.spv"));
-		imgui_shader_.program.reset(new lz::ShaderProgram(imgui_shader_.vertex.get(), imgui_shader_.fragment.get() ));
+		imgui_shader_.program.reset(new lz::ShaderProgram({ imgui_shader_.vertex.get(), imgui_shader_.fragment.get() }));
 	}
 
 	void ImGuiRenderer::init_keymap()

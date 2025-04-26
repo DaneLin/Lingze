@@ -1,5 +1,6 @@
 #include "Pipeline.h"
 
+#include "PipelineCache.h"
 #include "VertexDeclaration.h"
 
 namespace lz
@@ -116,7 +117,7 @@ namespace lz
 		pipeline_ = logical_device.createGraphicsPipelineUnique(nullptr, pipeline_create_info).value;
 	}
 
-	GraphicsPipeline::GraphicsPipeline(vk::Device logical_device, ShaderProgram& shader_program,
+	GraphicsPipeline::GraphicsPipeline(vk::Device logical_device, const std::vector<lz::ShaderStageInfo>& shader_stages,
 		const lz::VertexDeclaration& vertex_decl, vk::PipelineLayout pipeline_layout, DepthSettings depth_settings,
 		const std::vector<BlendSettings>& attachment_blend_settings, vk::PrimitiveTopology primitive_topology,
 		vk::RenderPass render_pass)
@@ -124,11 +125,11 @@ namespace lz
 		this->pipeline_layout_ = pipeline_layout;
 
 		std::vector<vk::PipelineShaderStageCreateInfo> shader_stage_infos;
-		for (auto shader : shader_program.shaders)
+		for (auto& shader_stage : shader_stages)
 		{
 			auto shader_stage_create_info = vk::PipelineShaderStageCreateInfo()
-				.setStage(shader->get_stage_bits())
-				.setModule(shader->get_module()->get_handle())
+				.setStage(shader_stage.stage)
+				.setModule(shader_stage.module)
 				.setPName("main");
 			shader_stage_infos.push_back(shader_stage_create_info);
 		}
@@ -176,9 +177,7 @@ namespace lz
 		// Configure depth/stencil state
 		auto depth_stencil_state = vk::PipelineDepthStencilStateCreateInfo()
 			.setStencilTestEnable(false)
-			.setDepthTestEnable(depth_settings.depth_func == vk::CompareOp::eAlways
-				? false
-				: true)
+			.setDepthTestEnable(depth_settings.depth_func == vk::CompareOp::eAlways? false: true)
 			.setDepthCompareOp(depth_settings.depth_func)
 			.setDepthWriteEnable(depth_settings.write_enable)
 			.setDepthBoundsTestEnable(false);

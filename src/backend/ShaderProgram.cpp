@@ -865,7 +865,7 @@ namespace lz
 		}
 	}
 
-	ShaderProgram::ShaderProgram(Shader* vertex_shader, Shader* fragment_shader): vertex_shader(vertex_shader),
+	/*ShaderProgram::ShaderProgram(Shader* vertex_shader, Shader* fragment_shader): vertex_shader(vertex_shader),
 		fragment_shader(fragment_shader)
 	{
 		combined_descriptor_set_layout_keys.resize(std::max(vertex_shader->get_sets_count(),
@@ -894,16 +894,17 @@ namespace lz
 			this->combined_descriptor_set_layout_keys[set_index] = DescriptorSetLayoutKey::merge(
 				set_layout_stage_keys.data(), set_layout_stage_keys.size());
 		}
-	}
+	}*/
 
 	ShaderProgram::ShaderProgram(std::initializer_list<Shader*> shaders)
 	{
 		size_t max_sets_count = 0;
 		for (auto& shader:shaders)
 		{
+			this->shaders.push_back(shader);
 			max_sets_count = std::max(max_sets_count, shader->get_sets_count());
 		}
-
+		combined_descriptor_set_layout_keys.resize(max_sets_count);
 		for (size_t set_index = 0; set_index  < combined_descriptor_set_layout_keys.size(); ++set_index)
 		{
 			vk::DescriptorSetLayout set_layout_handle = nullptr;
