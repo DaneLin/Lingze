@@ -103,8 +103,8 @@ namespace lz
 		for (auto& object : objects_)
 		{
 			object_callback(object.obj_to_world, object.albedo_color, object.emissive_color,
-			                object.mesh->vertex_buffer->get_buffer(),
-			                object.mesh->index_buffer ? object.mesh->index_buffer->get_buffer() : nullptr,
+			                object.mesh->vertex_buffer->get_buffer().get_handle(),
+			                object.mesh->index_buffer ? object.mesh->index_buffer->get_buffer().get_handle() : nullptr,
 			                uint32_t(object.mesh->vertices_count), uint32_t(object.mesh->indices_count));
 		}
 	}
@@ -182,15 +182,65 @@ namespace lz
 		transfer_queue.end_command_buffer();
 	}
 
-	vk::Buffer Scene::get_global_vertex_buffer() const
+	void Scene::create_draw_buffer()
+	{
+		// debug code
+		std::cerr << "generating draw indirect buffer\n";
+		std::vector< vk::DrawIndexedIndirectCommand> draw_commands(objects_.size());
+		std::vector<glm::mat4> object_models(objects_.size());
+		// Iterate through objects and record draw commands
+		for (size_t index =0 ; index < objects_.size(); ++index)
+		{
+			const auto& object = objects_[index];
+			vk::DrawIndexedIndirectCommand draw_command;
+			draw_command.firstInstance = 0;
+			draw_command.firstIndex = object.global_index_offset;
+			draw_command.vertexOffset = object.global_vertex_offset;
+			draw_command.indexCount = object.mesh->indices_count;
+			draw_command.instanceCount = 1;
+			draw_commands[index] = std::move(draw_command);
+
+			object_models[index] = object.obj_to_world;
+		}
+
+		// upload
+		lz::ExecuteOnceQueue transfer_queue(core_);
+		auto transfer_command_buffer = transfer_queue.begin_command_buffer();
+
+		auto physical_device = core_->get_physical_device();
+		auto logical_device = core_->get_logical_device();
+		draw_indirect_buffer_ = std::make_unique<lz::StagedBuffer>(physical_device, logical_device, 
+			draw_commands.size() * sizeof(vk::DrawIndexedIndirectCommand), 
+			vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndirectBuffer);
+		memcpy(draw_indirect_buffer_->map(), draw_commands.data(), draw_commands.size() * sizeof(vk::DrawIndexedIndirectCommand));
+		draw_indirect_buffer_->unmap(transfer_command_buffer);
+
+		draw_call_buffer_ = std::make_unique<lz::StagedBuffer>(physical_device, logical_device, object_models.size() * sizeof(glm::mat4), vk::BufferUsageFlagBits::eStorageBuffer);
+		memcpy(draw_call_buffer_->map(), object_models.data(), object_models.size() * sizeof(glm::mat4));
+		draw_call_buffer_->unmap(transfer_command_buffer);
+
+		transfer_queue.end_command_buffer();
+	}
+
+	Buffer& Scene::get_global_vertex_buffer() const
 	{
 		return global_vertex_buffer_->get_buffer();
 	}
 
 	vk::Buffer Scene::get_global_index_buffer() const
 	{
-			return global_index_buffer_ ? global_index_buffer_->get_buffer() : nullptr;
+			return global_index_buffer_ ? global_index_buffer_->get_buffer().get_handle() : nullptr;
 		
+	}
+
+	Buffer& Scene::get_draw_call_buffer() const
+	{
+		return draw_call_buffer_->get_buffer();
+	}
+
+	Buffer& Scene::get_draw_indirect_buffer() const
+	{
+		return draw_indirect_buffer_->get_buffer();
 	}
 
 	/*void Scene::iterate_objects_global_buffer(GlobalBufferObjectCallback object_callback)

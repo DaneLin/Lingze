@@ -6,19 +6,27 @@ namespace lz {
     namespace application {
 
         // Define DemoApp class, inherits from App base class
-        class SimpleMeshShadingApp : public lz::App
+        class MeshShadingApp : public lz::App
         {
         public:
-            SimpleMeshShadingApp() : lz::App("Lingze Simple Mesh Shading", 1280, 760) {}
+            MeshShadingApp() : lz::App("Lingze Mesh Shading", 1280, 760)
+            {
+                mesh_shading_enabled_ = true;
+            }
 
-            virtual ~SimpleMeshShadingApp() = default;
+            virtual ~MeshShadingApp() override = default;
 
         protected:
             // Load scene
             virtual bool load_scene() override;
 
+            virtual void render_ui() override;
+
             // Create renderer
             virtual std::unique_ptr<lz::render::BaseRenderer> create_renderer() override;
+
+        private:
+            bool mesh_shading_enabled_;
         };
 
     } // namespace application

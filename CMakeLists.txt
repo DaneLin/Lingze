@@ -64,21 +64,6 @@ add_custom_target(
 file(GLOB lingze_main_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cpp")
 file(GLOB lingze_main_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.h")
 
-# Application common files
-file(GLOB lingze_application_common_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/application/*.h")
-
-# Application demo projects
-# SimpleTriangle files
-file(GLOB_RECURSE lingze_simpletriangle_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/application/SimpleTriangle/*.cpp")
-file(GLOB_RECURSE lingze_simpletriangle_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/application/SimpleTriangle/*.h")
-
-# SimpleMeshShading files
-file(GLOB_RECURSE lingze_simplemesh_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/application/SimpleMeshShading/*.cpp")
-file(GLOB_RECURSE lingze_simplemesh_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/application/SimpleMeshShading/*.h")
-
-# BasicShape files
-file(GLOB_RECURSE lingze_basicshape_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/application/BasicShape/*.cpp")
-file(GLOB_RECURSE lingze_basicshape_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/application/BasicShape/*.h")
 
 # Backend files
 file(GLOB_RECURSE lingze_backend_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/backend/*.cpp")
@@ -87,10 +72,6 @@ file(GLOB_RECURSE lingze_backend_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/
 # Render common files
 file(GLOB_RECURSE lingze_render_common_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/render/common/*.cpp")
 file(GLOB_RECURSE lingze_render_common_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/render/common/*.h")
-
-# Renderer files
-file(GLOB_RECURSE lingze_renderers_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/render/renderers/*.cpp")
-file(GLOB_RECURSE lingze_renderers_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/render/renderers/*.h")
 
 # Scene files
 file(GLOB_RECURSE lingze_scene_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/scene/*.cpp")
@@ -146,18 +127,38 @@ foreach(app_dir ${app_dirs})
         # Get the directory name
         get_filename_component(dir_name ${app_dir} NAME)
         
-        # Skip if this is not a real application directory (e.g., if it's just a common header file)
-        if(EXISTS "${app_dir}/${dir_name}App.cpp" OR EXISTS "${app_dir}/${dir_name}App.h")
-            # Find the app file
-            file(GLOB app_files CONFIGURE_DEPENDS "${app_dir}/*App.cpp")
+        # Find all cpp files in the directory
+        file(GLOB_RECURSE app_source_files CONFIGURE_DEPENDS "${app_dir}/*.cpp")
+        file(GLOB_RECURSE app_header_files CONFIGURE_DEPENDS "${app_dir}/*.h")
+        
+        # Skip empty directories or directories without cpp files
+        if(app_source_files)
+            # Find a suitable main file - look for patterns that could indicate an entry point
+            set(main_file "")
             
-            # Create an executable for each app found
-            foreach(app_file ${app_files})
-                # Extract app name from file path (without path and extension)
-                get_filename_component(app_name ${app_file} NAME_WE)
+            # First, try to find a file that contains "main" or "App" in its name
+            foreach(src_file ${app_source_files})
+                get_filename_component(file_name ${src_file} NAME)
+                string(TOLOWER ${file_name} file_name_lower)
                 
-                # Create executable
-                add_executable(${app_name} ${app_file})
+                if(file_name_lower MATCHES "main" OR file_name_lower MATCHES "app")
+                    set(main_file ${src_file})
+                    break()
+                endif()
+            endforeach()
+            
+            # If no main file found, use the first cpp file
+            if(NOT main_file AND app_source_files)
+                list(GET app_source_files 0 main_file)
+            endif()
+            
+            # If we found a main file, create an executable
+            if(main_file)
+                # Use the directory name as the application name
+                set(app_name "${dir_name}App")
+                
+                # Create executable with all source files in the directory
+                add_executable(${app_name} ${main_file} ${app_source_files} ${app_header_files})
                 target_link_libraries(${app_name} LingzeEngine)
                 
                 # Set output directory
@@ -166,11 +167,11 @@ foreach(app_dir ${app_dirs})
                     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/bin/cmake"
                 )
                 
-                message(STATUS "Found application: ${app_name}")
+                message(STATUS "Found application: ${app_name} (main file: ${main_file})")
                 
                 # Add to our list of found applications
                 list(APPEND found_applications ${app_name})
-            endforeach()
+            endif()
         endif()
     endif()
 endforeach()

@@ -39,8 +39,7 @@ namespace lz::render
 
 		render_graph->add_pass(lz::RenderGraph::RenderPassDesc()
                        .set_color_attachments({
-	                       {frame_info.swapchain_image_view_proxy_id, vk::AttachmentLoadOp::eClear}
-                       })
+	                       {frame_info.swapchain_image_view_proxy_id, vk::AttachmentLoadOp::eClear}})
                        .set_depth_attachment(frame_resource->depth_stencil_proxy_.image_view_proxy.get().id(),
                                              vk::AttachmentLoadOp::eClear)
                        .set_render_area_extent(viewport_extent_)

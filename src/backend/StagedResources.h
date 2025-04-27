@@ -14,7 +14,7 @@ namespace lz
 
         void unmap(vk::CommandBuffer command_buffer);
 
-        vk::Buffer get_buffer();
+        lz::Buffer& get_buffer();
 
     private:
         std::unique_ptr<lz::Buffer> staging_buffer_;

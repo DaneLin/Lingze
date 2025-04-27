@@ -61,7 +61,11 @@ namespace lz
         
         // Render a frame
         virtual void render_frame();
-        
+
+        // Render UI
+        virtual void render_ui();
+        void recreate_swapchain();
+
         // Process input
         virtual void process_input();
         

@@ -74,16 +74,16 @@ namespace lz
 		                                          uint32_t indices_count)>;
 		void iterate_objects(ObjectCallback object_callback);
 
+		// Create global buffers (CPU side)
 		void create_global_buffers();
+
+		// Create buffer for draw call
+		void create_draw_buffer();
         
-		//using GlobalBufferObjectCallback = std::function<void(glm::mat4 object_to_world, glm::vec3 albedo_color,
-		//                                                     glm::vec3 emissive_color, uint32_t vertex_offset,
-		//                                                     uint32_t index_offset, uint32_t vertices_count,
-		//                                                     uint32_t indices_count)>;
-		//void iterate_objects_global_buffer(GlobalBufferObjectCallback object_callback);
-        
-		vk::Buffer get_global_vertex_buffer() const;
+		Buffer& get_global_vertex_buffer() const;
 		vk::Buffer get_global_index_buffer() const;
+		Buffer& get_draw_call_buffer() const;
+		Buffer& get_draw_indirect_buffer() const;
 		size_t get_global_vertices_count() const { return global_vertices_count_; }
 		size_t get_global_indices_count() const { return global_indices_count_; }
 		
@@ -95,6 +95,11 @@ namespace lz
 		// Global vertex buffer and index buffer
 		std::unique_ptr<lz::StagedBuffer> global_vertex_buffer_;
 		std::unique_ptr<lz::StagedBuffer> global_index_buffer_;
+
+		// Draw indirect
+		std::unique_ptr<lz::StagedBuffer> draw_call_buffer_;
+		std::unique_ptr<lz::StagedBuffer> draw_indirect_buffer_;
+
 		size_t global_indices_count_;
 		size_t global_vertices_count_;
 
