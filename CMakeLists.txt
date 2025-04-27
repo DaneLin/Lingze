@@ -84,13 +84,6 @@ file(GLOB_RECURSE lingze_renderers_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR
 file(GLOB_RECURSE lingze_scene_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/scene/*.cpp")
 file(GLOB_RECURSE lingze_scene_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/scene/*.h")
 
-# Shader files
-file(GLOB_RECURSE shader_files CONFIGURE_DEPENDS
-    "${CMAKE_SOURCE_DIR}/shaders/glsl/*.frag"
-    "${CMAKE_SOURCE_DIR}/shaders/glsl/*.vert"
-)
-list(APPEND shader_files "${CMAKE_SOURCE_DIR}/shaders/buildShaders.bat")
-
 # Create engine library, including all code except the application entry point
 set(lingze_lib_sources 
     ${lingze_backend_sources}
