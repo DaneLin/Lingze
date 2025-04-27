@@ -2,7 +2,7 @@
 
 namespace lz::render
 {
-	UnmippedProxy::UnmippedProxy(lz::RenderGraph* render_graph, vk::Format format, glm::uvec2 base_size,
+	UnmippedImageProxy::UnmippedImageProxy(lz::RenderGraph* render_graph, vk::Format format, glm::uvec2 base_size,
 		vk::ImageUsageFlags usage_flags)
 			:base_size(base_size)
 	{

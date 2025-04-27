@@ -26,16 +26,25 @@ namespace lz::render
 
 	private:
 		constexpr static uint32_t k_shader_data_set_index = 0;
+		constexpr static uint32_t k_drawcall_data_set_index = 1;
 
 		lz::VertexDeclaration vertex_decl_;
+
+#pragma pack(push, 1)
+		struct DrawCallDataBuffer
+		{
+			glm::mat4 model_matrix;
+		};
+#pragma pack(pop)
+
 
 		struct BasicShapeShader
 		{
 #pragma pack(push, 1)
 			struct DataBuffer
 			{
-				glm::mat4 viewMatrix;
-				glm::mat4 projMatrix;
+				glm::mat4 view_matrix;
+				glm::mat4 proj_matrix;
 			};
 #pragma pack(pop)
 
@@ -51,7 +60,7 @@ namespace lz::render
 			{
 			}
 
-			UnmippedProxy depth_stencil_proxy_;
+			UnmippedImageProxy depth_stencil_proxy_;
 		};
 
 		std::map<lz::RenderGraph*, std::unique_ptr<FrameResource>> frame_resource_datum_;
