@@ -49,6 +49,8 @@ namespace lz
 
 		std::unique_ptr<lz::StagedBuffer> vertex_buffer;
 		std::unique_ptr<lz::StagedBuffer> index_buffer;
+
+		MeshData mesh_data;
 		size_t indices_count;
 		size_t vertices_count;
 

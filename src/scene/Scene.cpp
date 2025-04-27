@@ -6,17 +6,17 @@
 
 namespace lz
 {
-	glm::vec3 ReadJsonVec3f(Json::Value vectorValue)
+	static glm::vec3 read_json_vec3_f(Json::Value vectorValue)
 	{
 		return glm::vec3(vectorValue[0].asFloat(), vectorValue[1].asFloat(), vectorValue[2].asFloat());
 	}
 
-	glm::ivec2 ReadJsonVec2i(Json::Value vectorValue)
+	static glm::ivec2 read_json_vec2_i(Json::Value vectorValue)
 	{
 		return glm::ivec2(vectorValue[0].asInt(), vectorValue[1].asInt());
 	}
 
-	glm::uvec3 ReadJsonVec3u(Json::Value vectorValue)
+	static glm::uvec3 read_json_vec3_u(Json::Value vectorValue)
 	{
 		return glm::uvec3(vectorValue[0].asUInt(), vectorValue[1].asUInt(), vectorValue[2].asUInt());
 	}
@@ -32,13 +32,13 @@ namespace lz
 
 		auto transfer_command_buffer = transfer_queue.begin_command_buffer();
 		{
-			Json::Value mesh_array = scene_config["meshes"];
+			Json::Value& mesh_array = scene_config["meshes"];
 			for (Json::ArrayIndex mesh_index = 0; mesh_index < mesh_array.size(); ++mesh_index)
 			{
-				Json::Value curr_mesh_node = mesh_array[mesh_index];
+				Json::Value& curr_mesh_node = mesh_array[mesh_index];
 
 				std::string mesh_file_name = curr_mesh_node.get("filename", "<unspecified>").asString();
-				glm::vec3 scale = ReadJsonVec3f(curr_mesh_node["scale"]);
+				glm::vec3 scale = read_json_vec3_f(curr_mesh_node["scale"]);
 
 				auto mesh_data = MeshData(mesh_file_name, scale);
 				switch (geometry_type)
@@ -78,15 +78,15 @@ namespace lz
 			}
 
 			object.mesh = name_to_mesh[mesh_name];
-			glm::vec3 rotation_vec = ReadJsonVec3f(curr_object_node["angle"]);
-			object.obj_to_world = glm::translate(ReadJsonVec3f(curr_object_node["pos"]));
+			glm::vec3 rotation_vec = read_json_vec3_f(curr_object_node["angle"]);
+			object.obj_to_world = glm::translate(read_json_vec3_f(curr_object_node["pos"]));
 			if (glm::length(rotation_vec) > 1e-3f)
 			{
 				object.obj_to_world = object.obj_to_world * glm::rotate(glm::length(rotation_vec), glm::normalize(rotation_vec));
 			}
 
-			object.albedo_color = ReadJsonVec3f(curr_object_node["albedoColor"]);
-			object.emissive_color = ReadJsonVec3f(curr_object_node["emissiveColor"]);
+			object.albedo_color = read_json_vec3_f(curr_object_node["albedoColor"]);
+			object.emissive_color = read_json_vec3_f(curr_object_node["emissiveColor"]);
 			object.is_shadow_receiver = curr_object_node.get("isShadowCaster", true).asBool();
 
 			if (curr_object_node.get("isMarker", false).asBool())
@@ -108,4 +108,100 @@ namespace lz
 			                uint32_t(object.mesh->vertices_count), uint32_t(object.mesh->indices_count));
 		}
 	}
+
+	void Scene::create_global_buffers()
+	{
+		// calc total vertex and index offset
+		size_t total_vertex_size = 0;
+		size_t total_index_size = 0;
+		global_vertices_count_ = 0;
+		global_indices_count_ = 0;
+
+		// use a map to record each mesh's offset in global buffer
+		std::unordered_map<Mesh*, std::pair<uint32_t, uint32_t>> mesh_to_offsets;
+
+		// first calc total size, only consider unique meshes
+		for (const auto& mesh_ptr : meshes_)
+		{
+			Mesh* mesh = mesh_ptr.get();
+			
+			// if this mesh has been processed, skip
+			if (mesh_to_offsets.find(mesh) != mesh_to_offsets.end()) {
+				continue;
+			}
+
+			mesh_to_offsets[mesh] = { global_vertices_count_, global_indices_count_ };
+			total_vertex_size += mesh->vertices_count * sizeof(MeshData::Vertex);
+			total_index_size += mesh->indices_count * sizeof(MeshData::IndexType);
+			
+			global_vertices_count_ += mesh->vertices_count;
+			global_indices_count_ += mesh->indices_count;
+		}
+
+		// create temp buffer to collect all data
+		std::vector<MeshData::Vertex> all_vertices;
+		std::vector<MeshData::IndexType> all_indices;
+		all_vertices.reserve(global_vertices_count_);
+		all_indices.reserve(global_indices_count_);
+
+		// record current offset
+		uint32_t current_vertex_offset = 0;
+		uint32_t current_index_offset = 0;
+
+		for (const auto& mesh_ptr : meshes_)
+		{
+			Mesh* mesh = mesh_ptr.get();
+			// get vertex data
+			all_vertices.insert(all_vertices.end(), mesh->mesh_data.vertices.begin(), mesh->mesh_data.vertices.end());
+			all_indices.insert(all_indices.end(), mesh->mesh_data.indices.begin(), mesh->mesh_data.indices.end());
+		}
+
+		// 
+		for (auto& object : objects_)
+		{
+			auto offsets = mesh_to_offsets[object.mesh];
+			object.global_vertex_offset = offsets.first;
+			object.global_index_offset = offsets.second;
+		}
+
+		lz::ExecuteOnceQueue transfer_queue(core_);
+		auto transfer_command_buffer = transfer_queue.begin_command_buffer();
+
+		auto physical_device = core_->get_physical_device();
+		auto logical_device = core_->get_logical_device();
+		global_vertex_buffer_ = std::make_unique<lz::StagedBuffer>(physical_device, logical_device, total_vertex_size, vk::BufferUsageFlagBits::eStorageBuffer);
+		memcpy(global_vertex_buffer_->map(), all_vertices.data(), total_vertex_size);
+		global_vertex_buffer_->unmap(transfer_command_buffer);
+
+		if (total_index_size > 0)
+		{
+			global_index_buffer_ = std::make_unique<lz::StagedBuffer>(physical_device, logical_device, total_index_size, vk::BufferUsageFlagBits::eIndexBuffer);
+			memcpy(global_index_buffer_->map(), all_indices.data(), total_index_size);
+			global_index_buffer_->unmap(transfer_command_buffer);
+		}
+		transfer_queue.end_command_buffer();
+	}
+
+	vk::Buffer Scene::get_global_vertex_buffer() const
+	{
+		return global_vertex_buffer_->get_buffer();
+	}
+
+	vk::Buffer Scene::get_global_index_buffer() const
+	{
+			return global_index_buffer_ ? global_index_buffer_->get_buffer() : nullptr;
+		
+	}
+
+	/*void Scene::iterate_objects_global_buffer(GlobalBufferObjectCallback object_callback)
+	{
+		for (auto& object : objects_)
+		{
+			object_callback(object.obj_to_world, object.albedo_color, object.emissive_color,
+			                object.global_vertex_offset, object.global_index_offset,
+			                uint32_t(object.mesh->vertices_count), uint32_t(object.mesh->indices_count));
+		}
+	}*/
+
+
 }

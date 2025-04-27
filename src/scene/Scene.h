@@ -18,6 +18,8 @@ namespace lz
 			albedo_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.f);
 			emissive_color = glm::vec3(1.0f, 1.0f, 1.0f);
 			is_shadow_receiver = true;
+			global_vertex_offset = 0;
+			global_index_offset = 0;
 		}
 
 		Mesh* mesh;
@@ -26,6 +28,10 @@ namespace lz
 		glm::vec3 albedo_color;
 		glm::vec3 emissive_color;
 		bool is_shadow_receiver;
+        
+		// 在全局缓冲区中的偏移量
+		uint32_t global_vertex_offset;
+		uint32_t global_index_offset;
 	};
 
 	struct Camera
@@ -61,16 +67,36 @@ namespace lz
 
 		Scene(Json::Value scene_config, lz::Core* core, GeometryTypes geometry_type);
 
+		// Legacy function: using vertex input binding
 		using ObjectCallback = std::function<void(glm::mat4 object_to_world, glm::vec3 albedo_color,
 		                                          glm::vec3 emissive_color, vk::Buffer vertex_buffer,
 		                                          vk::Buffer index_buffer, uint32_t vertices_count,
 		                                          uint32_t indices_count)>;
 		void iterate_objects(ObjectCallback object_callback);
 
+		void create_global_buffers();
+        
+		//using GlobalBufferObjectCallback = std::function<void(glm::mat4 object_to_world, glm::vec3 albedo_color,
+		//                                                     glm::vec3 emissive_color, uint32_t vertex_offset,
+		//                                                     uint32_t index_offset, uint32_t vertices_count,
+		//                                                     uint32_t indices_count)>;
+		//void iterate_objects_global_buffer(GlobalBufferObjectCallback object_callback);
+        
+		vk::Buffer get_global_vertex_buffer() const;
+		vk::Buffer get_global_index_buffer() const;
+		size_t get_global_vertices_count() const { return global_vertices_count_; }
+		size_t get_global_indices_count() const { return global_indices_count_; }
+		
 	private:
 		std::vector<std::unique_ptr<Mesh>> meshes_;
 		std::vector<Object> objects_;
 		size_t marker_object_index_;
+
+		// Global vertex buffer and index buffer
+		std::unique_ptr<lz::StagedBuffer> global_vertex_buffer_;
+		std::unique_ptr<lz::StagedBuffer> global_index_buffer_;
+		size_t global_indices_count_;
+		size_t global_vertices_count_;
 
 		lz::VertexDeclaration vertex_decl_;
 		lz::Core* core_;

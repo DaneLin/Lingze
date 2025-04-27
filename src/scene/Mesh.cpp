@@ -1,8 +1,7 @@
 #include "Mesh.h"
-
 #include <iostream>
-
 #include "tiny_obj_loader.h"
+#include "meshoptimizer.h"
 
 namespace tinyobj
 {
@@ -15,6 +14,7 @@ namespace tinyobj
 namespace lz
 {
 	MeshData::MeshData()
+		:primitive_topology(vk::PrimitiveTopology::eTriangleList)
 	{
 	}
 
@@ -28,12 +28,12 @@ namespace lz
 		std::string warn;
 		std::string err;
 
-		std::cout << "Loading mesh :" << file_name << '\n';
+		std::cerr << "Loading mesh :" << file_name << '\n';
 		bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, file_name.c_str(), nullptr);
 		
 		if (!warn.empty())
 		{
-			std::cout << "Warning : " << warn << '\n';
+			std::cerr << "Warning : " << warn << '\n';
 		}
 		if (!ret)
 		{
@@ -42,7 +42,7 @@ namespace lz
 		}
 		else
 		{
-			std::cout << "Loaded mesh : " << file_name << '\n';
+			std::cerr << "Loaded mesh : " << file_name << '\n';
 		}
 
 		std::map<tinyobj::index_t, size_t> deduplicated_indices;
@@ -276,6 +276,7 @@ namespace lz
 	Mesh::Mesh(const MeshData& mesh_data, vk::PhysicalDevice physical_device, vk::Device logical_device,
 	           vk::CommandBuffer transfer_command_buffer)
 	{
+		this->mesh_data = mesh_data;
 		this->primitive_topology = mesh_data.primitive_topology;
 		indices_count = mesh_data.indices.size();
 		vertices_count = mesh_data.vertices.size();
