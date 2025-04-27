@@ -29,7 +29,7 @@
 #include "backend/ImGuiProfilerRenderer.h"
 #include "render/common/ImguiRenderer.h"
 #include "scene/Scene.h"
-#include "render/renderers/BaseRenderer.h"
+#include "render/common/BaseRenderer.h"
 
 namespace lz
 {

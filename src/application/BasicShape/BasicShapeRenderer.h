@@ -1,6 +1,6 @@
 #pragma once
 
-#include "BaseRenderer.h"
+#include "render/common/BaseRenderer.h"
 #include "backend/VertexDeclaration.h"
 #include "backend/Core.h"
 #include "backend/ShaderProgram.h"

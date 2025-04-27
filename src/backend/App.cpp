@@ -1,7 +1,5 @@
 ﻿#include "backend/App.h"
 #include "backend/ImGuiProfilerRenderer.h"
-#include "render/renderers/SimpleRenderer.h"
-
 
 #include <iostream>
 #include <chrono>

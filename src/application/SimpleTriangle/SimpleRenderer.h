@@ -1,16 +1,17 @@
 #pragma once
 
-#include "BaseRenderer.h"
+#include "render/common/BaseRenderer.h"
+#include "backend/VertexDeclaration.h"
 #include "backend/ShaderProgram.h"
 
 namespace lz::render
 {
 	class lz::Core;
 
-	class SimpleMeshShadingRenderer final : public BaseRenderer
+	class SimpleRenderer : public BaseRenderer
 	{
 	public:
-		explicit SimpleMeshShadingRenderer(lz::Core* core);
+		explicit SimpleRenderer(lz::Core* core);
 
 		virtual void recreate_scene_resources(lz::Scene* scene) override;
 		virtual void recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count) override;
@@ -19,7 +20,7 @@ namespace lz::render
 		virtual void change_view() override;
 
 	private:
-		std::unique_ptr<lz::Shader> mesh_shader_;
+		std::unique_ptr<lz::Shader> vertex_shader_;
 		std::unique_ptr<lz::Shader> fragment_shader_;
 		std::unique_ptr<lz::ShaderProgram> shader_program_;
 

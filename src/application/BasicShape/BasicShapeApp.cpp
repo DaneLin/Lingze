@@ -1,7 +1,7 @@
 #include "BasicShapeApp.h"
 
-#include "EntryPoint.h"
-#include "render/renderers/BasicShapeRenderer.h"
+#include "../EntryPoint.h"
+#include "BasicShapeRenderer.h"
 
 namespace lz
 {
