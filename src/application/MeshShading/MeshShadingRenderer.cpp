@@ -94,8 +94,8 @@ namespace lz::render
 
 				                       context.get_command_buffer().bindIndexBuffer(
 					                       scene->get_global_index_buffer(), 0, vk::IndexType::eUint32);
-				                       context.get_command_buffer().drawIndexedIndirect(
-					                       scene->get_draw_indirect_buffer().get_handle(), 0, 6,
+									   context.get_command_buffer().drawIndexedIndirect(
+										   scene->get_draw_indirect_buffer().get_handle(), 0, scene->get_draw_count(),
 					                       sizeof(vk::DrawIndexedIndirectCommand));
 			                       }
 			                       else
@@ -109,13 +109,13 @@ namespace lz::render
 	{
 		const auto& logical_device = core_->get_logical_device();
 		{
-			base_shape_shader_.vertex_shader.reset(new Shader(logical_device,SHADER_SPIRV_DIR "MeshShading/BasicShape.vert.spv"));
-			base_shape_shader_.fragment_shader.reset(new Shader(logical_device, SHADER_SPIRV_DIR "MeshShading/BasicShape.frag.spv"));
+			base_shape_shader_.vertex_shader.reset(new Shader(logical_device,SHADER_SPIRV_GLSL_DIR "MeshShading/BasicShape.vert.spv"));
+			base_shape_shader_.fragment_shader.reset(new Shader(logical_device, SHADER_SPIRV_GLSL_DIR "MeshShading/BasicShape.frag.spv"));
 			base_shape_shader_.shader_program.reset(new ShaderProgram({base_shape_shader_.vertex_shader.get(),base_shape_shader_.fragment_shader.get()}));
 		}
 		{
-			meshlet_shader_.mesh_shader.reset(new Shader(logical_device,SHADER_SPIRV_DIR "MeshShading/meshlet.mesh.spv"));
-			meshlet_shader_.fragment_shader.reset(new Shader(logical_device,SHADER_SPIRV_DIR "MeshShading/meshlet.frag.spv"));
+			meshlet_shader_.mesh_shader.reset(new Shader(logical_device,SHADER_SPIRV_GLSL_DIR "MeshShading/meshlet.mesh.spv"));
+			meshlet_shader_.fragment_shader.reset(new Shader(logical_device,SHADER_SPIRV_GLSL_DIR "MeshShading/meshlet.frag.spv"));
 			meshlet_shader_.shader_program.reset(new ShaderProgram({meshlet_shader_.mesh_shader.get(), meshlet_shader_.fragment_shader.get()}));
 		}
 	}

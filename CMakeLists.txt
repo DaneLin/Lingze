@@ -42,8 +42,8 @@ include_directories("${Vulkan_INCLUDE_DIRS}")
 # Define shader paths for use in code
 add_compile_definitions(
     SHADER_DIR="${CMAKE_SOURCE_DIR}/shaders/"
-    SHADER_SPIRV_DIR="${CMAKE_SOURCE_DIR}/shaders/spirv/"
-    SHADER_GLSL_DIR="${CMAKE_SOURCE_DIR}/shaders/glsl/"
+    SHADER_SPIRV_GLSL_DIR="${CMAKE_SOURCE_DIR}/shaders/spirv_glsl/"
+    SHADER_SPIRV_HLSL_DIR="${CMAKE_SOURCE_DIR}/shaders/spirv_hlsl/"
     SCENE_DIR="${CMAKE_SOURCE_DIR}/data/scenes/"
     # Resolve macro conflicts between GLFW and Windows headers
     GLFW_INCLUDE_NONE
@@ -53,7 +53,7 @@ add_compile_definitions(
 add_custom_target(
     CompileShaders
     COMMAND ${CMAKE_COMMAND} -E echo "Compiling shaders..."
-    COMMAND cmd.exe /c "${CMAKE_SOURCE_DIR}/shaders/buildShaders.bat"
+    COMMAND cmd.exe /c "${CMAKE_SOURCE_DIR}/shaders/BuildAllShaders.bat"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Compiling modified shader files to SPIR-V"
     VERBATIM

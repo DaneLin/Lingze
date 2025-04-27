@@ -44,8 +44,10 @@ namespace lz::render
 	}
 	void SimpleRenderer::reload_shaders() 
 	{
-		vertex_shader_.reset(new lz::Shader(core_->get_logical_device(), SHADER_SPIRV_DIR"Simple/Simple.vert.spv"));
-		fragment_shader_.reset(new lz::Shader(core_->get_logical_device(), SHADER_SPIRV_DIR"Simple/Simple.frag.spv"));
+		/*vertex_shader_.reset(new lz::Shader(core_->get_logical_device(), SHADER_SPIRV_GLSL_DIR"Simple/Simple.vert.spv"));
+		fragment_shader_.reset(new lz::Shader(core_->get_logical_device(), SHADER_SPIRV_GLSL_DIR"Simple/Simple.frag.spv"));*/
+		vertex_shader_.reset(new lz::Shader(core_->get_logical_device(), SHADER_SPIRV_HLSL_DIR "Simple/Simple.vert.hlsl.spv"));
+		fragment_shader_.reset(new lz::Shader(core_->get_logical_device(), SHADER_SPIRV_HLSL_DIR "Simple/Simple.frag.hlsl.spv"));
 		shader_program_.reset(new lz::ShaderProgram({ vertex_shader_.get(), fragment_shader_.get() }));
 	 }
 	void SimpleRenderer::change_view() 

@@ -117,13 +117,27 @@ cmake --build .
   - [ ] 实例化渲染
   - [ ] 场景编辑器
 
-## 贡献
+## 参考文档和仓库
 
-欢迎贡献！请查看[贡献指南](CONTRIBUTING.md)了解如何参与项目开发。
+以下是开发过程中参考的文档和仓库：
 
-## 许可证
+- **官方文档**
+  - [Vulkan 规范](https://www.khronos.org/registry/vulkan/)
+  - [Vulkan 教程](https://vulkan-tutorial.com/)
+  - [Vulkan 指南](https://github.com/KhronosGroup/Vulkan-Guide)
 
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
+- **开源引擎和框架**
+  - [LegitEngine](https://github.com/Raikiri/LegitEngine) - 一个基于Vulkan的现代渲染引擎  
+  - [Filament](https://github.com/google/filament) - Google的物理渲染引擎
+  - [Granite](https://github.com/Themaister/Granite) - 现代Vulkan渲染引擎
+  - [V-EZ](https://github.com/GPUOpen-LibrariesAndSDKs/V-EZ) - 简化Vulkan开发
+  - [bgfx](https://github.com/bkaradzic/bgfx) - 跨平台渲染库
+
+- **学习资源**
+  - [GPU Gems系列](https://developer.nvidia.com/gpugems/gpugems/foreword)
+  - [Vulkan GPU Insights](https://www.gpuinsights.com/)
+  - [LearnOpenGL](https://learnopengl.com/) - 许多概念同样适用于Vulkan
+  - [MeshShading](https://gpuopen.com/learn/mesh_shaders/mesh_shaders-from_vertex_shader_to_mesh_shader/) - Mesh Shading 教程
 
 ---
 
@@ -248,10 +262,24 @@ cmake --build .
   - [ ] Instanced rendering
   - [ ] Scene editor
 
-## Contributing
+## Reference Documentation and Repositories
 
-Contributions are welcome! Please check out the [contribution guidelines](CONTRIBUTING.md) for details on how to participate in the project development.
+The following documentation and repositories were referenced during development:
 
-## License
+- **Official Documentation**
+  - [Vulkan Specification](https://www.khronos.org/registry/vulkan/)
+  - [Vulkan Tutorial](https://vulkan-tutorial.com/)
+  - [Vulkan Guide](https://github.com/KhronosGroup/Vulkan-Guide)
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+- **Open Source Engines and Frameworks**
+  - [LegitEngine](https://github.com/Raikiri/LegitEngine) - A modern rendering engine based on Vulkan
+  - [Filament](https://github.com/google/filament) - Google's physically-based rendering engine
+  - [Granite](https://github.com/Themaister/Granite) - Modern Vulkan rendering engine
+  - [V-EZ](https://github.com/GPUOpen-LibrariesAndSDKs/V-EZ) - Simplified Vulkan development
+  - [bgfx](https://github.com/bkaradzic/bgfx) - Cross-platform rendering library
+
+- **Learning Resources**
+  - [GPU Gems Series](https://developer.nvidia.com/gpugems/gpugems/foreword)
+  - [Vulkan GPU Insights](https://www.gpuinsights.com/)
+  - [LearnOpenGL](https://learnopengl.com/) - Many concepts also apply to Vulkan
+  - [MeshShading](https://gpuopen.com/learn/mesh_shaders/mesh_shaders-from_vertex_shader_to_mesh_shader/) - Mesh Shading tutorial
