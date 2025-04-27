@@ -27,7 +27,10 @@ namespace lz::application
 
 		ImGui::Begin("Demo features", 0, ImGuiWindowFlags_NoScrollbar);
 		{
-			ImGui::Checkbox("Enable Mesh Shading", &mesh_shading_enabled_);
+			if (ImGui::Checkbox("Enable Mesh Shading", &mesh_shading_enabled_))
+			{
+				dynamic_cast<lz::render::MeshShadingRenderer*>(renderer_.get())->set_mesh_shading_enable_flag(mesh_shading_enabled_);
+			}
 		}
 		ImGui::End();
 	}
