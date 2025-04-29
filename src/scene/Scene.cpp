@@ -120,6 +120,9 @@ namespace lz
 		// use a map to record each mesh's offset in global buffer
 		std::unordered_map<Mesh*, std::pair<uint32_t, uint32_t>> mesh_to_offsets;
 
+		std::vector<Meshlet> all_meshlets;
+		std::vector<uint32_t> all_meshlet_datas;
+
 		// first calc total size, only consider unique meshes
 		for (const auto& mesh_ptr : meshes_)
 		{
@@ -136,6 +139,9 @@ namespace lz
 			
 			global_vertices_count_ += mesh->vertices_count;
 			global_indices_count_ += mesh->indices_count;
+
+			mesh->mesh_data.append_meshlets(all_meshlets, all_meshlet_datas);
+
 		}
 
 		// create temp buffer to collect all data
@@ -143,6 +149,18 @@ namespace lz
 		std::vector<MeshData::IndexType> all_indices;
 		all_vertices.reserve(global_vertices_count_);
 		all_indices.reserve(global_indices_count_);
+
+		// reserve space for meshlet data
+		// round up to multiple of 64
+		size_t meshlet_count = all_meshlets.size();
+
+		size_t round_up_count = (meshlet_count + 63) & ~63;
+
+		while (all_meshlets.size() < round_up_count)
+		{
+			all_meshlets.push_back(Meshlet());
+		}
+		
 
 		// record current offset
 		uint32_t current_vertex_offset = 0;
@@ -179,6 +197,14 @@ namespace lz
 			memcpy(global_index_buffer_->map(), all_indices.data(), total_index_size);
 			global_index_buffer_->unmap(transfer_command_buffer);
 		}
+
+		if (all_meshlets.size() > 0)
+		{
+			global_meshlet_buffer_ = std::make_unique<lz::StagedBuffer>(physical_device, logical_device, all_meshlets.size() * sizeof(Meshlet), vk::BufferUsageFlagBits::eStorageBuffer);
+			memcpy(global_meshlet_buffer_->map(), all_meshlets.data(), all_meshlets.size() * sizeof(Meshlet));
+			global_meshlet_buffer_->unmap(transfer_command_buffer);
+		}
+
 		transfer_queue.end_command_buffer();
 	}
 
@@ -229,8 +255,7 @@ namespace lz
 
 	vk::Buffer Scene::get_global_index_buffer() const
 	{
-			return global_index_buffer_ ? global_index_buffer_->get_buffer().get_handle() : nullptr;
-		
+		return global_index_buffer_ ? global_index_buffer_->get_buffer().get_handle() : nullptr;
 	}
 
 	Buffer& Scene::get_draw_call_buffer() const
@@ -242,16 +267,6 @@ namespace lz
 	{
 		return draw_indirect_buffer_->get_buffer();
 	}
-
-	/*void Scene::iterate_objects_global_buffer(GlobalBufferObjectCallback object_callback)
-	{
-		for (auto& object : objects_)
-		{
-			object_callback(object.obj_to_world, object.albedo_color, object.emissive_color,
-			                object.global_vertex_offset, object.global_index_offset,
-			                uint32_t(object.mesh->vertices_count), uint32_t(object.mesh->indices_count));
-		}
-	}*/
 
 
 }

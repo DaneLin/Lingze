@@ -1,8 +1,50 @@
 #version 450
 #extension GL_EXT_mesh_shader : require
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_EXT_shader_16bit_storage: require
+#extension GL_EXT_shader_8bit_storage: require
+#extension GL_GOOGLE_include_directive: require
 
-layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
-layout(triangles, max_vertices = 3, max_primitives = 1) out;
+#include "../common_math.h"
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout(triangles, max_vertices = 64, max_primitives = 124) out;
+
+layout(set = 0, binding = 0) uniform ubo_data
+{
+	mat4 view;
+	mat4 projection;
+};
+
+
+struct Vertex
+{
+    vec3 pos;
+    vec3 color;
+    vec2 uv;
+};
+
+layout(set = 0, binding = 1, scalar) readonly buffer VertexBuffer
+{
+    Vertex vertices[];
+};
+
+struct Meshlet
+{
+	uint vertex_offset;
+	uint8_t vertex_count;
+	uint8_t triangle_count;
+};
+
+layout(binding = 2, scalar) readonly buffer Meshlets
+{
+	Meshlet meshlets[];
+};
+
+layout(binding = 3, scalar) readonly buffer MeshletData
+{
+	uint meshletData[];
+};
 
 void main()
 {

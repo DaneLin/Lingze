@@ -8,6 +8,25 @@
 
 namespace lz
 {
+#pragma pack(push, 1)
+	struct Meshlet
+	{
+		// vertex_offset...vertex_offset + vertex_count - 1 stores vertex indices
+		// we store indices packed in 4b units after that
+		uint32_t vertex_offset;
+		uint8_t vertex_count;
+		uint8_t triangle_count;
+	};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+	struct MeshDraw
+	{
+		uint32_t mesh_index;
+		uint32_t vertex_offset;
+	};
+#pragma pack(pop)
+
 	struct MeshData
 	{
 		MeshData();
@@ -24,6 +43,10 @@ namespace lz
 
 		static MeshData generate_point_mesh_sized(MeshData src_mesh, size_t points_per_triangle_count);
 
+		static void generate_meshlets(MeshData& src_mesh);
+
+		void append_meshlets(std::vector<Meshlet>& meshlets_datum, std::vector<uint32_t>& meshlet_data_datum);
+
 #pragma pack(push, 1)
 		struct Vertex
 		{
@@ -38,6 +61,10 @@ namespace lz
 		using IndexType = uint32_t;
 		std::vector<Vertex> vertices;
 		std::vector<IndexType> indices;
+
+		std::vector<Meshlet> meshlets;
+		std::vector<uint32_t> meshlet_data;
+
 		vk::PrimitiveTopology primitive_topology;
 	};
 

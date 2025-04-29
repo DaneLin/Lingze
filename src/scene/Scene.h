@@ -86,6 +86,8 @@ namespace lz
 		Buffer& get_draw_indirect_buffer() const;
 		size_t get_global_vertices_count() const { return global_vertices_count_; }
 		size_t get_global_indices_count() const { return global_indices_count_; }
+
+		size_t get_draw_count() const { return objects_.size(); }
 		
 	private:
 		std::vector<std::unique_ptr<Mesh>> meshes_;
@@ -95,6 +97,8 @@ namespace lz
 		// Global vertex buffer and index buffer
 		std::unique_ptr<lz::StagedBuffer> global_vertex_buffer_;
 		std::unique_ptr<lz::StagedBuffer> global_index_buffer_;
+		std::unique_ptr<lz::StagedBuffer> global_meshlet_buffer_;
+		std::unique_ptr<lz::StagedBuffer> global_meshlet_data_buffer_;
 
 		// Draw indirect
 		std::unique_ptr<lz::StagedBuffer> draw_call_buffer_;
@@ -102,6 +106,7 @@ namespace lz
 
 		size_t global_indices_count_;
 		size_t global_vertices_count_;
+
 
 		lz::VertexDeclaration vertex_decl_;
 		lz::Core* core_;
