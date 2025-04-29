@@ -371,7 +371,8 @@ namespace lz
 
 		auto device_features12 = vk::PhysicalDeviceVulkan12Features()
 			.setScalarBlockLayout(true)
-			.setDrawIndirectCount(true);
+			.setDrawIndirectCount(true)
+			.setStorageBuffer8BitAccess(true);
 			
 		// Enable Vulkan 1.1 features including shaderDrawParameters
 		auto device_features11 = vk::PhysicalDeviceVulkan11Features()

@@ -97,8 +97,8 @@ namespace lz
 		meshopt_optimizeVertexCache(tmp_indices.data(), tmp_indices.data(), index_count, vertex_count);
 		meshopt_optimizeVertexFetch(tmp_vertices.data(), tmp_indices.data(), index_count, tmp_vertices.data(), vertex_count, sizeof(Vertex));
 
-		this->vertices.insert(vertices.end(), tmp_vertices.begin(), tmp_vertices.end());
-		this->indices.insert(indices.end(), tmp_indices.begin(), tmp_indices.end());
+		this->vertices = std::move(tmp_vertices);
+		this->indices = std::move(tmp_indices);
 
 		// TODO: build lod
 		// TODO: build meshlet
@@ -271,109 +271,54 @@ namespace lz
 		return res;
 	}
 
-	void MeshData::generate_meshlets(MeshData& src_mesh)
-	{
-		assert(src_mesh.primitive_topology == vk::PrimitiveTopology::eTriangleList);
-
-		constexpr size_t k_max_vertices = 64;
-		constexpr size_t k_max_triangles = 124;
-		constexpr float k_cone_weight = 0.5f;
-
-		std::vector<meshopt_Meshlet> tmp_meshlets(meshopt_buildMeshletsBound(src_mesh.indices.size(), k_max_vertices, k_max_triangles));
-		std::vector<unsigned int> meshlet_vertices(tmp_meshlets.size() * k_max_vertices);
-		std::vector<unsigned char> meshlet_triangles(tmp_meshlets.size() * k_max_triangles * 3);
-
-		size_t meshlets_count = meshopt_buildMeshlets(tmp_meshlets.data(),
-			meshlet_vertices.data(),
-			meshlet_triangles.data(),
-			src_mesh.indices.data(),
-			src_mesh.indices.size(),
-			&src_mesh.vertices[0].pos.x,
-			src_mesh.vertices.size(),
-			sizeof(Vertex),
-			k_max_vertices,
-			k_max_triangles,
-			k_cone_weight);
-		tmp_meshlets.resize(meshlets_count);
-
-		for (auto& meshlet : tmp_meshlets)
-		{
-			size_t data_offset = src_mesh.meshlet_data.size();
-
-			for (unsigned int i = 0; i < meshlet.vertex_count; ++i)
-			{
-				src_mesh.meshlet_data.push_back(meshlet_vertices[meshlet.vertex_offset + i]);
-			}
-
-			const unsigned int* index_groups = reinterpret_cast<const unsigned int*>(&meshlet_triangles[0] + meshlet.triangle_offset);
-			unsigned int index_group_count = (meshlet.triangle_count * 3 + 3) / 4;
-
-			for (unsigned int i = 0; i < index_group_count; ++i)
-			{
-				src_mesh.meshlet_data.push_back(index_groups[i]);
-			}
-
-			// TODO: calc meshlet bounds
-
-			Meshlet m = {};
-			m.vertex_offset = uint32_t(data_offset);
-			m.triangle_count = meshlet.triangle_count;
-			m.vertex_count = meshlet.vertex_count;
-
-			src_mesh.meshlets.push_back(m);
-		}
-	}
-
-	void MeshData::append_meshlets(std::vector<Meshlet>& meshlets_datum, std::vector<uint32_t>& meshlet_data_datum)
+	void MeshData::append_meshlets(std::vector<Meshlet>& meshlets_datum)
 	{
 		assert(primitive_topology == vk::PrimitiveTopology::eTriangleList);
 
-		constexpr size_t k_max_vertices = 64;
-		constexpr size_t k_max_triangles = 124;
-		constexpr float k_cone_weight = 0.5f;
+		Meshlet meshlet = {};
+		std::vector<uint8_t> meshlet_vertices(vertices.size(), 0xff);
 
-		std::vector<meshopt_Meshlet> tmp_meshlets(meshopt_buildMeshletsBound(indices.size(), k_max_vertices, k_max_triangles));
-		std::vector<unsigned int> meshlet_vertices(tmp_meshlets.size() * k_max_vertices);
-		std::vector<unsigned char> meshlet_triangles(tmp_meshlets.size() * k_max_triangles * 3);
-
-		size_t meshlets_count = meshopt_buildMeshlets(tmp_meshlets.data(),
-			meshlet_vertices.data(),
-			meshlet_triangles.data(),
-			indices.data(),
-			indices.size(),
-			&vertices[0].pos.x,
-			vertices.size(),
-			sizeof(Vertex),
-			k_max_vertices,
-			k_max_triangles,
-			k_cone_weight);
-		tmp_meshlets.resize(meshlets_count);
-
-		for (auto& meshlet : tmp_meshlets)
+		for (size_t i = 0; i < indices.size(); i += 3)
 		{
-			size_t data_offset = meshlet_data_datum.size();
+			unsigned int a = indices[i + 0];
+			unsigned int b = indices[i + 1];
+			unsigned int c = indices[i + 2];
 
-			for (unsigned int i = 0; i < meshlet.vertex_count; ++i)
+			uint8_t& av = meshlet_vertices[a];
+			uint8_t& bv = meshlet_vertices[b];
+			uint8_t& cv = meshlet_vertices[c];
+
+			if (meshlet.vertex_count + (av == 0xff) + (bv == 0xff) + (cv == 0xff) > 64 || meshlet.index_count + 3 > 126)
 			{
-				meshlet_data_datum.push_back(meshlet_vertices[meshlet.vertex_offset + i]);
+				meshlets_datum.push_back(meshlet);
+				meshlet = {};
+				memset(meshlet_vertices.data(), 0xff, meshlet_vertices.size());
 			}
 
-			const unsigned int* index_groups = reinterpret_cast<const unsigned int*>(&meshlet_triangles[0] + meshlet.triangle_offset);
-			unsigned int index_group_count = (meshlet.triangle_count * 3 + 3) / 4;
-
-			for (unsigned int i = 0; i < index_group_count; ++i)
+			if (av == 0xff)
 			{
-				meshlet_data_datum.push_back(index_groups[i]);
+				av = meshlet.vertex_count++;
+				meshlet.vertice[av] = a;
+			}
+			if (bv == 0xff)
+			{
+				bv = meshlet.vertex_count++;
+				meshlet.vertice[bv] = b;
+			}
+			if (cv == 0xff)
+			{
+				cv = meshlet.vertex_count++;
+				meshlet.vertice[cv] = c;
 			}
 
-			// TODO: calc meshlet bounds
+			meshlet.indices[meshlet.index_count++] = av;
+			meshlet.indices[meshlet.index_count++] = bv;
+			meshlet.indices[meshlet.index_count++] = cv;
+		}
 
-			Meshlet m = {};
-			m.vertex_offset = uint32_t(data_offset);
-			m.triangle_count = meshlet.triangle_count;
-			m.vertex_count = meshlet.vertex_count;
-
-			meshlets_datum.push_back(m);
+		if (meshlet.index_count > 0)
+		{
+			meshlets_datum.push_back(meshlet);
 		}
 	}
 

@@ -1,21 +1,17 @@
 #version 450
-#extension GL_EXT_mesh_shader : require
 #extension GL_EXT_scalar_block_layout : require
 #extension GL_EXT_shader_16bit_storage: require
 #extension GL_EXT_shader_8bit_storage: require
-#extension GL_GOOGLE_include_directive: require
+#extension GL_EXT_mesh_shader: require
 
-#include "../common_math.h"
-
-layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
-layout(triangles, max_vertices = 64, max_primitives = 124) out;
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+layout(triangles, max_vertices = 64, max_primitives = 42) out;
 
 layout(set = 0, binding = 0) uniform ubo_data
 {
 	mat4 view;
 	mat4 projection;
 };
-
 
 struct Vertex
 {
@@ -24,35 +20,73 @@ struct Vertex
     vec2 uv;
 };
 
-layout(set = 0, binding = 1, scalar) readonly buffer VertexBuffer
+layout(binding = 1, scalar) readonly buffer Vertices
 {
     Vertex vertices[];
 };
 
 struct Meshlet
 {
-	uint vertex_offset;
-	uint8_t vertex_count;
-	uint8_t triangle_count;
+    uint vertices[64];
+    uint8_t indices[126];
+    uint8_t indexCount;
+    uint8_t vertexCount;
 };
 
 layout(binding = 2, scalar) readonly buffer Meshlets
 {
-	Meshlet meshlets[];
+    Meshlet meshlets[];
 };
 
-layout(binding = 3, scalar) readonly buffer MeshletData
+vec3 randomColor(uint seed)
 {
-	uint meshletData[];
-};
+    seed = (seed ^ 61u) ^ (seed >> 16u);
+    seed *= 9u;
+    seed = seed ^ (seed >> 4u);
+    seed *= 0x27d4eb2du;
+    seed = seed ^ (seed >> 15u);
+
+    float r = float((seed & 0xFFu)) / 255.0;
+    float g = float((seed >> 8u) & 0xFFu) / 255.0;
+    float b = float((seed >> 16u) & 0xFFu) / 255.0;
+
+    return vec3(r, g, b);
+}
+
+layout(location = 0) out vec4 color[];
 
 void main()
 {
-	uint vertexCount = 3;
-	uint triangleCount = 1;
-	SetMeshOutputsEXT(vertexCount, triangleCount);
-	gl_MeshVerticesEXT[0].gl_Position = vec4(0.5, -0.5, 0, 1);
-	gl_MeshVerticesEXT[1].gl_Position = vec4(0.5, 0.5, 0, 1);
-	gl_MeshVerticesEXT[2].gl_Position = vec4(-0.5, 0.5, 0, 1);
-	gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);
+    uint mi = gl_WorkGroupID.x;
+    uint ti = gl_LocalInvocationID.x;
+	uint vertexCount = uint(meshlets[mi].vertexCount);
+    uint indexCount = uint(meshlets[mi].indexCount);
+    uint primCount = uint(meshlets[mi].indexCount) / 3;
+
+    SetMeshOutputsEXT(vertexCount, primCount);
+	
+    vec3 meshletColor = randomColor(mi);
+
+    for (uint i = ti; i < uint(meshlets[mi].vertexCount); i += 32)
+    {
+        uint vi = meshlets[mi].vertices[i];
+
+        vec3 position = vec3(vertices[vi].pos);
+        vec2 texcoord = vec2(vertices[vi].uv);
+
+        gl_MeshVerticesEXT[i].gl_Position = projection * view * vec4(position, 1.0);
+        color[i] = vec4(meshletColor, 1.0);
+    }
+
+	
+    for (uint p = ti; p < primCount; p += 32)
+    {
+        // 这些索引是meshlet局部顶点索引，它们指向meshlet的vertices数组中的位置
+        uint idx0 = uint(meshlets[mi].indices[3*p]);
+        uint idx1 = uint(meshlets[mi].indices[3*p + 1]);
+        uint idx2 = uint(meshlets[mi].indices[3*p + 2]);
+        
+        // 将这些局部索引分配给图元
+        gl_PrimitiveTriangleIndicesEXT[p] = uvec3(idx0, idx1, idx2);
+    }
 }

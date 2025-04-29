@@ -84,8 +84,10 @@ namespace lz
 		vk::Buffer get_global_index_buffer() const;
 		Buffer& get_draw_call_buffer() const;
 		Buffer& get_draw_indirect_buffer() const;
+		Buffer& get_global_meshlet_buffer() const;
 		size_t get_global_vertices_count() const { return global_vertices_count_; }
 		size_t get_global_indices_count() const { return global_indices_count_; }
+		size_t get_global_meshlet_count() const { return global_meshlet_count_; }
 
 		size_t get_draw_count() const { return objects_.size(); }
 		
@@ -98,7 +100,6 @@ namespace lz
 		std::unique_ptr<lz::StagedBuffer> global_vertex_buffer_;
 		std::unique_ptr<lz::StagedBuffer> global_index_buffer_;
 		std::unique_ptr<lz::StagedBuffer> global_meshlet_buffer_;
-		std::unique_ptr<lz::StagedBuffer> global_meshlet_data_buffer_;
 
 		// Draw indirect
 		std::unique_ptr<lz::StagedBuffer> draw_call_buffer_;
@@ -106,6 +107,7 @@ namespace lz
 
 		size_t global_indices_count_;
 		size_t global_vertices_count_;
+		size_t global_meshlet_count_;
 
 
 		lz::VertexDeclaration vertex_decl_;

@@ -140,7 +140,7 @@ namespace lz
 			global_vertices_count_ += mesh->vertices_count;
 			global_indices_count_ += mesh->indices_count;
 
-			mesh->mesh_data.append_meshlets(all_meshlets, all_meshlet_datas);
+			mesh->mesh_data.append_meshlets(all_meshlets);
 
 		}
 
@@ -154,12 +154,14 @@ namespace lz
 		// round up to multiple of 64
 		size_t meshlet_count = all_meshlets.size();
 
-		size_t round_up_count = (meshlet_count + 63) & ~63;
+		//size_t round_up_count = (meshlet_count + 63) & ~63;
 
-		while (all_meshlets.size() < round_up_count)
-		{
-			all_meshlets.push_back(Meshlet());
-		}
+		// while (all_meshlets.size() % 32)
+		// {
+		// 	all_meshlets.push_back(Meshlet());
+		// }
+
+		global_meshlet_count_ = all_meshlets.size();
 		
 
 		// record current offset
@@ -266,6 +268,11 @@ namespace lz
 	Buffer& Scene::get_draw_indirect_buffer() const
 	{
 		return draw_indirect_buffer_->get_buffer();
+	}
+
+	Buffer& Scene::get_global_meshlet_buffer() const
+	{
+		return global_meshlet_buffer_->get_buffer();
 	}
 
 
