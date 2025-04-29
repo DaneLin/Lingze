@@ -14,9 +14,9 @@ namespace lz
 		uint32_t vertice[64];
 
 		// reference to global index buffer
-		uint8_t indices[126];
+		uint8_t indices[126 * 3];
 
-		uint8_t index_count;
+		uint8_t triangle_count;
 		uint8_t vertex_count;
 	};
 

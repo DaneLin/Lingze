@@ -288,11 +288,15 @@ namespace lz
 			uint8_t& bv = meshlet_vertices[b];
 			uint8_t& cv = meshlet_vertices[c];
 
-			if (meshlet.vertex_count + (av == 0xff) + (bv == 0xff) + (cv == 0xff) > 64 || meshlet.index_count + 3 > 126)
+			if (meshlet.vertex_count + (av == 0xff) + (bv == 0xff) + (cv == 0xff) > 64 || meshlet.triangle_count >= 126)
 			{
 				meshlets_datum.push_back(meshlet);
+				for (size_t j = 0; j < meshlet.vertex_count; ++j)
+				{
+					meshlet_vertices[meshlet.vertice[j]] = 0xff;
+				}
 				meshlet = {};
-				memset(meshlet_vertices.data(), 0xff, meshlet_vertices.size());
+
 			}
 
 			if (av == 0xff)
@@ -311,12 +315,13 @@ namespace lz
 				meshlet.vertice[cv] = c;
 			}
 
-			meshlet.indices[meshlet.index_count++] = av;
-			meshlet.indices[meshlet.index_count++] = bv;
-			meshlet.indices[meshlet.index_count++] = cv;
+			meshlet.indices[meshlet.triangle_count * 3 + 0] = av;
+			meshlet.indices[meshlet.triangle_count * 3 + 1] = bv;
+			meshlet.indices[meshlet.triangle_count * 3 + 2] = cv;
+			meshlet.triangle_count++;
 		}
 
-		if (meshlet.index_count > 0)
+		if (meshlet.triangle_count > 0)
 		{
 			meshlets_datum.push_back(meshlet);
 		}
