@@ -1,14 +1,5 @@
 # Dependency management
 
-# Set various include directories (still keep these variables in case they're needed elsewhere)
-set(TINYOBJ_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tiny_obj_loader/include PARENT_SCOPE)
-set(SPIRVCROSS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/spirv_cross PARENT_SCOPE)
-set(GLI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/gli PARENT_SCOPE)
-set(GLM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/glm/include PARENT_SCOPE)
-set(GLFW3_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/glfw/include PARENT_SCOPE)
-set(JSONCPP_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp PARENT_SCOPE)
-set(IMGUI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/imgui PARENT_SCOPE)
-
 # Set library file paths
 set(GLFW3_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/glfw/lib-vc2015/glfw3.lib" PARENT_SCOPE)
 
@@ -18,6 +9,7 @@ target_include_directories(deps_include INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/tiny_obj_loader/include
     ${CMAKE_CURRENT_SOURCE_DIR}/spirv_cross
     ${CMAKE_CURRENT_SOURCE_DIR}/spirv_cross/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/meshoptimizer
     ${CMAKE_CURRENT_SOURCE_DIR}/gli
     ${CMAKE_CURRENT_SOURCE_DIR}/glm/include
     ${CMAKE_CURRENT_SOURCE_DIR}/glfw/include
@@ -40,6 +32,7 @@ set(SPIRV_CROSS_SKIP_INSTALL ON CACHE BOOL "Skip installation targets" FORCE)
 
 # Add SPIRV-Cross as a subdirectory to build it
 add_subdirectory(spirv_cross)
+add_subdirectory(meshoptimizer)
 
 # Collect other dependency library source files (excluding SPIRV-Cross now)
 file(GLOB_RECURSE JSONCPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/*.cpp)
@@ -58,4 +51,4 @@ target_include_directories(lingze_deps PUBLIC
 )
 
 # Export the libraries to parent scope
-set(LINGZE_DEPS_LIB "lingze_deps;spirv-cross-core;spirv-cross-glsl" PARENT_SCOPE) 
+set(LINGZE_DEPS_LIB "lingze_deps;spirv-cross-core;spirv-cross-glsl;meshoptimizer" PARENT_SCOPE) 

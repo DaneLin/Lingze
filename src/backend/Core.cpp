@@ -336,6 +336,7 @@ namespace lz
 
 		// check if the device supports mesh shader extension
 		auto extensions = physical_device.enumerateDeviceExtensionProperties();
+		bool shader_draw_parameters_extension_supported = false;
 		for (const auto& extension : extensions)
 		{
 			if (strcmp(extension.extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME) == 0)
@@ -344,13 +345,20 @@ namespace lz
 				// only add the extension if the device supports it
 				device_extensions.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
 				std::cout << "Mesh Shader extension supported, adding to device extensions\n";
-				break;
+			}
+			// Check for shader draw parameters extension
+			if (strcmp(extension.extensionName, VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME) == 0)
+			{
+				shader_draw_parameters_extension_supported = true;
+				device_extensions.push_back(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME);
+				std::cout << "Shader Draw Parameters extension supported, adding to device extensions\n";
 			}
 		}
 
 		auto device_features = vk::PhysicalDeviceFeatures()
 		                       .setFragmentStoresAndAtomics(true)
-		                       .setVertexPipelineStoresAndAtomics(true);
+		                       .setVertexPipelineStoresAndAtomics(true)
+		                       .setMultiDrawIndirect(true);  // Enable multiDrawIndirect feature
 
 		auto device_create_info = vk::DeviceCreateInfo()
 		                          .setQueueCreateInfoCount(uint32_t(queue_create_infos.size()))
@@ -362,7 +370,13 @@ namespace lz
 		                          .setPpEnabledLayerNames(validation_layers.data());
 
 		auto device_features12 = vk::PhysicalDeviceVulkan12Features()
-			.setScalarBlockLayout(true);
+			.setScalarBlockLayout(true)
+			.setDrawIndirectCount(true)
+			.setStorageBuffer8BitAccess(true);
+			
+		// Enable Vulkan 1.1 features including shaderDrawParameters
+		auto device_features11 = vk::PhysicalDeviceVulkan11Features()
+			.setShaderDrawParameters(true);
 
 		if (mesh_shader_supported_)
 		{
@@ -371,18 +385,18 @@ namespace lz
 				.setTaskShader(true)
 				.setMeshShader(true);
 
-			// build the structure chain, add mesh shader features
-			vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceMeshShaderFeaturesEXT> chain = {
-				device_create_info, device_features12, mesh_shader_features
+			// build the structure chain, add mesh shader features and Vulkan 1.1 features
+			vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceVulkan11Features, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceMeshShaderFeaturesEXT> chain = {
+				device_create_info, device_features11, device_features12, mesh_shader_features
 			};
 
 			return physical_device.createDeviceUnique(chain.get<vk::DeviceCreateInfo>());
 		}
 		else
 		{
-			// not supported mesh shader, use the original feature chain
-			vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceVulkan12Features> chain = {
-				device_create_info, device_features12
+			// not supported mesh shader, use the original feature chain with Vulkan 1.1 features
+			vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceVulkan11Features, vk::PhysicalDeviceVulkan12Features> chain = {
+				device_create_info, device_features11, device_features12
 			};
 
 			return physical_device.createDeviceUnique(chain.get<vk::DeviceCreateInfo>());

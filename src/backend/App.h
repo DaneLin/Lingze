@@ -29,7 +29,7 @@
 #include "backend/ImGuiProfilerRenderer.h"
 #include "render/common/ImguiRenderer.h"
 #include "scene/Scene.h"
-#include "render/renderers/BaseRenderer.h"
+#include "render/common/BaseRenderer.h"
 
 namespace lz
 {
@@ -61,7 +61,11 @@ namespace lz
         
         // Render a frame
         virtual void render_frame();
-        
+
+        // Render UI
+        virtual void render_ui();
+        void recreate_swapchain();
+
         // Process input
         virtual void process_input();
         

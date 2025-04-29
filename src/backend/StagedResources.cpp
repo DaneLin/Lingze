@@ -36,9 +36,10 @@ namespace lz
 		command_buffer.copyBuffer(staging_buffer_->get_handle(), device_local_buffer_->get_handle(), {copyRegion});
 	}
 
-	vk::Buffer StagedBuffer::get_buffer()
+
+	lz::Buffer& StagedBuffer::get_buffer()
 	{
-		return device_local_buffer_->get_handle();
+		return *device_local_buffer_;
 	}
 
 	void load_buffer_data(lz::Core* core, void* buffer_data, size_t buffer_size, lz::Buffer* dst_buffer)

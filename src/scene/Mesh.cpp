@@ -1,8 +1,7 @@
 #include "Mesh.h"
-
 #include <iostream>
-
 #include "tiny_obj_loader.h"
+#include "meshoptimizer.h"
 
 namespace tinyobj
 {
@@ -15,6 +14,7 @@ namespace tinyobj
 namespace lz
 {
 	MeshData::MeshData()
+		:primitive_topology(vk::PrimitiveTopology::eTriangleList)
 	{
 	}
 
@@ -28,12 +28,12 @@ namespace lz
 		std::string warn;
 		std::string err;
 
-		std::cout << "Loading mesh :" << file_name << '\n';
+		std::cerr << "Loading mesh :" << file_name << '\n';
 		bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, file_name.c_str(), nullptr);
 		
 		if (!warn.empty())
 		{
-			std::cout << "Warning : " << warn << '\n';
+			std::cerr << "Warning : " << warn << '\n';
 		}
 		if (!ret)
 		{
@@ -42,51 +42,67 @@ namespace lz
 		}
 		else
 		{
-			std::cout << "Loaded mesh : " << file_name << '\n';
+			std::cerr << "Loaded mesh : " << file_name << '\n';
 		}
 
-		std::map<tinyobj::index_t, size_t> deduplicated_indices;
+		std::vector<Vertex> triangle_vertices;
 		for (auto& shape : shapes)
 		{
 			for (auto& index : shape.mesh.indices)
 			{
-				if (deduplicated_indices.find(index) == deduplicated_indices.end())
+				Vertex vertex;
+				vertex.pos = glm::vec3(
+					attrib.vertices[3 * index.vertex_index + 0] * scale.x,
+					attrib.vertices[3 * index.vertex_index + 1] * scale.y,
+					attrib.vertices[3 * index.vertex_index + 2] * scale.z);
+
+				if (index.normal_index != -1)
 				{
-					deduplicated_indices[index] = vertices.size();
-					Vertex vertex;
-					vertex.pos = glm::vec3(
-						attrib.vertices[3 * index.vertex_index + 0] * scale.x,
-						attrib.vertices[3 * index.vertex_index + 1] * scale.y,
-						attrib.vertices[3 * index.vertex_index + 2] * scale.z);
-
-					if (index.normal_index != -1)
-					{
-						vertex.normal = glm::vec3(
-							attrib.normals[3 * index.normal_index + 0],
-							attrib.normals[3 * index.normal_index + 1],
-							attrib.normals[3 * index.normal_index + 2]);
-					}
-					else
-					{
-						vertex.normal = glm::vec3(1.0f, 0.0f, 0.0f);
-					}
-
-					if (index.texcoord_index != -1)
-					{
-						vertex.uv = glm::vec2(
-							attrib.texcoords[2 * index.texcoord_index + 0],
-							attrib.texcoords[2 * index.texcoord_index + 1]);
-					}
-					else
-					{
-						vertex.uv = glm::vec2(0.0f, 0.0f);
-					}
-
-					vertices.push_back(vertex);
+					vertex.normal = glm::vec3(
+						attrib.normals[3 * index.normal_index + 0],
+						attrib.normals[3 * index.normal_index + 1],
+						attrib.normals[3 * index.normal_index + 2]);
 				}
-				indices.push_back(IndexType(deduplicated_indices[index]));
+				else
+				{
+					vertex.normal = glm::vec3(1.0f, 0.0f, 0.0f);
+				}
+
+				if (index.texcoord_index != -1)
+				{
+					vertex.uv = glm::vec2(
+						attrib.texcoords[2 * index.texcoord_index + 0],
+						attrib.texcoords[2 * index.texcoord_index + 1]);
+				}
+				else
+				{
+					vertex.uv = glm::vec2(0.0f, 0.0f);
+				}
+
+				triangle_vertices.push_back(vertex);
 			}
 		}
+
+		size_t index_count = triangle_vertices.size();
+		// mesh optimizer
+		std::vector<uint32_t> remap(index_count);
+		size_t vertex_count = meshopt_generateVertexRemap(remap.data(), 0, index_count, triangle_vertices.data(), index_count, sizeof(Vertex));
+
+		std::vector<Vertex> tmp_vertices(vertex_count);
+		std::vector<uint32_t> tmp_indices(index_count);
+
+		meshopt_remapVertexBuffer(tmp_vertices.data(), triangle_vertices.data(), index_count, sizeof(Vertex), remap.data());
+		meshopt_remapIndexBuffer(tmp_indices.data(), 0, index_count, remap.data());
+
+		meshopt_optimizeVertexCache(tmp_indices.data(), tmp_indices.data(), index_count, vertex_count);
+		meshopt_optimizeVertexFetch(tmp_vertices.data(), tmp_indices.data(), index_count, tmp_vertices.data(), vertex_count, sizeof(Vertex));
+
+		this->vertices = std::move(tmp_vertices);
+		this->indices = std::move(tmp_indices);
+
+		// TODO: build lod
+		// TODO: build meshlet
+
 	}
 
 	float MeshData::get_triangle_area(glm::vec3 points[3])
@@ -255,6 +271,57 @@ namespace lz
 		return res;
 	}
 
+	void MeshData::append_meshlets(std::vector<Meshlet>& meshlets_datum)
+	{
+		assert(primitive_topology == vk::PrimitiveTopology::eTriangleList);
+
+		Meshlet meshlet = {};
+		std::vector<uint8_t> meshlet_vertices(vertices.size(), 0xff);
+
+		for (size_t i = 0; i < indices.size(); i += 3)
+		{
+			unsigned int a = indices[i + 0];
+			unsigned int b = indices[i + 1];
+			unsigned int c = indices[i + 2];
+
+			uint8_t& av = meshlet_vertices[a];
+			uint8_t& bv = meshlet_vertices[b];
+			uint8_t& cv = meshlet_vertices[c];
+
+			if (meshlet.vertex_count + (av == 0xff) + (bv == 0xff) + (cv == 0xff) > 64 || meshlet.index_count + 3 > 126)
+			{
+				meshlets_datum.push_back(meshlet);
+				meshlet = {};
+				memset(meshlet_vertices.data(), 0xff, meshlet_vertices.size());
+			}
+
+			if (av == 0xff)
+			{
+				av = meshlet.vertex_count++;
+				meshlet.vertice[av] = a;
+			}
+			if (bv == 0xff)
+			{
+				bv = meshlet.vertex_count++;
+				meshlet.vertice[bv] = b;
+			}
+			if (cv == 0xff)
+			{
+				cv = meshlet.vertex_count++;
+				meshlet.vertice[cv] = c;
+			}
+
+			meshlet.indices[meshlet.index_count++] = av;
+			meshlet.indices[meshlet.index_count++] = bv;
+			meshlet.indices[meshlet.index_count++] = cv;
+		}
+
+		if (meshlet.index_count > 0)
+		{
+			meshlets_datum.push_back(meshlet);
+		}
+	}
+
 	MeshData::Vertex MeshData::triangle_vertex_sample(Vertex triangle_vertices[3], glm::vec2 rand_val)
 	{
 		float sqx = sqrt(rand_val.x);
@@ -276,6 +343,7 @@ namespace lz
 	Mesh::Mesh(const MeshData& mesh_data, vk::PhysicalDevice physical_device, vk::Device logical_device,
 	           vk::CommandBuffer transfer_command_buffer)
 	{
+		this->mesh_data = mesh_data;
 		this->primitive_topology = mesh_data.primitive_topology;
 		indices_count = mesh_data.indices.size();
 		vertices_count = mesh_data.vertices.size();

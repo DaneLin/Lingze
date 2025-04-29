@@ -41,20 +41,17 @@ Lingze/
 │   │   └── ...               # 其他核心组件
 │   ├── render/               # 渲染系统
 │   │   ├── common/           # 通用渲染组件
-│   │   └── renderers/        # 不同类型的渲染器实现
-│   │       ├── BaseRenderer.h        # 渲染器基类
-│   │       ├── SimpleRenderer.h/cpp  # 简单三角形渲染器
-│   │       └── BasicShapeRenderer.h/cpp # 基础几何体渲染器
 │   ├── scene/                # 场景管理系统
 │   │   ├── Scene.h/cpp       # 场景类，管理对象和材质
 │   │   └── Mesh.h/cpp        # 网格数据和加载
 │   └── application/          # 示例应用程序
 │       ├── EntryPoint.h      # 应用程序入口点宏
-│       ├── SimpleTriangleApp.h/cpp  # 三角形渲染示例
-│       └── BasicShapeApp.h/cpp      # 基础几何体示例
+│       ├── $Example$App      # 渲染示例
 ├── shaders/                  # 着色器目录
 │   ├── glsl/                 # GLSL源代码
-│   └── spirv/                # 编译后的SPIR-V字节码
+│   ├── hlsl/                 # HLSL源代码
+│   ├── spirv_glsl/           # 编译后spirv文件     
+│   └── spirv_hlsl/           # 编译后spirv文件 
 ├── deps/                     # 第三方依赖
 ├── data/                     # 资源数据（模型、纹理等）
 └── CMakeLists.txt            # CMake构建配置
@@ -95,7 +92,7 @@ cmake --build .
   - [ ] 实时阴影
   - [ ] SSAO
   - [ ] 延迟渲染
-  - [ ] Mesh Shader
+  - [x] Mesh Shader
   - [ ] 计算着色器
   - [ ] 光线追踪
 
@@ -117,13 +114,30 @@ cmake --build .
   - [ ] 实例化渲染
   - [ ] 场景编辑器
 
-## 贡献
+## 运行截图
+![Mesh Shading演示](docs/imgs/meshshading.png)
 
-欢迎贡献！请查看[贡献指南](CONTRIBUTING.md)了解如何参与项目开发。
+## 参考文档和仓库
 
-## 许可证
+以下是开发过程中参考的文档和仓库：
 
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
+- **官方文档**
+  - [Vulkan 规范](https://www.khronos.org/registry/vulkan/)
+  - [Vulkan 教程](https://vulkan-tutorial.com/)
+  - [Vulkan 指南](https://github.com/KhronosGroup/Vulkan-Guide)
+
+- **开源引擎和框架**
+  - [LegitEngine](https://github.com/Raikiri/LegitEngine) - 一个基于Vulkan的现代渲染引擎  
+  - [Filament](https://github.com/google/filament) - Google的物理渲染引擎
+  - [Granite](https://github.com/Themaister/Granite) - 现代Vulkan渲染引擎
+  - [V-EZ](https://github.com/GPUOpen-LibrariesAndSDKs/V-EZ) - 简化Vulkan开发
+  - [bgfx](https://github.com/bkaradzic/bgfx) - 跨平台渲染库
+
+- **学习资源**
+  - [GPU Gems系列](https://developer.nvidia.com/gpugems/gpugems/foreword)
+  - [Vulkan GPU Insights](https://www.gpuinsights.com/)
+  - [LearnOpenGL](https://learnopengl.com/) - 许多概念同样适用于Vulkan
+  - [MeshShading](https://gpuopen.com/learn/mesh_shaders/mesh_shaders-from_vertex_shader_to_mesh_shader/) - Mesh Shading 教程
 
 ---
 
@@ -172,20 +186,17 @@ Lingze/
 │   │   └── ...               # Other core components
 │   ├── render/               # Rendering system
 │   │   ├── common/           # Common rendering components
-│   │   └── renderers/        # Different renderer implementations
-│   │       ├── BaseRenderer.h        # Renderer base class
-│   │       ├── SimpleRenderer.h/cpp  # Simple triangle renderer
-│   │       └── BasicShapeRenderer.h/cpp # Basic geometry renderer
 │   ├── scene/                # Scene management system
 │   │   ├── Scene.h/cpp       # Scene class, manages objects and materials
 │   │   └── Mesh.h/cpp        # Mesh data and loading
 │   └── application/          # Example applications
 │       ├── EntryPoint.h      # Application entry point macro
-│       ├── SimpleTriangleApp.h/cpp  # Triangle rendering example
-│       └── BasicShapeApp.h/cpp      # Basic geometry example
+│       ├── %Example%App      # Rendering example
 ├── shaders/                  # Shader directory
 │   ├── glsl/                 # GLSL source code
-│   └── spirv/                # Compiled SPIR-V bytecode
+│   ├── hlsl/                 # HLSL source code
+│   ├── spirv_glsl/           # Compiled SPIR-V bytecode
+│   └── spirv_hlsl/           # Compiled SPIR-V bytecode
 ├── deps/                     # Third-party dependencies
 ├── data/                     # Resource data (models, textures, etc.)
 └── CMakeLists.txt            # CMake build configuration
@@ -226,7 +237,7 @@ cmake --build .
   - [ ] Real-time shadows
   - [ ] SSAO
   - [ ] Deferred rendering
-  - [ ] Mesh Shader
+  - [x] Mesh Shader
   - [ ] Compute shaders
   - [ ] Ray tracing
 
@@ -248,10 +259,27 @@ cmake --build .
   - [ ] Instanced rendering
   - [ ] Scene editor
 
-## Contributing
+## Screenshots
+![Mesh Shading Demo](docs/imgs/meshshading.png)
 
-Contributions are welcome! Please check out the [contribution guidelines](CONTRIBUTING.md) for details on how to participate in the project development.
+## Reference Documentation and Repositories
 
-## License
+The following documentation and repositories were referenced during development:
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+- **Official Documentation**
+  - [Vulkan Specification](https://www.khronos.org/registry/vulkan/)
+  - [Vulkan Tutorial](https://vulkan-tutorial.com/)
+  - [Vulkan Guide](https://github.com/KhronosGroup/Vulkan-Guide)
+
+- **Open Source Engines and Frameworks**
+  - [LegitEngine](https://github.com/Raikiri/LegitEngine) - A modern rendering engine based on Vulkan
+  - [Filament](https://github.com/google/filament) - Google's physically-based rendering engine
+  - [Granite](https://github.com/Themaister/Granite) - Modern Vulkan rendering engine
+  - [V-EZ](https://github.com/GPUOpen-LibrariesAndSDKs/V-EZ) - Simplified Vulkan development
+  - [bgfx](https://github.com/bkaradzic/bgfx) - Cross-platform rendering library
+
+- **Learning Resources**
+  - [GPU Gems Series](https://developer.nvidia.com/gpugems/gpugems/foreword)
+  - [Vulkan GPU Insights](https://www.gpuinsights.com/)
+  - [LearnOpenGL](https://learnopengl.com/) - Many concepts also apply to Vulkan
+  - [MeshShading](https://gpuopen.com/learn/mesh_shaders/mesh_shaders-from_vertex_shader_to_mesh_shader/) - Mesh Shading tutorial

@@ -19,16 +19,11 @@ namespace lz::render
 	void SimpleRenderer::recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count) 
 	{
 		viewport_extent_ = viewport_extent;
-		//std::cout << "viewport_extent: " << viewport_extent_.width << " " << viewport_extent_.height << std::endl;
 	 }
 	void SimpleRenderer::render_frame(const lz::InFlightQueue::FrameInfo& frame_info, const lz::Camera& camera, const lz::Camera& light, lz::Scene* scene, GLFWwindow* window) 
 	{
-		// SimpleRenderer only renders a triangle
-		vk::ClearValue clear_value;
-		clear_value.color = {0.0f, 0.0f, 0.0f, 1.0f};
-		//std::cout << "extent: " << viewport_extent_.width << " " << viewport_extent_.height << std::endl;
 		core_->get_render_graph()->add_pass(lz::RenderGraph::RenderPassDesc()
-			.set_color_attachments({{frame_info.swapchain_image_view_proxy_id,vk::AttachmentLoadOp::eClear,clear_value}})
+			.set_color_attachments({{frame_info.swapchain_image_view_proxy_id,vk::AttachmentLoadOp::eClear}})
 			.set_render_area_extent(viewport_extent_)
 			.set_record_func([this](lz::RenderGraph::RenderPassContext context)
 			{
@@ -49,8 +44,10 @@ namespace lz::render
 	}
 	void SimpleRenderer::reload_shaders() 
 	{
-		vertex_shader_.reset(new lz::Shader(core_->get_logical_device(), SHADER_SPIRV_DIR"Simple/Simple.vert.spv"));
-		fragment_shader_.reset(new lz::Shader(core_->get_logical_device(), SHADER_SPIRV_DIR"Simple/Simple.frag.spv"));
+		/*vertex_shader_.reset(new lz::Shader(core_->get_logical_device(), SHADER_SPIRV_GLSL_DIR"Simple/Simple.vert.spv"));
+		fragment_shader_.reset(new lz::Shader(core_->get_logical_device(), SHADER_SPIRV_GLSL_DIR"Simple/Simple.frag.spv"));*/
+		vertex_shader_.reset(new lz::Shader(core_->get_logical_device(), SHADER_SPIRV_HLSL_DIR "Simple/Simple.vert.hlsl.spv"));
+		fragment_shader_.reset(new lz::Shader(core_->get_logical_device(), SHADER_SPIRV_HLSL_DIR "Simple/Simple.frag.hlsl.spv"));
 		shader_program_.reset(new lz::ShaderProgram({ vertex_shader_.get(), fragment_shader_.get() }));
 	 }
 	void SimpleRenderer::change_view() 

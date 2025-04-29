@@ -8,6 +8,18 @@
 
 namespace lz
 {
+	struct Meshlet
+	{
+		// reference to global vertex buffer
+		uint32_t vertice[64];
+
+		// reference to global index buffer
+		uint8_t indices[126];
+
+		uint8_t index_count;
+		uint8_t vertex_count;
+	};
+
 	struct MeshData
 	{
 		MeshData();
@@ -24,6 +36,8 @@ namespace lz
 
 		static MeshData generate_point_mesh_sized(MeshData src_mesh, size_t points_per_triangle_count);
 
+		void append_meshlets(std::vector<Meshlet>& meshlets_datum);
+
 #pragma pack(push, 1)
 		struct Vertex
 		{
@@ -38,6 +52,9 @@ namespace lz
 		using IndexType = uint32_t;
 		std::vector<Vertex> vertices;
 		std::vector<IndexType> indices;
+
+		std::vector<Meshlet> meshlets;
+
 		vk::PrimitiveTopology primitive_topology;
 	};
 
@@ -49,6 +66,8 @@ namespace lz
 
 		std::unique_ptr<lz::StagedBuffer> vertex_buffer;
 		std::unique_ptr<lz::StagedBuffer> index_buffer;
+
+		MeshData mesh_data;
 		size_t indices_count;
 		size_t vertices_count;
 

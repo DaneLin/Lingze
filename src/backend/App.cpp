@@ -1,7 +1,5 @@
 ﻿#include "backend/App.h"
 #include "backend/ImGuiProfilerRenderer.h"
-#include "render/renderers/SimpleRenderer.h"
-
 
 #include <iostream>
 #include <chrono>
@@ -57,6 +55,7 @@ namespace lz
 				prev_frame_time = curr_frame_time;
 
 				glfwPollEvents();
+				recreate_swapchain();
 				process_input();
 				render_frame();
 			}
@@ -178,11 +177,89 @@ namespace lz
 			imgui_renderer_->process_input(window_);
 
 			glfwGetCursorPos(window_, &mouse_pos_.x, &mouse_pos_.y);
+
+			auto& imgui_io = ImGui::GetIO();
+			imgui_io.DeltaTime = 1.0f / 60.0f;
+			imgui_io.DisplaySize.x = float(in_flight_queue_->get_image_size().width);
+			imgui_io.DisplaySize.y = float(in_flight_queue_->get_image_size().height);
+
+			if (!ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow))
+			{
+				glm::vec3 dir = glm::vec3(0.0f, 0.0f, 0.0f);
+
+				if (glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_2))
+				{
+					float mouse_speed = 0.01f;
+					if (mouse_pos_ != prev_mouse_pos_)
+					{
+						renderer_->change_view();
+					}
+					camera_.hor_angle += float((mouse_pos_ - prev_mouse_pos_).x * mouse_speed);
+					camera_.vert_angle += float((mouse_pos_ - prev_mouse_pos_).y * mouse_speed);
+				}
+				glm::mat4 camera_transform = camera_.get_transform_matrix();
+				glm::vec3 camera_forward = glm::vec3(camera_transform * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+				glm::vec3 camera_right = glm::vec3(camera_transform * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
+				glm::vec3 camera_up = glm::vec3(camera_transform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f));
+
+				if (glfwGetKey(window_, GLFW_KEY_W) == GLFW_PRESS)
+				{
+					dir += glm::vec3(0.0f, 0.0f, 1.0f);
+				}
+				if (glfwGetKey(window_, GLFW_KEY_S) == GLFW_PRESS)
+				{
+					dir += glm::vec3(0.0f, 0.0f, -1.0f);
+				}
+				if (glfwGetKey(window_, GLFW_KEY_A) == GLFW_PRESS)
+				{
+					dir += glm::vec3(-1.0f, 0.0f, 0.0f);
+				}
+				if (glfwGetKey(window_, GLFW_KEY_D) == GLFW_PRESS)
+				{
+					dir += glm::vec3(1.0f, 0.0f, 0.0f);
+				}
+				if (glfwGetKey(window_, GLFW_KEY_Q) == GLFW_PRESS)
+				{
+					dir += glm::vec3(0.0f, 1.0f, 0.0f);
+				}
+				if (glfwGetKey(window_, GLFW_KEY_E) == GLFW_PRESS)
+				{
+					dir += glm::vec3(0.0f, -1.0f, 0.0f);
+				}
+
+				if (glm::length(dir) > 0.0f)
+				{
+					renderer_->change_view();
+				}
+
+				float camera_speed = 3.0f;
+				camera_.pos += camera_forward * dir.z * camera_speed * delta_time_;
+				camera_.pos += camera_right * dir.x * camera_speed * delta_time_;
+				camera_.pos += camera_up * dir.y * camera_speed * delta_time_;
+
+
+				if (glfwGetKey(window_, GLFW_KEY_V) == GLFW_PRESS)
+				{
+					renderer_->reload_shaders();
+				}
+			}
 		}
 	}
 
-	// Render a frame
-	void App::render_frame()
+	// Render UI
+	void App::render_ui()
+	{
+		ImGui::Begin("Demo controls", 0, ImGuiWindowFlags_NoScrollbar);
+		{
+			ImGui::Text("wasd, q, e: move camera");
+			ImGui::Text("v: live reload shaders");
+
+			ImGui::Checkbox("Show performance", &show_performance);
+		}
+		ImGui::End();
+	}
+
+	void App::recreate_swapchain()
 	{
 		// Check if swapchain needs to be rebuilt (window resized or initializing)
 		if (!in_flight_queue_ || framebuffer_resized_)
@@ -231,72 +308,11 @@ namespace lz
 				                                              in_flight_queue_->get_in_flight_frames_count());
 			}
 		}
+	}
 
-		auto& imgui_io = ImGui::GetIO();
-		imgui_io.DeltaTime = 1.0f / 60.0f;
-		imgui_io.DisplaySize.x = float(in_flight_queue_->get_image_size().width);
-		imgui_io.DisplaySize.y = float(in_flight_queue_->get_image_size().height);
-
-		if (!ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow))
-		{
-			glm::vec3 dir = glm::vec3(0.0f, 0.0f, 0.0f);
-
-			if (glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_2))
-			{
-				float mouse_speed = 0.01f;
-				if (mouse_pos_ != prev_mouse_pos_)
-				{
-					renderer_->change_view();
-				}
-				camera_.hor_angle += float((mouse_pos_ - prev_mouse_pos_).x * mouse_speed);
-				camera_.vert_angle += float((mouse_pos_ - prev_mouse_pos_).y * mouse_speed);
-			}
-			glm::mat4 camera_transform = camera_.get_transform_matrix();
-			glm::vec3 camera_forward = glm::vec3(camera_transform * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
-			glm::vec3 camera_right = glm::vec3(camera_transform * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
-			glm::vec3 camera_up = glm::vec3(camera_transform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f));
-
-			if (glfwGetKey(window_, GLFW_KEY_W) == GLFW_PRESS)
-			{
-				dir += glm::vec3(0.0f, 0.0f, 1.0f);
-			}
-			if (glfwGetKey(window_, GLFW_KEY_S) == GLFW_PRESS)
-			{
-				dir += glm::vec3(0.0f, 0.0f, -1.0f);
-			}
-			if (glfwGetKey(window_, GLFW_KEY_A) == GLFW_PRESS)
-			{
-				dir += glm::vec3(-1.0f, 0.0f, 0.0f);
-			}
-			if (glfwGetKey(window_, GLFW_KEY_D) == GLFW_PRESS)
-			{
-				dir += glm::vec3(1.0f, 0.0f, 0.0f);
-			}
-			if (glfwGetKey(window_, GLFW_KEY_Q) == GLFW_PRESS)
-			{
-				dir += glm::vec3(0.0f, 1.0f, 0.0f);
-			}
-			if (glfwGetKey(window_, GLFW_KEY_E) == GLFW_PRESS)
-			{
-				dir += glm::vec3(0.0f, -1.0f, 0.0f);
-			}
-
-			if (glm::length(dir) > 0.0f)
-			{
-				renderer_->change_view();
-			}
-
-			float camera_speed = 3.0f;
-			camera_.pos += camera_forward * dir.z * camera_speed * delta_time_;
-			camera_.pos += camera_right * dir.x * camera_speed * delta_time_;
-			camera_.pos += camera_up * dir.y * camera_speed * delta_time_;
-
-
-			if (glfwGetKey(window_, GLFW_KEY_V) == GLFW_PRESS)
-			{
-				renderer_->reload_shaders();
-			}
-		}
+	// Render a frame
+	void App::render_frame()
+	{
 
 		try
 		{
@@ -318,7 +334,7 @@ namespace lz
 					if (!profiler_window_.stop_profiling)
 					{
 						auto profilers_task = in_flight_queue_->get_cpu_profiler().start_scoped_task(
-							"Peformance processing", lz::Colors::sun_flower);
+							"Performance processing", lz::Colors::sun_flower);
 
 						profiler_window_.cpu_graph.load_frame_data(cpu_profiler_data.data(), cpu_profiler_data.size());
 						profiler_window_.gpu_graph.load_frame_data(gpu_profiler_data.data(), gpu_profiler_data.size());
@@ -326,19 +342,12 @@ namespace lz
 
 					{
 						auto profilers_task = in_flight_queue_->get_cpu_profiler().start_scoped_task(
-							"Peformance rendering", lz::Colors::belize_hole);
+							"Performance rendering", lz::Colors::belize_hole);
 						profiler_window_.render();
 					}
 				}
 
-				ImGui::Begin("Demo controls", 0, ImGuiWindowFlags_NoScrollbar);
-				{
-					ImGui::Text("wasd, q, e: move camera");
-					ImGui::Text("v: live reload shaders");
-
-					ImGui::Checkbox("Show performance", &show_performance);
-				}
-				ImGui::End();
+				render_ui();
 
 				ImGui::Render();
 				imgui_renderer_->render_frame(frame_info, window_, ImGui::GetDrawData());

@@ -9,7 +9,7 @@ namespace lz {
         class SimpleMeshShadingApp : public lz::App
         {
         public:
-            SimpleMeshShadingApp() : lz::App("Lingze Simple Triangle", 1280, 760) {}
+            SimpleMeshShadingApp() : lz::App("Lingze Simple Mesh Shading", 1280, 760) {}
 
             virtual ~SimpleMeshShadingApp() = default;
 
