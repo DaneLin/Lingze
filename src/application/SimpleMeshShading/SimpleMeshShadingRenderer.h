@@ -19,6 +19,7 @@ namespace lz::render
 		virtual void change_view() override;
 
 	private:
+		std::unique_ptr<lz::Shader> task_shader_;
 		std::unique_ptr<lz::Shader> mesh_shader_;
 		std::unique_ptr<lz::Shader> fragment_shader_;
 		std::unique_ptr<lz::ShaderProgram> shader_program_;

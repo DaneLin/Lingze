@@ -1,0 +1,41 @@
+#version 450
+
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_EXT_shader_16bit_storage: require
+#extension GL_EXT_shader_8bit_storage: require
+#extension GL_EXT_mesh_shader: require
+
+#extension GL_GOOGLE_include_directive : require
+
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+
+#include "mesh.h"
+
+layout(binding = 2) readonly buffer Meshlets
+{
+    Meshlet meshlets[];
+};
+
+struct TaskPayload {
+    uint meshlet_indices[32];
+};
+
+taskPayloadSharedEXT TaskPayload payload;
+
+void main()
+{
+    uint ti = gl_LocalInvocationID.x;
+    uint mgi = gl_WorkGroupID.x;
+    uint mi = mgi * 32 + ti;
+
+    // TODO: Culling
+
+    payload.meshlet_indices[ti] = mi;
+
+    barrier();
+
+    if(ti == 0)
+    {
+        EmitMeshTasksEXT(32, 1, 0);
+    }
+}

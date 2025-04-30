@@ -3,34 +3,19 @@
 #extension GL_EXT_shader_16bit_storage: require
 #extension GL_EXT_shader_8bit_storage: require
 #extension GL_EXT_mesh_shader: require
+#extension GL_GOOGLE_include_directive : require
+
+#include "mesh.h"
+#include "../common_math.h"
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 layout(triangles, max_vertices = 64, max_primitives = 126) out;
 
-layout(set = 0, binding = 0) uniform ubo_data
-{
-	mat4 view;
-	mat4 projection;
-};
 
-struct Vertex
-{
-    vec3 pos;
-    vec3 color;
-    vec2 uv;
-};
 
 layout(binding = 1, scalar) readonly buffer Vertices
 {
     Vertex vertices[];
-};
-
-struct Meshlet
-{
-    uint data_offset;
-    uint vertex_offset;
-    uint8_t triangleCount;
-    uint8_t vertexCount;
 };
 
 layout(binding = 2) readonly buffer Meshlets
@@ -43,34 +28,26 @@ layout(binding = 3) readonly buffer MeshletDataBuffer
     uint meshlet_data[];
 };
 
-vec3 randomColor(uint seed)
-{
-    seed = (seed ^ 61u) ^ (seed >> 16u);
-    seed *= 9u;
-    seed = seed ^ (seed >> 4u);
-    seed *= 0x27d4eb2du;
-    seed = seed ^ (seed >> 15u);
+struct TaskPayload {
+    uint meshlet_indices[32];
+};
 
-    float r = float((seed & 0xFFu)) / 255.0;
-    float g = float((seed >> 8u) & 0xFFu) / 255.0;
-    float b = float((seed >> 16u) & 0xFFu) / 255.0;
-
-    return vec3(r, g, b);
-}
+taskPayloadSharedEXT TaskPayload payload;
 
 layout(location = 0) out vec4 color[];
 
 void main()
 {
-    uint mi = gl_WorkGroupID.x;
+    uint mi = payload.meshlet_indices[gl_WorkGroupID.x];
     uint ti = gl_LocalInvocationID.x;
+
 	uint vertexCount = uint(meshlets[mi].vertexCount);
     uint indexCount = uint(meshlets[mi].triangleCount) * 3;
     uint primCount = uint(meshlets[mi].triangleCount);
 
     SetMeshOutputsEXT(vertexCount, primCount);
 
-    vec3 meshletColor = randomColor(mi);
+    vec3 meshletColor = random_color(mi);
 
     for (uint i = ti; i < uint(meshlets[mi].vertexCount); i += 32)
     {

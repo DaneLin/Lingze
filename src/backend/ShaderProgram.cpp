@@ -687,6 +687,14 @@ namespace lz
 				local_size_.z = compiler.get_execution_mode_argument(spv::ExecutionMode::ExecutionModeLocalSize, 2);
 			}
 			break;
+		case spv::ExecutionModel::ExecutionModelTaskEXT:
+			{
+				stage_flag_bits_ = vk::ShaderStageFlagBits::eTaskEXT;
+				local_size_.x = compiler.get_execution_mode_argument(spv::ExecutionMode::ExecutionModeLocalSize, 0);
+				local_size_.y = compiler.get_execution_mode_argument(spv::ExecutionMode::ExecutionModeLocalSize, 1);
+				local_size_.z = compiler.get_execution_mode_argument(spv::ExecutionMode::ExecutionModeLocalSize, 2);
+			}
+			break;
 
 		default:
 			{
