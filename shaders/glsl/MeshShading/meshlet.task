@@ -36,6 +36,6 @@ void main()
 
     if(ti == 0)
     {
-        EmitMeshTasksEXT(32, 1, 0);
+        EmitMeshTasksEXT(32, 1,1); 
     }
 }
