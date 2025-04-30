@@ -271,61 +271,56 @@ namespace lz
 		return res;
 	}
 
-	void MeshData::append_meshlets(std::vector<Meshlet>& meshlets_datum)
+
+	void MeshData::append_meshlets(std::vector<Meshlet>& meshlets_datum, std::vector<uint32_t>& meshlet_data_datum,const uint32_t vertex_offset)
 	{
 		assert(primitive_topology == vk::PrimitiveTopology::eTriangleList);
 
-		Meshlet meshlet = {};
-		std::vector<uint8_t> meshlet_vertices(vertices.size(), 0xff);
+		constexpr size_t k_max_vertices = 64;
+		constexpr size_t k_max_triangles = 124; // we use 4 bytes to store indices, so the max triangle count is 124 that is divisible by 4
+		constexpr float k_cone_weight = 0.5f;
 
-		for (size_t i = 0; i < indices.size(); i += 3)
+		std::vector<meshopt_Meshlet> tmp_meshlets(meshopt_buildMeshletsBound(indices.size(), k_max_vertices, k_max_triangles));
+		std::vector<unsigned int> meshlet_vertices(tmp_meshlets.size() * k_max_vertices);
+		std::vector<unsigned char> meshlet_triangles(tmp_meshlets.size() * k_max_triangles * 3);
+
+		tmp_meshlets.resize(meshopt_buildMeshlets(tmp_meshlets.data(),
+			meshlet_vertices.data(), meshlet_triangles.data(),
+			indices.data(), indices.size(),
+			&vertices[0].pos.x, vertices.size(), sizeof(Vertex),
+			k_max_vertices, k_max_triangles, k_cone_weight));
+
+		for (auto& meshlet : tmp_meshlets)
 		{
-			unsigned int a = indices[i + 0];
-			unsigned int b = indices[i + 1];
-			unsigned int c = indices[i + 2];
+			size_t data_offset = meshlet_data_datum.size();
 
-			uint8_t& av = meshlet_vertices[a];
-			uint8_t& bv = meshlet_vertices[b];
-			uint8_t& cv = meshlet_vertices[c];
-
-			if (meshlet.vertex_count + (av == 0xff) + (bv == 0xff) + (cv == 0xff) > 64 || meshlet.triangle_count >= 126)
+			for (size_t i = 0; i < meshlet.vertex_count; ++i)
 			{
-				meshlets_datum.push_back(meshlet);
-				for (size_t j = 0; j < meshlet.vertex_count; ++j)
-				{
-					meshlet_vertices[meshlet.vertice[j]] = 0xff;
-				}
-				meshlet = {};
-
+				meshlet_data_datum.push_back(meshlet_vertices[meshlet.vertex_offset + i]);
 			}
 
-			if (av == 0xff)
+			const unsigned int* index_groups = reinterpret_cast<const unsigned int*>(&meshlet_triangles[0] + meshlet.triangle_offset);
+			// round up to multiple of 4
+			unsigned int index_group_count = (meshlet.triangle_count * 3 + 3) / 4;
+
+			for (size_t i = 0; i < index_group_count; ++i)
 			{
-				av = meshlet.vertex_count++;
-				meshlet.vertice[av] = a;
-			}
-			if (bv == 0xff)
-			{
-				bv = meshlet.vertex_count++;
-				meshlet.vertice[bv] = b;
-			}
-			if (cv == 0xff)
-			{
-				cv = meshlet.vertex_count++;
-				meshlet.vertice[cv] = c;
+				meshlet_data_datum.push_back(index_groups[i]);
 			}
 
-			meshlet.indices[meshlet.triangle_count * 3 + 0] = av;
-			meshlet.indices[meshlet.triangle_count * 3 + 1] = bv;
-			meshlet.indices[meshlet.triangle_count * 3 + 2] = cv;
-			meshlet.triangle_count++;
-		}
+			// TODO: add meshlet bounding data
 
-		if (meshlet.triangle_count > 0)
-		{
-			meshlets_datum.push_back(meshlet);
+			Meshlet m = {};
+			m.data_offset = data_offset;
+			m.vertex_offset = vertex_offset;
+			m.triangle_count = meshlet.triangle_count;
+			m.vertex_count = meshlet.vertex_count;
+
+			meshlets_datum.push_back(m);
 		}
 	}
+
+	
 
 	MeshData::Vertex MeshData::triangle_vertex_sample(Vertex triangle_vertices[3], glm::vec2 rand_val)
 	{

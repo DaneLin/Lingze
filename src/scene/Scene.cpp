@@ -136,11 +136,11 @@ namespace lz
 			mesh_to_offsets[mesh] = { global_vertices_count_, global_indices_count_ };
 			total_vertex_size += mesh->vertices_count * sizeof(MeshData::Vertex);
 			total_index_size += mesh->indices_count * sizeof(MeshData::IndexType);
+
+			mesh->mesh_data.append_meshlets(all_meshlets, all_meshlet_datas, global_vertices_count_);
 			
 			global_vertices_count_ += mesh->vertices_count;
 			global_indices_count_ += mesh->indices_count;
-
-			mesh->mesh_data.append_meshlets(all_meshlets);
 
 		}
 
@@ -205,6 +205,10 @@ namespace lz
 			global_meshlet_buffer_ = std::make_unique<lz::StagedBuffer>(physical_device, logical_device, all_meshlets.size() * sizeof(Meshlet), vk::BufferUsageFlagBits::eStorageBuffer);
 			memcpy(global_meshlet_buffer_->map(), all_meshlets.data(), all_meshlets.size() * sizeof(Meshlet));
 			global_meshlet_buffer_->unmap(transfer_command_buffer);
+
+			global_meshlet_data_buffer_ = std::make_unique<lz::StagedBuffer>(physical_device, logical_device, all_meshlet_datas.size() * sizeof(uint32_t), vk::BufferUsageFlagBits::eStorageBuffer);
+			memcpy(global_meshlet_data_buffer_->map(), all_meshlet_datas.data(), all_meshlet_datas.size() * sizeof(uint32_t));
+			global_meshlet_data_buffer_->unmap(transfer_command_buffer);
 		}
 
 		transfer_queue.end_command_buffer();
@@ -275,5 +279,8 @@ namespace lz
 		return global_meshlet_buffer_->get_buffer();
 	}
 
-
+	Buffer& Scene::get_global_meshlet_data_buffer() const
+	{
+		return global_meshlet_data_buffer_->get_buffer();
+	}
 }

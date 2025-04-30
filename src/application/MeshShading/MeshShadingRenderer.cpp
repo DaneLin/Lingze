@@ -18,6 +18,7 @@ namespace lz::render
 	                                                       size_t in_flight_frames_count)
 	{
 		viewport_extent_ = viewport_extent;
+		frame_resource_datum_.clear();
 	}
 
 	void MeshShadingRenderer::render_frame(const lz::InFlightQueue::FrameInfo& frame_info,
@@ -136,6 +137,9 @@ namespace lz::render
 										storage_buffer_bindings.push_back(
 					                       shader_data_set_info->make_storage_buffer_binding(
 						                       "Meshlets", &scene->get_global_meshlet_buffer()));
+										storage_buffer_bindings.push_back(
+											shader_data_set_info->make_storage_buffer_binding(
+												"MeshletDataBuffer", &scene->get_global_meshlet_data_buffer()));
 
 									// TODO: add draw call buffer for model matrix
 				                    //    storage_buffer_bindings.push_back(
