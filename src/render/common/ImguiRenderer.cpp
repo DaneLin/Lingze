@@ -400,8 +400,8 @@ namespace lz::render
 
 	void ImGuiRenderer::reload_shaders()
 	{
-		imgui_shader_.vertex.reset(new lz::Shader(core_->get_logical_device(),SHADER_SPIRV_GLSL_DIR "ImGui/ImGui.vert.spv"));
-		imgui_shader_.fragment.reset(new lz::Shader(core_->get_logical_device(),SHADER_SPIRV_GLSL_DIR "ImGui/ImGui.frag.spv"));
+		imgui_shader_.vertex.reset(new lz::Shader(core_->get_logical_device(),SHADER_GLSL_DIR "ImGui/ImGui.vert"));
+		imgui_shader_.fragment.reset(new lz::Shader(core_->get_logical_device(),SHADER_GLSL_DIR "ImGui/ImGui.frag"));
 		imgui_shader_.program.reset(new lz::ShaderProgram({ imgui_shader_.vertex.get(), imgui_shader_.fragment.get() }));
 	}
 

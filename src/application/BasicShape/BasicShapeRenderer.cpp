@@ -104,8 +104,8 @@ namespace lz::render
 
 	void BasicShapeRenderer::reload_shaders()
 	{
-		base_shape_shader_.vertex_shader.reset(new lz::Shader(core_->get_logical_device(),SHADER_SPIRV_GLSL_DIR"BasicShape/BasicShape.vert.spv"));
-		base_shape_shader_.fragment_shader.reset(new lz::Shader(core_->get_logical_device(),SHADER_SPIRV_GLSL_DIR"BasicShape/BasicShape.frag.spv"));
+		base_shape_shader_.vertex_shader.reset(new lz::Shader(core_->get_logical_device(),SHADER_GLSL_DIR"BasicShape/BasicShape.vert"));
+		base_shape_shader_.fragment_shader.reset(new lz::Shader(core_->get_logical_device(),SHADER_GLSL_DIR"BasicShape/BasicShape.frag"));
 		base_shape_shader_.shader_program.reset(new lz::ShaderProgram({ base_shape_shader_.vertex_shader.get(), base_shape_shader_.fragment_shader.get() }));
 	}
 

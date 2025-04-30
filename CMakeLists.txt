@@ -42,21 +42,13 @@ include_directories("${Vulkan_INCLUDE_DIRS}")
 # Define shader paths for use in code
 add_compile_definitions(
     SHADER_DIR="${CMAKE_SOURCE_DIR}/shaders/"
+    SHADER_GLSL_DIR="${CMAKE_SOURCE_DIR}/shaders/glsl/"
+    SHADER_HLSL_DIR="${CMAKE_SOURCE_DIR}/shaders/hlsl/"
     SHADER_SPIRV_GLSL_DIR="${CMAKE_SOURCE_DIR}/shaders/spirv_glsl/"
     SHADER_SPIRV_HLSL_DIR="${CMAKE_SOURCE_DIR}/shaders/spirv_hlsl/"
     SCENE_DIR="${CMAKE_SOURCE_DIR}/data/scenes/"
     # Resolve macro conflicts between GLFW and Windows headers
     GLFW_INCLUDE_NONE
-)
-
-# Define shader compilation custom target
-add_custom_target(
-    CompileShaders
-    COMMAND ${CMAKE_COMMAND} -E echo "Compiling shaders..."
-    COMMAND cmd.exe /c "${CMAKE_SOURCE_DIR}/shaders/BuildAllShaders.bat"
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMENT "Compiling modified shader files to SPIR-V"
-    VERBATIM
 )
 
 # Automatically find all source files using GLOB_RECURSE
@@ -101,7 +93,6 @@ set(lingze_lib_headers
 
 # Create engine core library for all applications to use
 add_library(LingzeEngine STATIC ${lingze_lib_sources} ${lingze_lib_headers})
-add_dependencies(LingzeEngine CompileShaders)
 target_link_libraries(LingzeEngine ${Vulkan_LIBRARIES} ${GLFW3_LIBRARIES} deps_include ${LINGZE_DEPS_LIB})
 
 # Create source groups to better organize files in the IDE

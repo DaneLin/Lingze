@@ -163,14 +163,14 @@ namespace lz::render
 	{
 		const auto &logical_device = core_->get_logical_device();
 		{
-			base_shape_shader_.vertex_shader.reset(new Shader(logical_device, SHADER_SPIRV_GLSL_DIR "MeshShading/BasicShape.vert.spv"));
-			base_shape_shader_.fragment_shader.reset(new Shader(logical_device, SHADER_SPIRV_GLSL_DIR "MeshShading/BasicShape.frag.spv"));
+			base_shape_shader_.vertex_shader.reset(new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/BasicShape.vert"));
+			base_shape_shader_.fragment_shader.reset(new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/BasicShape.frag"));
 			base_shape_shader_.shader_program.reset(new ShaderProgram({base_shape_shader_.vertex_shader.get(), base_shape_shader_.fragment_shader.get()}));
 		}
 		{
-			meshlet_shader_.task_shader.reset(new Shader(logical_device, SHADER_SPIRV_GLSL_DIR "MeshShading/meshlet.task.spv"));
-			meshlet_shader_.mesh_shader.reset(new Shader(logical_device, SHADER_SPIRV_GLSL_DIR "MeshShading/meshlet.mesh.spv"));
-			meshlet_shader_.fragment_shader.reset(new Shader(logical_device, SHADER_SPIRV_GLSL_DIR "MeshShading/meshlet.frag.spv"));
+			meshlet_shader_.task_shader.reset(new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/meshlet.task"));
+			meshlet_shader_.mesh_shader.reset(new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/meshlet.mesh"));
+			meshlet_shader_.fragment_shader.reset(new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/meshlet.frag"));
 			meshlet_shader_.shader_program.reset(new ShaderProgram({meshlet_shader_.task_shader.get(), meshlet_shader_.mesh_shader.get(), meshlet_shader_.fragment_shader.get()}));
 		}
 	}
