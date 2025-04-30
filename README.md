@@ -92,7 +92,7 @@ cmake --build .
   - [ ] 实时阴影
   - [ ] SSAO
   - [ ] 延迟渲染
-  - [x] Mesh Shader
+  - [x] Mesh Shader & Task Shader
   - [ ] 计算着色器
   - [ ] 光线追踪
 
@@ -237,7 +237,7 @@ cmake --build .
   - [ ] Real-time shadows
   - [ ] SSAO
   - [ ] Deferred rendering
-  - [x] Mesh Shader
+  - [x] Mesh Shader & Task Shader
   - [ ] Compute shaders
   - [ ] Ray tracing
 
