@@ -46,9 +46,9 @@ namespace lz::render
 
 	void SimpleMeshShadingRenderer::reload_shaders()
 	{
-		task_shader_.reset(new Shader(core_->get_logical_device(), SHADER_SPIRV_GLSL_DIR"MeshShading/ms.task.spv"));
-		mesh_shader_.reset(new Shader(core_->get_logical_device(), SHADER_SPIRV_GLSL_DIR"MeshShading/ms.mesh.spv"));
-		fragment_shader_.reset(new Shader(core_->get_logical_device(), SHADER_SPIRV_GLSL_DIR"MeshShading/ps.frag.spv"));
+		task_shader_.reset(new Shader(core_->get_logical_device(), SHADER_GLSL_DIR"MeshShading/ms.task"));
+		mesh_shader_.reset(new Shader(core_->get_logical_device(), SHADER_GLSL_DIR"MeshShading/ms.mesh"));
+		fragment_shader_.reset(new Shader(core_->get_logical_device(), SHADER_GLSL_DIR"MeshShading/ps.frag"));
 		shader_program_.reset(new ShaderProgram({ task_shader_.get(), mesh_shader_.get(), fragment_shader_.get() }));
 	}
 

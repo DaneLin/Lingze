@@ -15,7 +15,15 @@ target_include_directories(deps_include INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/glfw/include
     ${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp
     ${CMAKE_CURRENT_SOURCE_DIR}/imgui
+    ${CMAKE_CURRENT_SOURCE_DIR}/glslang
 )
+
+# Configure glslang options
+set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "Enable glslang binaries" FORCE)
+set(ENABLE_HLSL OFF CACHE BOOL "Enables HLSL input support" FORCE)
+set(ENABLE_CTEST OFF CACHE BOOL "Enables testing" FORCE)
+set(BUILD_EXTERNAL OFF CACHE BOOL "Build external dependencies in /External" FORCE)
+set(ENABLE_OPT OFF CACHE BOOL "Enables spirv-tools optimizer" FORCE)
 
 # Configure SPIRV-Cross using its own CMake build system
 # Disable options we don't need to speed up build
@@ -33,6 +41,7 @@ set(SPIRV_CROSS_SKIP_INSTALL ON CACHE BOOL "Skip installation targets" FORCE)
 # Add SPIRV-Cross as a subdirectory to build it
 add_subdirectory(spirv_cross)
 add_subdirectory(meshoptimizer)
+add_subdirectory(glslang)
 
 # Collect other dependency library source files (excluding SPIRV-Cross now)
 file(GLOB_RECURSE JSONCPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/*.cpp)
@@ -51,4 +60,4 @@ target_include_directories(lingze_deps PUBLIC
 )
 
 # Export the libraries to parent scope
-set(LINGZE_DEPS_LIB "lingze_deps;spirv-cross-core;spirv-cross-glsl;meshoptimizer" PARENT_SCOPE) 
+set(LINGZE_DEPS_LIB "lingze_deps;spirv-cross-core;spirv-cross-glsl;meshoptimizer;glslang;SPIRV" PARENT_SCOPE) 

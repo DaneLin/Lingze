@@ -4,3 +4,9 @@
 [submodule "deps/meshoptimizer"]
 	path = deps/meshoptimizer
 	url = https://github.com/zeux/meshoptimizer.git
+[submodule "deps/shaderc"]
+	path = deps/shaderc
+	url = https://github.com/google/shaderc.git
+[submodule "deps/glslang"]
+	path = deps/glslang
+	url = https://github.com/KhronosGroup/glslang.git
