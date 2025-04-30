@@ -22,13 +22,13 @@ namespace lz
 			global_index_offset = 0;
 		}
 
-		Mesh* mesh;
+		Mesh *mesh;
 		glm::mat4 obj_to_world;
 
 		glm::vec3 albedo_color;
 		glm::vec3 emissive_color;
 		bool is_shadow_receiver;
-        
+
 		// 在全局缓冲区中的偏移量
 		uint32_t global_vertex_offset;
 		uint32_t global_index_offset;
@@ -45,10 +45,8 @@ namespace lz
 
 		glm::mat4 get_transform_matrix() const
 		{
-			return glm::translate(pos) * glm::rotate(hor_angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(
-				vert_angle, glm::vec3(1.0f, 0.0f, 0.0f));
+			return glm::translate(pos) * glm::rotate(hor_angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(vert_angle, glm::vec3(1.0f, 0.0f, 0.0f));
 		}
-
 
 		glm::vec3 pos;
 		float vert_angle;
@@ -65,13 +63,13 @@ namespace lz
 			eSizedPoints
 		};
 
-		Scene(Json::Value scene_config, lz::Core* core, GeometryTypes geometry_type);
+		Scene(Json::Value scene_config, lz::Core *core, GeometryTypes geometry_type);
 
 		// Legacy function: using vertex input binding
 		using ObjectCallback = std::function<void(glm::mat4 object_to_world, glm::vec3 albedo_color,
-		                                          glm::vec3 emissive_color, vk::Buffer vertex_buffer,
-		                                          vk::Buffer index_buffer, uint32_t vertices_count,
-		                                          uint32_t indices_count)>;
+												  glm::vec3 emissive_color, vk::Buffer vertex_buffer,
+												  vk::Buffer index_buffer, uint32_t vertices_count,
+												  uint32_t indices_count)>;
 		void iterate_objects(ObjectCallback object_callback);
 
 		// Create global buffers (CPU side)
@@ -79,18 +77,19 @@ namespace lz
 
 		// Create buffer for draw call
 		void create_draw_buffer();
-        
-		Buffer& get_global_vertex_buffer() const;
+
+		Buffer &get_global_vertex_buffer() const;
 		vk::Buffer get_global_index_buffer() const;
-		Buffer& get_draw_call_buffer() const;
-		Buffer& get_draw_indirect_buffer() const;
-		Buffer& get_global_meshlet_buffer() const;
+		Buffer &get_draw_call_buffer() const;
+		Buffer &get_draw_indirect_buffer() const;
+		Buffer &get_global_meshlet_buffer() const;
+		Buffer &get_global_meshlet_data_buffer() const;
 		size_t get_global_vertices_count() const { return global_vertices_count_; }
 		size_t get_global_indices_count() const { return global_indices_count_; }
 		size_t get_global_meshlet_count() const { return global_meshlet_count_; }
 
 		size_t get_draw_count() const { return objects_.size(); }
-		
+
 	private:
 		std::vector<std::unique_ptr<Mesh>> meshes_;
 		std::vector<Object> objects_;
@@ -100,6 +99,7 @@ namespace lz
 		std::unique_ptr<lz::StagedBuffer> global_vertex_buffer_;
 		std::unique_ptr<lz::StagedBuffer> global_index_buffer_;
 		std::unique_ptr<lz::StagedBuffer> global_meshlet_buffer_;
+		std::unique_ptr<lz::StagedBuffer> global_meshlet_data_buffer_;
 
 		// Draw indirect
 		std::unique_ptr<lz::StagedBuffer> draw_call_buffer_;
@@ -109,8 +109,7 @@ namespace lz
 		size_t global_vertices_count_;
 		size_t global_meshlet_count_;
 
-
 		lz::VertexDeclaration vertex_decl_;
-		lz::Core* core_;
+		lz::Core *core_;
 	};
 }

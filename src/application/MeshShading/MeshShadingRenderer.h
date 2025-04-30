@@ -45,6 +45,7 @@ namespace lz::render
 
 		struct MeshletShader
 		{
+			std::unique_ptr<lz::Shader> task_shader;
 			std::unique_ptr<lz::Shader> mesh_shader;
 			std::unique_ptr<lz::Shader> fragment_shader;
 			std::unique_ptr<lz::ShaderProgram> shader_program;

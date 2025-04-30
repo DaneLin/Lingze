@@ -3,73 +3,55 @@
 #extension GL_EXT_shader_16bit_storage: require
 #extension GL_EXT_shader_8bit_storage: require
 #extension GL_EXT_mesh_shader: require
+#extension GL_GOOGLE_include_directive : require
+
+#include "mesh.h"
+#include "../common_math.h"
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
-layout(triangles, max_vertices = 64, max_primitives = 42) out;
+layout(triangles, max_vertices = 64, max_primitives = 126) out;
 
-layout(set = 0, binding = 0) uniform ubo_data
-{
-	mat4 view;
-	mat4 projection;
-};
 
-struct Vertex
-{
-    vec3 pos;
-    vec3 color;
-    vec2 uv;
-};
 
 layout(binding = 1, scalar) readonly buffer Vertices
 {
     Vertex vertices[];
 };
 
-struct Meshlet
-{
-    uint vertices[64];
-    uint8_t indices[126];
-    uint8_t indexCount;
-    uint8_t vertexCount;
-};
-
-layout(binding = 2, scalar) readonly buffer Meshlets
+layout(binding = 2) readonly buffer Meshlets
 {
     Meshlet meshlets[];
 };
 
-vec3 randomColor(uint seed)
+layout(binding = 3) readonly buffer MeshletDataBuffer
 {
-    seed = (seed ^ 61u) ^ (seed >> 16u);
-    seed *= 9u;
-    seed = seed ^ (seed >> 4u);
-    seed *= 0x27d4eb2du;
-    seed = seed ^ (seed >> 15u);
+    uint meshlet_data[];
+};
 
-    float r = float((seed & 0xFFu)) / 255.0;
-    float g = float((seed >> 8u) & 0xFFu) / 255.0;
-    float b = float((seed >> 16u) & 0xFFu) / 255.0;
+struct TaskPayload {
+    uint meshlet_indices[32];
+};
 
-    return vec3(r, g, b);
-}
+taskPayloadSharedEXT TaskPayload payload;
 
 layout(location = 0) out vec4 color[];
 
 void main()
 {
-    uint mi = gl_WorkGroupID.x;
+    uint mi = payload.meshlet_indices[gl_WorkGroupID.x];
     uint ti = gl_LocalInvocationID.x;
+
 	uint vertexCount = uint(meshlets[mi].vertexCount);
-    uint indexCount = uint(meshlets[mi].indexCount);
-    uint primCount = uint(meshlets[mi].indexCount) / 3;
+    uint indexCount = uint(meshlets[mi].triangleCount) * 3;
+    uint primCount = uint(meshlets[mi].triangleCount);
 
     SetMeshOutputsEXT(vertexCount, primCount);
-	
-    vec3 meshletColor = randomColor(mi);
+
+    vec3 meshletColor = random_color(mi);
 
     for (uint i = ti; i < uint(meshlets[mi].vertexCount); i += 32)
     {
-        uint vi = meshlets[mi].vertices[i];
+        uint vi = meshlet_data[meshlets[mi].data_offset + i] + meshlets[mi].vertex_offset;
 
         vec3 position = vec3(vertices[vi].pos);
         vec2 texcoord = vec2(vertices[vi].uv);
@@ -78,15 +60,25 @@ void main()
         color[i] = vec4(meshletColor, 1.0);
     }
 
-	
-    for (uint p = ti; p < primCount; p += 32)
+    uint base = meshlets[mi].data_offset + vertexCount;
+
+    for (uint tri = ti; tri < primCount; tri += 32)
     {
-        // 这些索引是meshlet局部顶点索引，它们指向meshlet的vertices数组中的位置
-        uint idx0 = uint(meshlets[mi].indices[3*p]);
-        uint idx1 = uint(meshlets[mi].indices[3*p + 1]);
-        uint idx2 = uint(meshlets[mi].indices[3*p + 2]);
-        
-        // 将这些局部索引分配给图元
-        gl_PrimitiveTriangleIndicesEXT[p] = uvec3(idx0, idx1, idx2);
+        // calculate index byte by 4 bytes
+        uint i0 = meshlet_data[base + (tri * 3 + 0) / 4];
+        uint i1 = meshlet_data[base + (tri * 3 + 1) / 4];
+        uint i2 = meshlet_data[base + (tri * 3 + 2) / 4];
+
+        // calculate mask by 4 bytes (multiple with 8 to get the correct bit position)
+        uint s0 = ((tri * 3 + 0) % 4) * 8;
+        uint s1 = ((tri * 3 + 1) % 4) * 8;
+        uint s2 = ((tri * 3 + 2) % 4) * 8;
+
+        // calculate index byte by mask
+        uint v0 = (i0 >> s0) & 0xFF;
+        uint v1 = (i1 >> s1) & 0xFF;
+        uint v2 = (i2 >> s2) & 0xFF;
+
+        gl_PrimitiveTriangleIndicesEXT[tri] = uvec3(v0, v1, v2);
     }
 }

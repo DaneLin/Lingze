@@ -3,7 +3,6 @@
 #include "backend/Core.h"
 #include "backend/PresentQueue.h"
 
-
 namespace lz
 {
 	static glm::vec3 read_json_vec3_f(Json::Value vectorValue)
@@ -21,21 +20,21 @@ namespace lz
 		return glm::uvec3(vectorValue[0].asUInt(), vectorValue[1].asUInt(), vectorValue[2].asUInt());
 	}
 
-	Scene::Scene(Json::Value scene_config, lz::Core* core, GeometryTypes geometry_type)
+	Scene::Scene(Json::Value scene_config, lz::Core *core, GeometryTypes geometry_type)
 	{
 		this->core_ = core;
 
 		vertex_decl_ = Mesh::get_vertex_declaration();
 		lz::ExecuteOnceQueue transfer_queue(core);
 
-		std::map<std::string, Mesh*> name_to_mesh;
+		std::map<std::string, Mesh *> name_to_mesh;
 
 		auto transfer_command_buffer = transfer_queue.begin_command_buffer();
 		{
-			Json::Value& mesh_array = scene_config["meshes"];
+			Json::Value &mesh_array = scene_config["meshes"];
 			for (Json::ArrayIndex mesh_index = 0; mesh_index < mesh_array.size(); ++mesh_index)
 			{
-				Json::Value& curr_mesh_node = mesh_array[mesh_index];
+				Json::Value &curr_mesh_node = mesh_array[mesh_index];
 
 				std::string mesh_file_name = curr_mesh_node.get("filename", "<unspecified>").asString();
 				glm::vec3 scale = read_json_vec3_f(curr_mesh_node["scale"]);
@@ -44,16 +43,16 @@ namespace lz
 				switch (geometry_type)
 				{
 				case GeometryTypes::eRegularPoints:
-					{
-						float splat_size = 0.1f;
-						mesh_data = MeshData::generate_point_mesh_regular(mesh_data, std::pow(1.0f / splat_size, 2.0f));
-					}
-					break;
+				{
+					float splat_size = 0.1f;
+					mesh_data = MeshData::generate_point_mesh_regular(mesh_data, std::pow(1.0f / splat_size, 2.0f));
+				}
+				break;
 				case GeometryTypes::eSizedPoints:
-					{
-						mesh_data = MeshData::generate_point_mesh_sized(mesh_data, 1);
-					}
-					break;
+				{
+					mesh_data = MeshData::generate_point_mesh_sized(mesh_data, 1);
+				}
+				break;
 				}
 
 				auto mesh = std::unique_ptr<Mesh>(new Mesh(mesh_data, core_->get_physical_device(), core_->get_logical_device(), transfer_command_buffer));
@@ -100,12 +99,12 @@ namespace lz
 
 	void Scene::iterate_objects(ObjectCallback object_callback)
 	{
-		for (auto& object : objects_)
+		for (auto &object : objects_)
 		{
 			object_callback(object.obj_to_world, object.albedo_color, object.emissive_color,
-			                object.mesh->vertex_buffer->get_buffer().get_handle(),
-			                object.mesh->index_buffer ? object.mesh->index_buffer->get_buffer().get_handle() : nullptr,
-			                uint32_t(object.mesh->vertices_count), uint32_t(object.mesh->indices_count));
+							object.mesh->vertex_buffer->get_buffer().get_handle(),
+							object.mesh->index_buffer ? object.mesh->index_buffer->get_buffer().get_handle() : nullptr,
+							uint32_t(object.mesh->vertices_count), uint32_t(object.mesh->indices_count));
 		}
 	}
 
@@ -118,30 +117,30 @@ namespace lz
 		global_indices_count_ = 0;
 
 		// use a map to record each mesh's offset in global buffer
-		std::unordered_map<Mesh*, std::pair<uint32_t, uint32_t>> mesh_to_offsets;
+		std::unordered_map<Mesh *, std::pair<uint32_t, uint32_t>> mesh_to_offsets;
 
 		std::vector<Meshlet> all_meshlets;
 		std::vector<uint32_t> all_meshlet_datas;
 
 		// first calc total size, only consider unique meshes
-		for (const auto& mesh_ptr : meshes_)
+		for (const auto &mesh_ptr : meshes_)
 		{
-			Mesh* mesh = mesh_ptr.get();
-			
+			Mesh *mesh = mesh_ptr.get();
+
 			// if this mesh has been processed, skip
-			if (mesh_to_offsets.find(mesh) != mesh_to_offsets.end()) {
+			if (mesh_to_offsets.find(mesh) != mesh_to_offsets.end())
+			{
 				continue;
 			}
 
-			mesh_to_offsets[mesh] = { global_vertices_count_, global_indices_count_ };
+			mesh_to_offsets[mesh] = {global_vertices_count_, global_indices_count_};
 			total_vertex_size += mesh->vertices_count * sizeof(MeshData::Vertex);
 			total_index_size += mesh->indices_count * sizeof(MeshData::IndexType);
-			
+
+			mesh->mesh_data.append_meshlets(all_meshlets, all_meshlet_datas, global_vertices_count_);
+
 			global_vertices_count_ += mesh->vertices_count;
 			global_indices_count_ += mesh->indices_count;
-
-			mesh->mesh_data.append_meshlets(all_meshlets);
-
 		}
 
 		// create temp buffer to collect all data
@@ -150,34 +149,27 @@ namespace lz
 		all_vertices.reserve(global_vertices_count_);
 		all_indices.reserve(global_indices_count_);
 
-		// reserve space for meshlet data
-		// round up to multiple of 64
-		size_t meshlet_count = all_meshlets.size();
-
-		//size_t round_up_count = (meshlet_count + 63) & ~63;
-
-		// while (all_meshlets.size() % 32)
-		// {
-		// 	all_meshlets.push_back(Meshlet());
-		// }
+		while (all_meshlets.size() % 32)
+		{
+			all_meshlets.push_back(Meshlet());
+		}
 
 		global_meshlet_count_ = all_meshlets.size();
-		
 
 		// record current offset
 		uint32_t current_vertex_offset = 0;
 		uint32_t current_index_offset = 0;
 
-		for (const auto& mesh_ptr : meshes_)
+		for (const auto &mesh_ptr : meshes_)
 		{
-			Mesh* mesh = mesh_ptr.get();
+			Mesh *mesh = mesh_ptr.get();
 			// get vertex data
 			all_vertices.insert(all_vertices.end(), mesh->mesh_data.vertices.begin(), mesh->mesh_data.vertices.end());
 			all_indices.insert(all_indices.end(), mesh->mesh_data.indices.begin(), mesh->mesh_data.indices.end());
 		}
 
-		// 
-		for (auto& object : objects_)
+		//
+		for (auto &object : objects_)
 		{
 			auto offsets = mesh_to_offsets[object.mesh];
 			object.global_vertex_offset = offsets.first;
@@ -205,6 +197,10 @@ namespace lz
 			global_meshlet_buffer_ = std::make_unique<lz::StagedBuffer>(physical_device, logical_device, all_meshlets.size() * sizeof(Meshlet), vk::BufferUsageFlagBits::eStorageBuffer);
 			memcpy(global_meshlet_buffer_->map(), all_meshlets.data(), all_meshlets.size() * sizeof(Meshlet));
 			global_meshlet_buffer_->unmap(transfer_command_buffer);
+
+			global_meshlet_data_buffer_ = std::make_unique<lz::StagedBuffer>(physical_device, logical_device, all_meshlet_datas.size() * sizeof(uint32_t), vk::BufferUsageFlagBits::eStorageBuffer);
+			memcpy(global_meshlet_data_buffer_->map(), all_meshlet_datas.data(), all_meshlet_datas.size() * sizeof(uint32_t));
+			global_meshlet_data_buffer_->unmap(transfer_command_buffer);
 		}
 
 		transfer_queue.end_command_buffer();
@@ -214,12 +210,12 @@ namespace lz
 	{
 		// debug code
 		std::cerr << "generating draw indirect buffer\n";
-		std::vector< vk::DrawIndexedIndirectCommand> draw_commands(objects_.size());
+		std::vector<vk::DrawIndexedIndirectCommand> draw_commands(objects_.size());
 		std::vector<glm::mat4> object_models(objects_.size());
 		// Iterate through objects and record draw commands
-		for (size_t index =0 ; index < objects_.size(); ++index)
+		for (size_t index = 0; index < objects_.size(); ++index)
 		{
-			const auto& object = objects_[index];
+			const auto &object = objects_[index];
 			vk::DrawIndexedIndirectCommand draw_command;
 			draw_command.firstInstance = 0;
 			draw_command.firstIndex = object.global_index_offset;
@@ -237,9 +233,9 @@ namespace lz
 
 		auto physical_device = core_->get_physical_device();
 		auto logical_device = core_->get_logical_device();
-		draw_indirect_buffer_ = std::make_unique<lz::StagedBuffer>(physical_device, logical_device, 
-			draw_commands.size() * sizeof(vk::DrawIndexedIndirectCommand), 
-			vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndirectBuffer);
+		draw_indirect_buffer_ = std::make_unique<lz::StagedBuffer>(physical_device, logical_device,
+																   draw_commands.size() * sizeof(vk::DrawIndexedIndirectCommand),
+																   vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndirectBuffer);
 		memcpy(draw_indirect_buffer_->map(), draw_commands.data(), draw_commands.size() * sizeof(vk::DrawIndexedIndirectCommand));
 		draw_indirect_buffer_->unmap(transfer_command_buffer);
 
@@ -250,7 +246,7 @@ namespace lz
 		transfer_queue.end_command_buffer();
 	}
 
-	Buffer& Scene::get_global_vertex_buffer() const
+	Buffer &Scene::get_global_vertex_buffer() const
 	{
 		return global_vertex_buffer_->get_buffer();
 	}
@@ -260,20 +256,23 @@ namespace lz
 		return global_index_buffer_ ? global_index_buffer_->get_buffer().get_handle() : nullptr;
 	}
 
-	Buffer& Scene::get_draw_call_buffer() const
+	Buffer &Scene::get_draw_call_buffer() const
 	{
 		return draw_call_buffer_->get_buffer();
 	}
 
-	Buffer& Scene::get_draw_indirect_buffer() const
+	Buffer &Scene::get_draw_indirect_buffer() const
 	{
 		return draw_indirect_buffer_->get_buffer();
 	}
 
-	Buffer& Scene::get_global_meshlet_buffer() const
+	Buffer &Scene::get_global_meshlet_buffer() const
 	{
 		return global_meshlet_buffer_->get_buffer();
 	}
 
-
+	Buffer &Scene::get_global_meshlet_data_buffer() const
+	{
+		return global_meshlet_data_buffer_->get_buffer();
+	}
 }

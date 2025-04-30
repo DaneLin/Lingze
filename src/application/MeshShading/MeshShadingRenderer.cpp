@@ -4,41 +4,42 @@
 
 namespace lz::render
 {
-	MeshShadingRenderer::MeshShadingRenderer(lz::Core* core)
+	MeshShadingRenderer::MeshShadingRenderer(lz::Core *core)
 		: core_(core)
 	{
 		reload_shaders();
 	}
 
-	void MeshShadingRenderer::recreate_scene_resources(lz::Scene* scene)
+	void MeshShadingRenderer::recreate_scene_resources(lz::Scene *scene)
 	{
 	}
 
 	void MeshShadingRenderer::recreate_swapchain_resources(vk::Extent2D viewport_extent,
-	                                                       size_t in_flight_frames_count)
+														   size_t in_flight_frames_count)
 	{
 		viewport_extent_ = viewport_extent;
+		frame_resource_datum_.clear();
 	}
 
-	void MeshShadingRenderer::render_frame(const lz::InFlightQueue::FrameInfo& frame_info,
-	                                       const lz::Camera& camera, const lz::Camera& light, lz::Scene* scene,
-	                                       GLFWwindow* window)
+	void MeshShadingRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_info,
+										   const lz::Camera &camera, const lz::Camera &light, lz::Scene *scene,
+										   GLFWwindow *window)
 	{
 		auto render_graph = core_->get_render_graph();
-		auto& frame_resource = frame_resource_datum_[render_graph];
+		auto &frame_resource = frame_resource_datum_[render_graph];
 		if (!frame_resource)
 		{
 			glm::uvec2 size = {viewport_extent_.width, viewport_extent_.height};
 			frame_resource.reset(new FrameResource(render_graph, size));
 		}
 		render_graph->add_pass(lz::RenderGraph::RenderPassDesc()
-		                       .set_color_attachments({{frame_info.swapchain_image_view_proxy_id, vk::AttachmentLoadOp::eClear}})
-		                       .set_depth_attachment(
-			                       frame_resource->depth_stencil_proxy_.image_view_proxy.get().id(),
-			                       vk::AttachmentLoadOp::eClear)
-		                       .set_render_area_extent(viewport_extent_)
-		                       .set_record_func([&](lz::RenderGraph::RenderPassContext context)
-		                       {
+								   .set_color_attachments({{frame_info.swapchain_image_view_proxy_id, vk::AttachmentLoadOp::eClear}})
+								   .set_depth_attachment(
+									   frame_resource->depth_stencil_proxy_.image_view_proxy.get().id(),
+									   vk::AttachmentLoadOp::eClear)
+								   .set_render_area_extent(viewport_extent_)
+								   .set_record_func([&](lz::RenderGraph::RenderPassContext context)
+													{
 			                       if (!mesh_shading_enable_)
 			                       {
 				                       auto shader_program = base_shape_shader_.shader_program.get();
@@ -95,7 +96,7 @@ namespace lz::render
 				                       context.get_command_buffer().bindIndexBuffer(
 					                       scene->get_global_index_buffer(), 0, vk::IndexType::eUint32);
 									   context.get_command_buffer().drawIndexedIndirect(
-										   scene->get_draw_indirect_buffer().get_handle(), 0, scene->get_draw_count(),
+										   scene->get_draw_indirect_buffer().get_handle(), 0, uint32_t(scene->get_draw_count()),
 					                       sizeof(vk::DrawIndexedIndirectCommand));
 			                       }
 			                       else
@@ -136,11 +137,11 @@ namespace lz::render
 										storage_buffer_bindings.push_back(
 					                       shader_data_set_info->make_storage_buffer_binding(
 						                       "Meshlets", &scene->get_global_meshlet_buffer()));
+										storage_buffer_bindings.push_back(
+											shader_data_set_info->make_storage_buffer_binding(
+												"MeshletDataBuffer", &scene->get_global_meshlet_data_buffer()));
 
 									// TODO: add draw call buffer for model matrix
-				                    //    storage_buffer_bindings.push_back(
-					                //        shader_data_set_info->make_storage_buffer_binding(
-						            //            "DrawCallDataBuffer", &scene->get_draw_call_buffer()));
 
 
 				                       auto shader_data_set = core_->get_descriptor_set_cache()->
@@ -153,23 +154,24 @@ namespace lz::render
 					                       vk::PipelineBindPoint::eGraphics, pipeline_info.pipeline_layout,
 					                       k_shader_data_set_index, {shader_data_set}, { shader_data.dynamic_offset });
 
-									context.get_command_buffer().drawMeshTasksEXT(scene->get_global_meshlet_count(), 1, 1, core_->get_dynamic_loader());
-			                       }
-		                       }));
+									uint32_t task_need_count = uint32_t(scene->get_global_meshlet_count()  / 32);
+									context.get_command_buffer().drawMeshTasksEXT(task_need_count, 1, 1, core_->get_dynamic_loader());
+			                       } }));
 	}
 
 	void MeshShadingRenderer::reload_shaders()
 	{
-		const auto& logical_device = core_->get_logical_device();
+		const auto &logical_device = core_->get_logical_device();
 		{
-			base_shape_shader_.vertex_shader.reset(new Shader(logical_device,SHADER_SPIRV_GLSL_DIR "MeshShading/BasicShape.vert.spv"));
+			base_shape_shader_.vertex_shader.reset(new Shader(logical_device, SHADER_SPIRV_GLSL_DIR "MeshShading/BasicShape.vert.spv"));
 			base_shape_shader_.fragment_shader.reset(new Shader(logical_device, SHADER_SPIRV_GLSL_DIR "MeshShading/BasicShape.frag.spv"));
-			base_shape_shader_.shader_program.reset(new ShaderProgram({base_shape_shader_.vertex_shader.get(),base_shape_shader_.fragment_shader.get()}));
+			base_shape_shader_.shader_program.reset(new ShaderProgram({base_shape_shader_.vertex_shader.get(), base_shape_shader_.fragment_shader.get()}));
 		}
 		{
-			meshlet_shader_.mesh_shader.reset(new Shader(logical_device,SHADER_SPIRV_GLSL_DIR "MeshShading/meshlet.mesh.spv"));
-			meshlet_shader_.fragment_shader.reset(new Shader(logical_device,SHADER_SPIRV_GLSL_DIR "MeshShading/meshlet.frag.spv"));
-			meshlet_shader_.shader_program.reset(new ShaderProgram({meshlet_shader_.mesh_shader.get(), meshlet_shader_.fragment_shader.get()}));
+			meshlet_shader_.task_shader.reset(new Shader(logical_device, SHADER_SPIRV_GLSL_DIR "MeshShading/meshlet.task.spv"));
+			meshlet_shader_.mesh_shader.reset(new Shader(logical_device, SHADER_SPIRV_GLSL_DIR "MeshShading/meshlet.mesh.spv"));
+			meshlet_shader_.fragment_shader.reset(new Shader(logical_device, SHADER_SPIRV_GLSL_DIR "MeshShading/meshlet.frag.spv"));
+			meshlet_shader_.shader_program.reset(new ShaderProgram({meshlet_shader_.task_shader.get(), meshlet_shader_.mesh_shader.get(), meshlet_shader_.fragment_shader.get()}));
 		}
 	}
 
