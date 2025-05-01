@@ -23,22 +23,23 @@ void SimpleMeshShadingRenderer::recreate_swapchain_resources(vk::Extent2D viewpo
 void SimpleMeshShadingRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_info,
                                              const lz::Camera &camera, const lz::Camera &light, lz::Scene *scene, GLFWwindow *window)
 {
-	core_->get_render_graph()->add_pass(lz::RenderGraph::RenderPassDesc()
-	                                        .set_color_attachments({{frame_info.swapchain_image_view_proxy_id, vk::AttachmentLoadOp::eClear}})
-	                                        .set_render_area_extent(viewport_extent_)
-	                                        .set_record_func([this](lz::RenderGraph::RenderPassContext context) {
-		                                        auto shader_program = shader_program_.get();
-		                                        auto pipeline_info  = this->core_->get_pipeline_cache()->bind_graphics_pipeline(
-                                                    context.get_command_buffer(),
-                                                    context.get_render_pass()->get_handle(),
-                                                    lz::DepthSettings::disabled(),
-                                                    {lz::BlendSettings::opaque()},
-                                                    lz::VertexDeclaration(),
-                                                    vk::PrimitiveTopology::eTriangleList,
-                                                    shader_program);
+	auto render_graph = core_->get_render_graph();
+	render_graph->add_pass(lz::RenderGraph::RenderPassDesc()
+	                           .set_color_attachments({{frame_info.swapchain_image_view_proxy_id, vk::AttachmentLoadOp::eClear}})
+	                           .set_render_area_extent(viewport_extent_)
+	                           .set_record_func([this](lz::RenderGraph::RenderPassContext context) {
+		                           auto shader_program = shader_program_.get();
+		                           auto pipeline_info  = this->core_->get_pipeline_cache()->bind_graphics_pipeline(
+                                       context.get_command_buffer(),
+                                       context.get_render_pass()->get_handle(),
+                                       lz::DepthSettings::disabled(),
+                                       {lz::BlendSettings::opaque()},
+                                       lz::VertexDeclaration(),
+                                       vk::PrimitiveTopology::eTriangleList,
+                                       shader_program);
 
-		                                        context.get_command_buffer().drawMeshTasksEXT(1, 1, 1, core_->get_dynamic_loader());
-	                                        }));
+		                           context.get_command_buffer().drawMeshTasksEXT(1, 1, 1, core_->get_dynamic_loader());
+	                           }));
 }
 
 void SimpleMeshShadingRenderer::reload_shaders()

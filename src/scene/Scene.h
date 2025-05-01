@@ -29,7 +29,7 @@ struct Object
 	glm::vec3 emissive_color;
 	bool      is_shadow_receiver;
 
-	// 在全局缓冲区中的偏移量
+	// Offset in global buffers
 	uint32_t global_vertex_offset;
 	uint32_t global_index_offset;
 };
@@ -117,9 +117,9 @@ class Scene
 	std::unique_ptr<lz::StagedBuffer> draw_call_buffer_;
 	std::unique_ptr<lz::StagedBuffer> draw_indirect_buffer_;
 
-	size_t global_indices_count_;
-	size_t global_vertices_count_;
-	size_t global_meshlet_count_;
+	uint32_t global_indices_count_;
+	uint32_t global_vertices_count_;
+	uint32_t global_meshlet_count_;
 
 	lz::VertexDeclaration vertex_decl_;
 	lz::Core             *core_;

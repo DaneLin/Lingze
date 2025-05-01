@@ -24,12 +24,43 @@ App::App(const std::string &app_name, int width, int height) :
 	// Initialize default camera and light positions
 	camera_.pos = glm::vec3(0.0f, 0.5f, -2.0f);
 	light_.pos  = glm::vec3(0.0f, 0.5f, -2.0f);
+
+	// Add default instance extensions required by GLFW
+	add_instance_extension("VK_KHR_surface");
+	add_instance_extension("VK_KHR_win32_surface");
+
+	// Add default device extensions
+	add_device_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 }
 
 // Destructor
 App::~App()
 {
 	cleanup();
+}
+
+// Add instance extension
+void App::add_instance_extension(const std::string &name, bool optional)
+{
+	instance_extensions_.emplace_back(name, optional);
+}
+
+// Add device extension
+void App::add_device_extension(const std::string &name, bool optional)
+{
+	device_extensions_.emplace_back(name, optional);
+}
+
+// Clear all instance extensions
+void App::clear_instance_extensions()
+{
+	instance_extensions_.clear();
+}
+
+// Clear all device extensions
+void App::clear_device_extensions()
+{
+	device_extensions_.clear();
 }
 
 // Run the application
@@ -97,17 +128,35 @@ bool App::init()
 	// Set window resize callback function
 	glfwSetFramebufferSizeCallback(window_, framebuffer_resize_callback);
 
-	// Set up Vulkan instance and window
-	const char *glfw_extensions[]    = {"VK_KHR_surface", "VK_KHR_win32_surface"};
-	uint32_t    glfw_extension_count = std::size(glfw_extensions);
+	// Prepare instance extensions
+	std::vector<const char *> instance_extension_names;
+	for (const auto &ext : instance_extensions_)
+	{
+		instance_extension_names.push_back(ext.name.c_str());
+	}
 
+	// Window setup for surface creation
 	WindowDesc window_desc = {};
 	window_desc.h_instance = GetModuleHandle(NULL);
 	window_desc.h_wnd      = glfwGetWin32Window(window_);
 
 	// Create Vulkan core
 	bool enable_debugging = true;
-	core_                 = std::make_unique<Core>(glfw_extensions, glfw_extension_count, &window_desc, enable_debugging);
+
+	// Prepare device extensions
+	std::vector<const char *> device_extension_names;
+	for (const auto &ext : device_extensions_)
+	{
+		device_extension_names.push_back(ext.name.c_str());
+	}
+
+	// Create the Core with our extension lists
+	core_ = std::make_unique<Core>(
+	    instance_extension_names.data(),
+	    static_cast<uint32_t>(instance_extension_names.size()),
+	    &window_desc,
+	    enable_debugging,
+	    device_extension_names);
 
 	// Load scene
 	if (!load_scene())
@@ -252,6 +301,8 @@ void App::render_ui()
 		ImGui::Text("v: live reload shaders");
 
 		ImGui::Checkbox("Show performance", &show_performance);
+
+		// TODO: Add more status
 	}
 	ImGui::End();
 }

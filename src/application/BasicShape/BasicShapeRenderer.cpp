@@ -38,8 +38,7 @@ void BasicShapeRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_
 
 	render_graph->add_pass(lz::RenderGraph::RenderPassDesc()
 	                           .set_color_attachments({{frame_info.swapchain_image_view_proxy_id, vk::AttachmentLoadOp::eClear}})
-	                           .set_depth_attachment(frame_resource->depth_stencil_proxy_.image_view_proxy.get().id(),
-	                                                 vk::AttachmentLoadOp::eClear)
+	                           .set_depth_attachment(frame_resource->depth_stencil_proxy_.image_view_proxy.get().id(), vk::AttachmentLoadOp::eClear)
 	                           .set_render_area_extent(viewport_extent_)
 	                           .set_record_func([&](lz::RenderGraph::RenderPassContext context) {
 		                           const auto shader_program = base_shape_shader_.shader_program.get();

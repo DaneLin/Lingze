@@ -15,8 +15,9 @@
 namespace lz
 {
 Core::Core(const char **instance_extensions, const uint32_t instance_extensions_count,
-           const WindowDesc *compatible_window_desc,
-           const bool        enable_debugging)
+           const WindowDesc                *compatible_window_desc,
+           const bool                       enable_debugging,
+           const std::vector<const char *> &device_extensions_input)
 {
 	std::vector<const char *>
 	                          res_instance_extensions(instance_extensions, instance_extensions + instance_extensions_count);
@@ -39,13 +40,6 @@ Core::Core(const char **instance_extensions, const uint32_t instance_extensions_
 	}
 	this->physical_device_ = find_physical_device(instance_.get());
 
-	// std::cout << "Supported extensions:\n";
-	// auto extensions = physicalDevice.enumerateDeviceExtensionProperties();
-	// for (auto extension : extensions)
-	// {
-	//   std::cout << "  " << extension.extensionName << "\n";
-	// }
-
 	if (compatible_window_desc)
 	{
 		vk::UniqueSurfaceKHR compatible_surface;
@@ -56,8 +50,25 @@ Core::Core(const char **instance_extensions, const uint32_t instance_extensions_
 		this->queue_family_indices_ = find_queue_family_indices(physical_device_, compatible_surface.get());
 	}
 
-	std::vector<const char *> device_extensions;
-	device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	// Initialize device extensions with input list
+	std::vector<const char *> device_extensions = device_extensions_input;
+
+	// Ensure swapchain extension is included
+	bool has_swapchain = false;
+	for (const auto &ext : device_extensions)
+	{
+		if (strcmp(ext, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0)
+		{
+			has_swapchain = true;
+			break;
+		}
+	}
+
+	if (!has_swapchain)
+	{
+		device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+	}
+
 	this->logical_device_ = create_logical_device(physical_device_, queue_family_indices_, device_extensions,
 	                                              validation_layers);
 	this->graphics_queue_ = get_device_queue(logical_device_.get(), queue_family_indices_.graphics_family_index);
@@ -80,8 +91,7 @@ void Core::clear_caches() const
 	this->pipeline_cache_->clear();
 }
 
-std::unique_ptr<Swapchain> Core::create_swapchain(WindowDesc window_desc, uint32_t images_count,
-                                                  vk::PresentModeKHR preferred_mode)
+std::unique_ptr<Swapchain> Core::create_swapchain(WindowDesc window_desc, uint32_t images_count, vk::PresentModeKHR preferred_mode)
 {
 	// auto swapchain = std::make_unique<Swapchain>(instance_.get(), physical_device_, logical_device_.get(),
 	//                                              window_desc, images_count, queue_family_indices_,
@@ -250,33 +260,211 @@ vk::PhysicalDevice Core::find_physical_device(const vk::Instance instance)
 {
 	const std::vector<vk::PhysicalDevice> physical_devices = instance.enumeratePhysicalDevices();
 	std::cout << "Found " << physical_devices.size() << " physical device(s)\n";
-	vk::PhysicalDevice physical_device = nullptr;
 
-	bool has_discrete_gpu = false;
+	if (physical_devices.empty())
+	{
+		throw std::runtime_error("Failed to find any GPU with Vulkan support");
+	}
+
+	// Rate each physical device and select the best one
+	struct DeviceCandidate
+	{
+		vk::PhysicalDevice device;
+		int                score;
+	};
+
+	std::vector<DeviceCandidate> candidates;
+
+	// Required device extensions
+	std::vector<const char *> required_extensions = {
+	    VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
 	for (const auto &device : physical_devices)
 	{
-		vk::PhysicalDeviceProperties device_properties = device.getProperties();
-		std::cout << "  Physical device found: " << device_properties.deviceName;
-		vk::PhysicalDeviceFeatures device_features = device.getFeatures();
+		vk::PhysicalDeviceProperties       device_properties = device.getProperties();
+		vk::PhysicalDeviceFeatures         device_features   = device.getFeatures();
+		vk::PhysicalDeviceMemoryProperties memory_properties = device.getMemoryProperties();
 
-		if (device_properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
+		std::cout << "  Physical device found: " << device_properties.deviceName << "\n";
+
+		// Check if device supports graphics queue family
+		const std::vector<vk::QueueFamilyProperties> queue_families     = device.getQueueFamilyProperties();
+		bool                                         has_graphics_queue = false;
+
+		for (const auto &queue_family : queue_families)
 		{
-			has_discrete_gpu = true;
-			physical_device  = device;
-		}
-		else
-		{
-			if (!has_discrete_gpu)
+			if (queue_family.queueFlags & vk::QueueFlagBits::eGraphics)
 			{
-				physical_device = device;
+				has_graphics_queue = true;
+				break;
 			}
 		}
 
-		std::cout << "\n";
+		if (!has_graphics_queue)
+		{
+			std::cout << "    Device does not support graphics operations. Skipping.\n";
+			continue;
+		}
+
+		// Check device extension support
+		auto                  available_extensions = device.enumerateDeviceExtensionProperties();
+		std::set<std::string> required_extensions_set(required_extensions.begin(), required_extensions.end());
+
+		for (const auto &extension : available_extensions)
+		{
+			required_extensions_set.erase(extension.extensionName);
+		}
+
+		if (!required_extensions_set.empty())
+		{
+			std::cout << "    Device does not support required extensions. Skipping.\n";
+			continue;
+		}
+
+		// Initialize device score
+		int score = 0;
+
+		// Score based on device type
+		switch (device_properties.deviceType)
+		{
+			case vk::PhysicalDeviceType::eDiscreteGpu:
+				score += 1000;        // Discrete GPU gets highest score
+				break;
+			case vk::PhysicalDeviceType::eIntegratedGpu:
+				score += 500;        // Integrated GPU gets second highest
+				break;
+			case vk::PhysicalDeviceType::eVirtualGpu:
+				score += 200;
+				break;
+			case vk::PhysicalDeviceType::eCpu:
+				score += 100;
+				break;
+			default:
+				score += 10;
+				break;
+		}
+
+		// Score based on device limits
+		score += device_properties.limits.maxImageDimension2D / 1024;        // Image dimension limits
+
+		// Score based on maximum compute workgroup count
+		score += device_properties.limits.maxComputeWorkGroupCount[0] / 64;
+
+		// Consider maximum texture size
+		score += device_properties.limits.maxImageArrayLayers / 8;
+
+		// Consider driver version
+		score += device_properties.driverVersion / 10000;
+
+		// Consider Vulkan API version
+		score += VK_VERSION_MAJOR(device_properties.apiVersion) * 10;
+		score += VK_VERSION_MINOR(device_properties.apiVersion) * 5;
+
+		// consider device memory
+		uint64_t device_memory = 0;
+		for (uint32_t i = 0; i < memory_properties.memoryHeapCount; i++)
+		{
+			if (memory_properties.memoryHeaps[i].flags & vk::MemoryHeapFlagBits::eDeviceLocal)
+			{
+				device_memory = memory_properties.memoryHeaps[i].size;
+				score += static_cast<int>(device_memory / (1024 * 1024 * 1024));        // Add 1 point per GB of VRAM
+				break;
+			}
+		}
+
+		// convert device type to string for display
+		std::string device_type_str;
+		switch (device_properties.deviceType)
+		{
+			case vk::PhysicalDeviceType::eDiscreteGpu:
+				device_type_str = "Discrete GPU";
+				break;
+			case vk::PhysicalDeviceType::eIntegratedGpu:
+				device_type_str = "Integrated GPU";
+				break;
+			case vk::PhysicalDeviceType::eVirtualGpu:
+				device_type_str = "Virtual GPU";
+				break;
+			case vk::PhysicalDeviceType::eCpu:
+				device_type_str = "CPU";
+				break;
+			case vk::PhysicalDeviceType::eOther:
+				device_type_str = "Other";
+				break;
+			default:
+				device_type_str = "Unknown";
+				break;
+		}
+
+		std::cout << "    Type: " << device_type_str
+		          << ", Memory: " << (device_memory / (1024 * 1024)) << " MB"
+		          << ", Score: " << score << "\n";
+
+		candidates.push_back({device, score});
 	}
-	if (!physical_device)
-		throw std::runtime_error("Failed to find physical device");
-	return physical_device;
+
+	// sort the candidates by score in descending order
+	std::sort(candidates.begin(), candidates.end(),
+	          [](const DeviceCandidate &a, const DeviceCandidate &b) {
+		          return a.score > b.score;
+	          });
+
+	// select the device with the highest score
+	if (candidates.empty())
+	{
+		throw std::runtime_error("Failed to find suitable physical device");
+	}
+
+	vk::PhysicalDevice                 best_device     = candidates[0].device;
+	vk::PhysicalDeviceProperties       best_properties = best_device.getProperties();
+	vk::PhysicalDeviceMemoryProperties best_memory     = best_device.getMemoryProperties();
+
+	// get device type string
+	std::string device_type_str;
+	switch (best_properties.deviceType)
+	{
+		case vk::PhysicalDeviceType::eDiscreteGpu:
+			device_type_str = "Discrete GPU";
+			break;
+		case vk::PhysicalDeviceType::eIntegratedGpu:
+			device_type_str = "Integrated GPU";
+			break;
+		case vk::PhysicalDeviceType::eVirtualGpu:
+			device_type_str = "Virtual GPU";
+			break;
+		case vk::PhysicalDeviceType::eCpu:
+			device_type_str = "CPU";
+			break;
+		case vk::PhysicalDeviceType::eOther:
+			device_type_str = "Other";
+			break;
+		default:
+			device_type_str = "Unknown";
+			break;
+	}
+
+	// calculate device local memory
+	uint64_t device_local_memory = 0;
+	for (uint32_t i = 0; i < best_memory.memoryHeapCount; i++)
+	{
+		if (best_memory.memoryHeaps[i].flags & vk::MemoryHeapFlagBits::eDeviceLocal)
+		{
+			device_local_memory += best_memory.memoryHeaps[i].size;
+		}
+	}
+
+	std::cout << "Selected physical device: " << best_properties.deviceName
+	          << " (Score: " << candidates[0].score << ")\n"
+	          << "  Device type: " << device_type_str << "\n"
+	          << "  API version: " << VK_VERSION_MAJOR(best_properties.apiVersion) << "."
+	          << VK_VERSION_MINOR(best_properties.apiVersion) << "."
+	          << VK_VERSION_PATCH(best_properties.apiVersion) << "\n"
+	          << "  Driver version: " << best_properties.driverVersion << "\n"
+	          << "  Vendor ID: " << best_properties.vendorID << "\n"
+	          << "  Device ID: " << best_properties.deviceID << "\n"
+	          << "  Device local memory: " << (device_local_memory / (1024 * 1024)) << " MB\n";
+
+	return best_device;
 }
 
 QueueFamilyIndices Core::find_queue_family_indices(const vk::PhysicalDevice physical_device,
@@ -319,72 +507,63 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 		queue_create_infos.push_back(queue_create_info);
 	}
 
-	// check if the device supports mesh shader extension
-	auto extensions                                 = physical_device.enumerateDeviceExtensionProperties();
-	bool shader_draw_parameters_extension_supported = false;
-	mesh_shader_supported_                          = false;
-	for (const auto &extension : extensions)
+	// Get all supported device extensions
+	auto supported_extensions = physical_device.enumerateDeviceExtensionProperties();
+
+	// Check if requested extensions are supported
+	std::vector<const char *> enabled_extensions;
+	for (const auto &ext_name : device_extensions)
 	{
-		if (strcmp(extension.extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME) == 0)
+		bool extension_found = false;
+		for (const auto &supported_ext : supported_extensions)
 		{
-			mesh_shader_supported_ = true;
-			// only add the extension if the device supports it
-			device_extensions.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
-			std::cout << "Mesh Shader extension supported, adding to device extensions\n";
+			if (strcmp(supported_ext.extensionName, ext_name) == 0)
+			{
+				extension_found = true;
+				enabled_extensions.push_back(ext_name);
+
+				if (strcmp(supported_ext.extensionName, "VK_EXT_MESH_SHADER_EXTENSION_NAME") == 0)
+				{
+					mesh_shader_supported_ = true;
+				}
+			}
 		}
-		// Check for shader draw parameters extension
-		if (strcmp(extension.extensionName, VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME) == 0)
+
+		if (!extension_found)
 		{
-			shader_draw_parameters_extension_supported = true;
-			device_extensions.push_back(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME);
-			std::cout << "Shader Draw Parameters extension supported, adding to device extensions\n";
+			throw std::runtime_error("Device extension " + std::string(ext_name) + " is not supported by the physical device");
 		}
 	}
 
-	auto device_features = vk::PhysicalDeviceFeatures()
-	                           .setFragmentStoresAndAtomics(true)
-	                           .setVertexPipelineStoresAndAtomics(true)
-	                           .setMultiDrawIndirect(true);        // Enable multiDrawIndirect feature
+	// Request physical device features
+	vk::PhysicalDeviceFeatures device_features;
+	device_features.setMultiDrawIndirect(true);
 
-	auto device_create_info = vk::DeviceCreateInfo()
-	                              .setQueueCreateInfoCount(uint32_t(queue_create_infos.size()))
-	                              .setPQueueCreateInfos(queue_create_infos.data())
-	                              .setPEnabledFeatures(&device_features)
-	                              .setEnabledExtensionCount(uint32_t(device_extensions.size()))
-	                              .setPpEnabledExtensionNames(device_extensions.data())
-	                              .setEnabledLayerCount(uint32_t(validation_layers.size()))
-	                              .setPpEnabledLayerNames(validation_layers.data());
+	// Setup mesh shader feature structure if needed
+	vk::PhysicalDeviceMeshShaderFeaturesEXT mesh_shader_features;
+	mesh_shader_features.setMeshShader(true);
+	mesh_shader_features.setTaskShader(true);
 
-	auto device_features12 = vk::PhysicalDeviceVulkan12Features()
-	                             .setScalarBlockLayout(true)
-	                             .setDrawIndirectCount(true)
-	                             .setStorageBuffer8BitAccess(true);
+	// Setup device create info
+	vk::DeviceCreateInfo device_create_info;
+	device_create_info.setQueueCreateInfoCount(static_cast<uint32_t>(queue_create_infos.size()))
+	    .setPQueueCreateInfos(queue_create_infos.data())
+	    .setPEnabledFeatures(&device_features)
+	    .setEnabledExtensionCount(static_cast<uint32_t>(enabled_extensions.size()))
+	    .setPpEnabledExtensionNames(enabled_extensions.data())
+	    .setEnabledLayerCount(static_cast<uint32_t>(validation_layers.size()))
+	    .setPpEnabledLayerNames(validation_layers.data());
 
-	// Enable Vulkan 1.1 features including shaderDrawParameters
-	auto device_features11 = vk::PhysicalDeviceVulkan11Features()
-	                             .setShaderDrawParameters(true);
-
+	// Add mesh shader feature to pNext chain if enabled
+	void *pNext = nullptr;
 	if (mesh_shader_supported_)
 	{
-		// create mesh shader feature structure
-		auto mesh_shader_features = vk::PhysicalDeviceMeshShaderFeaturesEXT()
-		                                .setTaskShader(true)
-		                                .setMeshShader(true);
-
-		// build the structure chain, add mesh shader features and Vulkan 1.1 features
-		vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceVulkan11Features, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceMeshShaderFeaturesEXT> chain = {
-		    device_create_info, device_features11, device_features12, mesh_shader_features};
-
-		return physical_device.createDeviceUnique(chain.get<vk::DeviceCreateInfo>());
+		mesh_shader_features.pNext = pNext;
+		pNext                      = &mesh_shader_features;
 	}
-	else
-	{
-		// not supported mesh shader, use the original feature chain with Vulkan 1.1 features
-		vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceVulkan11Features, vk::PhysicalDeviceVulkan12Features> chain = {
-		    device_create_info, device_features11, device_features12};
+	device_create_info.setPNext(pNext);
 
-		return physical_device.createDeviceUnique(chain.get<vk::DeviceCreateInfo>());
-	}
+	return physical_device.createDeviceUnique(device_create_info);
 }
 
 vk::Queue Core::get_device_queue(const vk::Device logical_device, const uint32_t queue_family_index)

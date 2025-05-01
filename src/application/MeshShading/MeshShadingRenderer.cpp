@@ -13,8 +13,7 @@ MeshShadingRenderer::MeshShadingRenderer(lz::Core *core) :
 void MeshShadingRenderer::recreate_scene_resources(lz::Scene *scene)
 {}
 
-void MeshShadingRenderer::recreate_swapchain_resources(
-    vk::Extent2D viewport_extent, size_t in_flight_frames_count)
+void MeshShadingRenderer::recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count)
 {
 	viewport_extent_ = viewport_extent;
 	frame_resource_datum_.clear();
@@ -33,8 +32,7 @@ void MeshShadingRenderer::render_frame(
 	}
 	render_graph->add_pass(
 	    lz::RenderGraph::RenderPassDesc()
-	        .set_color_attachments({{frame_info.swapchain_image_view_proxy_id,
-	                                 vk::AttachmentLoadOp::eClear}})
+	        .set_color_attachments({{frame_info.swapchain_image_view_proxy_id, vk::AttachmentLoadOp::eClear}})
 	        .set_depth_attachment(
 	            frame_resource->depth_stencil_proxy_.image_view_proxy.get().id(),
 	            vk::AttachmentLoadOp::eClear)
@@ -174,25 +172,16 @@ void MeshShadingRenderer::reload_shaders()
 {
 	const auto &logical_device = core_->get_logical_device();
 	{
-		base_shape_shader_.vertex_shader.reset(new Shader(
-		    logical_device, SHADER_GLSL_DIR "MeshShading/BasicShape.vert"));
-		base_shape_shader_.fragment_shader.reset(new Shader(
-		    logical_device, SHADER_GLSL_DIR "MeshShading/BasicShape.frag"));
-		base_shape_shader_.shader_program.reset(
-		    new ShaderProgram({base_shape_shader_.vertex_shader.get(),
-		                       base_shape_shader_.fragment_shader.get()}));
+		base_shape_shader_.vertex_shader.reset(new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/BasicShape.vert"));
+		base_shape_shader_.fragment_shader.reset(new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/BasicShape.frag"));
+		base_shape_shader_.shader_program.reset(new ShaderProgram({base_shape_shader_.vertex_shader.get(), base_shape_shader_.fragment_shader.get()}));
 	}
 	if (core_->mesh_shader_supported())
 	{
-		meshlet_shader_.task_shader.reset(
-		    new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/meshlet.task"));
-		meshlet_shader_.mesh_shader.reset(
-		    new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/meshlet.mesh"));
-		meshlet_shader_.fragment_shader.reset(
-		    new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/meshlet.frag"));
-		meshlet_shader_.shader_program.reset(new ShaderProgram(
-		    {meshlet_shader_.task_shader.get(), meshlet_shader_.mesh_shader.get(),
-		     meshlet_shader_.fragment_shader.get()}));
+		meshlet_shader_.task_shader.reset(new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/meshlet.task"));
+		meshlet_shader_.mesh_shader.reset(new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/meshlet.mesh"));
+		meshlet_shader_.fragment_shader.reset(new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/meshlet.frag"));
+		meshlet_shader_.shader_program.reset(new ShaderProgram({meshlet_shader_.task_shader.get(), meshlet_shader_.mesh_shader.get(), meshlet_shader_.fragment_shader.get()}));
 	}
 }
 

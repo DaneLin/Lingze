@@ -14,7 +14,8 @@ class MeshShadingApp : public lz::App
 	MeshShadingApp() :
 	    lz::App("Lingze Mesh Shading", 1280, 760)
 	{
-		mesh_shading_enabled_ = true;
+		add_device_extension(VK_EXT_MESH_SHADER_EXTENSION_NAME, true);
+		add_device_extension(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME, true);
 	}
 
 	virtual ~MeshShadingApp() override = default;
@@ -29,7 +30,7 @@ class MeshShadingApp : public lz::App
 	virtual std::unique_ptr<lz::render::BaseRenderer> create_renderer() override;
 
   private:
-	bool mesh_shading_enabled_;
+	bool mesh_shading_enabled_ = false;
 };
 
 }        // namespace application

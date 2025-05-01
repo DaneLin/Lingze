@@ -111,8 +111,8 @@ void Scene::iterate_objects(ObjectCallback object_callback)
 void Scene::create_global_buffers()
 {
 	// calc total vertex and index offset
-	size_t total_vertex_size = 0;
-	size_t total_index_size  = 0;
+	uint32_t total_vertex_size = 0;
+	uint32_t total_index_size  = 0;
 	global_vertices_count_   = 0;
 	global_indices_count_    = 0;
 

@@ -22,6 +22,8 @@
 #include <ctime>
 #include <memory>
 #include <sstream>
+#include <string>
+#include <vector>
 
 #include "backend/Core.h"
 
@@ -37,6 +39,17 @@ namespace lz
 class App
 {
   public:
+	// Extension descriptor with optional flag
+	struct Extension
+	{
+		std::string name;
+		bool        optional;
+
+		Extension(const std::string &name, bool optional = false) :
+		    name(name), optional(optional)
+		{}
+	};
+
 	// Constructor
 	App(const std::string &appName = "Lingze App", int width = 1280, int height = 760);
 
@@ -45,6 +58,18 @@ class App
 
 	// Run the application
 	int run();
+
+	// Add instance extension
+	void add_instance_extension(const std::string &name, bool optional = false);
+
+	// Add device extension
+	void add_device_extension(const std::string &name, bool optional = false);
+
+	// Clear all instance extensions
+	void clear_instance_extensions();
+
+	// Clear all device extensions
+	void clear_device_extensions();
 
   protected:
 	// Initialize the application
@@ -102,5 +127,9 @@ class App
 
 	Camera camera_;
 	Camera light_;
+
+	// Instance and device extension lists
+	std::vector<Extension> instance_extensions_;
+	std::vector<Extension> device_extensions_;
 };
 }        // namespace lz

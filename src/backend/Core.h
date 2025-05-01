@@ -21,9 +21,11 @@ class Core
 	// - instanceExtensionsCount: Number of instance extensions
 	// - compatibleWindowDesc: Window descriptor for surface compatibility check
 	// - enableDebugging: Whether to enable Vulkan validation layers
+	// - deviceExtensions: Optional list of device extensions to enable
 	Core(const char **instance_extensions, uint32_t instance_extensions_count,
-	     const WindowDesc *compatible_window_desc,
-	     bool              enable_debugging);
+	     const WindowDesc                *compatible_window_desc,
+	     bool                             enable_debugging,
+	     const std::vector<const char *> &device_extensions = {});
 
 	// Destructor: Cleans up Vulkan resources
 	~Core();
@@ -161,7 +163,7 @@ class Core
 	vk::UniqueCommandPool create_command_pool(vk::Device logical_device, uint32_t family_index);
 
 	// check if the device supports mesh shader extension
-	bool mesh_shader_supported_;
+	bool mesh_shader_supported_ = false;
 
 	// Core Vulkan objects
 	vk::UniqueInstance                                                      instance_;
