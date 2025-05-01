@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <iostream>
+#include "../backend/Logging.h"
 
 // Define entry point macro for quick application entry point generation
 // Usage: LINGZE_MAIN(AppClassName)
@@ -16,12 +17,12 @@
 		}                                                                    \
 		catch (const std::exception &e)                                      \
 		{                                                                    \
-			std::cerr << "Program exception: " << e.what() << std::endl;     \
+			LOGE("Program exception: {}", e.what());                         \
 			return -1;                                                       \
 		}                                                                    \
 		catch (...)                                                          \
 		{                                                                    \
-			std::cerr << "Unknown program exception occurred!" << std::endl; \
+			LOGE("Unknown program exception occurred!");                     \
 			return -1;                                                       \
 		}                                                                    \
 	}

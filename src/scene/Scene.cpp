@@ -2,6 +2,7 @@
 
 #include "backend/Core.h"
 #include "backend/PresentQueue.h"
+#include "../backend/Logging.h"
 
 namespace lz
 {
@@ -72,7 +73,7 @@ Scene::Scene(Json::Value scene_config, lz::Core *core, GeometryTypes geometry_ty
 		std::string mesh_name        = curr_object_node.get("mesh", "<unspecified>").asString();
 		if (name_to_mesh.find(mesh_name) == name_to_mesh.end())
 		{
-			std::cout << "Mesh " << mesh_name << " not specified\n";
+			LOGW("Mesh {} not specified", mesh_name);
 			continue;
 		}
 
@@ -209,7 +210,7 @@ void Scene::create_global_buffers()
 void Scene::create_draw_buffer()
 {
 	// debug code
-	std::cerr << "generating draw indirect buffer\n";
+	LOGD("generating draw indirect buffer");
 	std::vector<vk::DrawIndexedIndirectCommand> draw_commands(objects_.size());
 	std::vector<glm::mat4>                      object_models(objects_.size());
 	// Iterate through objects and record draw commands

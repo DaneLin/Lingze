@@ -1,5 +1,6 @@
 ﻿#include "backend/App.h"
 #include "backend/ImGuiProfilerRenderer.h"
+#include "backend/Logging.h"
 
 #include "imgui.h"
 #include <chrono>
@@ -31,6 +32,8 @@ App::App(const std::string &app_name, int width, int height) :
 
 	// Add default device extensions
 	add_device_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+	spdlog::set_pattern(LOGGER_FORMAT);
 }
 
 // Destructor
@@ -70,7 +73,7 @@ int App::run()
 	{
 		if (!init())
 		{
-			std::cerr << "Application initialization failed!" << '\n';
+			LOGE("Application initialization failed!");
 			return -1;
 		}
 
@@ -98,7 +101,7 @@ int App::run()
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr << "Error: " << e.what() << '\n';
+		LOGE("Error: {}", e.what());
 		return -1;
 	}
 
@@ -111,7 +114,7 @@ bool App::init()
 	// Initialize GLFW
 	if (!glfwInit())
 	{
-		std::cerr << "GLFW initialization failed" << '\n';
+		LOGE("GLFW initialization failed");
 		return false;
 	}
 
@@ -120,7 +123,7 @@ bool App::init()
 	window_ = glfwCreateWindow(window_width_, window_height_, app_name_.c_str(), nullptr, nullptr);
 	if (!window_)
 	{
-		std::cerr << "GLFW window creation failed" << '\n';
+		LOGE("GLFW window creation failed");
 		glfwTerminate();
 		return false;
 	}
@@ -161,7 +164,7 @@ bool App::init()
 	// Load scene
 	if (!load_scene())
 	{
-		std::cerr << "Scene loading failed" << '\n';
+		LOGE("Scene loading failed");
 		return false;
 	}
 
@@ -169,7 +172,7 @@ bool App::init()
 	renderer_ = create_renderer();
 	if (!renderer_)
 	{
-		std::cerr << "Renderer creation failed" << '\n';
+		LOGE("Renderer creation failed");
 		return false;
 	}
 
@@ -193,18 +196,18 @@ bool App::load_scene_from_file(const std::string &config_file_name, lz::Scene::G
 	std::ifstream file_stream(config_file_name);
 	if (!file_stream.is_open())
 	{
-		std::cerr << "Unable to open scene file!" << '\n';
+		LOGE("Unable to open scene file!");
 		return false;
 	}
 
 	bool result = reader.parse(file_stream, config_root);
 	if (!result)
 	{
-		std::cerr << "Error: Failed to parse file " << config_file_name << ": " << reader.getFormattedErrorMessages() << '\n';
+		LOGE("Error: Failed to parse file {}: {}", config_file_name, reader.getFormattedErrorMessages());
 		return false;
 	}
 
-	std::cerr << "File " << config_file_name << " parsed successfully" << '\n';
+	LOGI("File {} parsed successfully", config_file_name);
 	scene_ = std::make_unique<lz::Scene>(config_root["scene"], core_.get(), geo_type);
 
 	return true;
@@ -314,7 +317,7 @@ void App::recreate_swapchain()
 	{
 		if (framebuffer_resized_)
 		{
-			std::cout << "Window resized, recreate swapchain" << '\n';
+			LOGI("Window resized, recreate swapchain");
 			framebuffer_resized_ = false;
 
 			if (in_flight_queue_)
@@ -343,7 +346,7 @@ void App::recreate_swapchain()
 		}
 		else
 		{
-			std::cout << "Create frame queue" << '\n';
+			LOGI("Create frame queue");
 			core_->clear_caches();
 			WindowDesc window_desc = {};
 			window_desc.h_instance = GetModuleHandle(NULL);

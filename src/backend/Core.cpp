@@ -11,6 +11,7 @@
 #include "RenderGraph.h"
 #include "Surface.h"
 #include "Swapchain.h"
+#include "Logging.h"
 
 namespace lz
 {
@@ -251,7 +252,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Core::debug_message_callback(
     const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
     void                                       *p_user_data)
 {
-	std::cerr << "validation layer: " << p_callback_data->pMessage << '\n';
+	// std::cerr << "validation layer: " << p_callback_data->pMessage << '\n';
+	LOGI("validation layer : {}", p_callback_data->pMessage);
 
 	return VK_FALSE;
 }
@@ -259,7 +261,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Core::debug_message_callback(
 vk::PhysicalDevice Core::find_physical_device(const vk::Instance instance)
 {
 	const std::vector<vk::PhysicalDevice> physical_devices = instance.enumeratePhysicalDevices();
-	std::cout << "Found " << physical_devices.size() << " physical device(s)\n";
+	LOGI("Found {} physical device(s)", physical_devices.size());
 
 	if (physical_devices.empty())
 	{
@@ -285,7 +287,7 @@ vk::PhysicalDevice Core::find_physical_device(const vk::Instance instance)
 		vk::PhysicalDeviceFeatures         device_features   = device.getFeatures();
 		vk::PhysicalDeviceMemoryProperties memory_properties = device.getMemoryProperties();
 
-		std::cout << "  Physical device found: " << device_properties.deviceName << "\n";
+		LOGI("  Physical device found : {}", device_properties.deviceName.data());
 
 		// Check if device supports graphics queue family
 		const std::vector<vk::QueueFamilyProperties> queue_families     = device.getQueueFamilyProperties();
@@ -302,7 +304,7 @@ vk::PhysicalDevice Core::find_physical_device(const vk::Instance instance)
 
 		if (!has_graphics_queue)
 		{
-			std::cout << "    Device does not support graphics operations. Skipping.\n";
+			LOGI("    Device does not support graphics operations. Skipping.");
 			continue;
 		}
 
@@ -317,7 +319,7 @@ vk::PhysicalDevice Core::find_physical_device(const vk::Instance instance)
 
 		if (!required_extensions_set.empty())
 		{
-			std::cout << "    Device does not support required extensions. Skipping.\n";
+			LOGI("    Device does not support required extensions. Skipping.");
 			continue;
 		}
 
@@ -396,9 +398,10 @@ vk::PhysicalDevice Core::find_physical_device(const vk::Instance instance)
 				break;
 		}
 
-		std::cout << "    Type: " << device_type_str
-		          << ", Memory: " << (device_memory / (1024 * 1024)) << " MB"
-		          << ", Score: " << score << "\n";
+		LOGI("    Type: {}, Memory: {} MB, Score: {}", 
+			device_type_str, 
+			(device_memory / (1024 * 1024)), 
+			score);
 
 		candidates.push_back({device, score});
 	}
@@ -453,16 +456,18 @@ vk::PhysicalDevice Core::find_physical_device(const vk::Instance instance)
 		}
 	}
 
-	std::cout << "Selected physical device: " << best_properties.deviceName
-	          << " (Score: " << candidates[0].score << ")\n"
-	          << "  Device type: " << device_type_str << "\n"
-	          << "  API version: " << VK_VERSION_MAJOR(best_properties.apiVersion) << "."
-	          << VK_VERSION_MINOR(best_properties.apiVersion) << "."
-	          << VK_VERSION_PATCH(best_properties.apiVersion) << "\n"
-	          << "  Driver version: " << best_properties.driverVersion << "\n"
-	          << "  Vendor ID: " << best_properties.vendorID << "\n"
-	          << "  Device ID: " << best_properties.deviceID << "\n"
-	          << "  Device local memory: " << (device_local_memory / (1024 * 1024)) << " MB\n";
+	LOGI("Selected physical device: {} (Score: {})", 
+		best_properties.deviceName.data(),
+		candidates[0].score);
+	LOGI("  Device type: {}", device_type_str);
+	LOGI("  API version: {}.{}.{}", 
+		VK_VERSION_MAJOR(best_properties.apiVersion),
+		VK_VERSION_MINOR(best_properties.apiVersion),
+		VK_VERSION_PATCH(best_properties.apiVersion));
+	LOGI("  Driver version: {}", best_properties.driverVersion);
+	LOGI("  Vendor ID: {}", best_properties.vendorID);
+	LOGI("  Device ID: {}", best_properties.deviceID);
+	LOGI("  Device local memory: {} MB", (device_local_memory / (1024 * 1024)));
 
 	return best_device;
 }
@@ -492,8 +497,7 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
                                              std::vector<const char *> device_extensions,
                                              std::vector<const char *> validation_layers)
 {
-	std::set<uint32_t> unique_queue_family_indices = {
-	    family_indices.graphics_family_index, family_indices.present_family_index};
+	std::set<uint32_t> unique_queue_family_indices = {family_indices.graphics_family_index, family_indices.present_family_index};
 
 	std::vector<vk::DeviceQueueCreateInfo> queue_create_infos;
 	float                                  queue_priority = 1.0f;
@@ -505,6 +509,12 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 		                             .setPQueuePriorities(&queue_priority);
 
 		queue_create_infos.push_back(queue_create_info);
+	}
+
+	LOGI("Device extensions will be enabled:");
+	for (const auto &ext : device_extensions)
+	{
+		LOGI("  {}", ext);
 	}
 
 	// Get all supported device extensions
@@ -534,6 +544,8 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 			throw std::runtime_error("Device extension " + std::string(ext_name) + " is not supported by the physical device");
 		}
 	}
+
+	
 
 	// Request physical device features
 	vk::PhysicalDeviceFeatures device_features;

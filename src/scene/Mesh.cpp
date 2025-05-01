@@ -1,6 +1,7 @@
 #include "Mesh.h"
 #include "meshoptimizer.h"
 #include "tiny_obj_loader.h"
+#include "../backend/Logging.h"
 #include <iostream>
 
 namespace tinyobj
@@ -28,21 +29,21 @@ MeshData::MeshData(const std::string file_name, glm::vec3 scale)
 	std::string warn;
 	std::string err;
 
-	std::cerr << "Loading mesh :" << file_name << '\n';
+	LOGI("Loading mesh: {}", file_name);
 	bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, file_name.c_str(), nullptr);
 
 	if (!warn.empty())
 	{
-		std::cerr << "Warning : " << warn << '\n';
+		LOGW("Warning: {}", warn);
 	}
 	if (!ret)
 	{
-		std::cerr << "Error : " << err << '\n';
+		LOGE("Error: {}", err);
 		throw std::runtime_error("Failed to load mesh");
 	}
 	else
 	{
-		std::cerr << "Loaded mesh : " << file_name << '\n';
+		LOGI("Loaded mesh: {}", file_name);
 	}
 
 	std::vector<Vertex> triangle_vertices;

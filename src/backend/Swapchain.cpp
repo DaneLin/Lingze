@@ -1,4 +1,5 @@
 #include "Swapchain.h"
+#include "Logging.h"
 
 #include "Image.h"
 #include "ImageView.h"
@@ -91,7 +92,7 @@ bool Swapchain::recreate(vk::Extent2D new_size)
 	}
 	catch (vk::SystemError &err)
 	{
-		std::cerr << "Failed to recreate swapchain: " << err.what() << std::endl;
+		LOGE("Failed to recreate swapchain: {}", err.what());
 		return false;
 	}
 

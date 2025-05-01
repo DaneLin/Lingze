@@ -1,4 +1,5 @@
 #include "ShaderProgram.h"
+#include "Logging.h"
 
 #include "ShaderModule.h"
 
@@ -933,7 +934,7 @@ const std::vector<uint32_t> Shader::get_bytecode(std::string filename)
 	}
 	else
 	{
-		std::cerr << "Compiling GLSL shader: " << filename << std::endl;
+		LOGI("Compiling GLSL shader: {}", filename);
 		// Handle GLSL source file - compile to SPIR-V using glslang
 		// Initialize glslang
 		initializeGlslang();
@@ -991,7 +992,7 @@ const std::vector<uint32_t> Shader::get_bytecode(std::string filename)
 		// Generate SPIR-V
 		std::vector<uint32_t> spirv;
 		glslang::GlslangToSpv(*program.getIntermediate(stage), spirv);
-		std::cerr << "SPIR-V generated for shader: " << filename << std::endl;
+		LOGD("SPIR-V generated for shader: {}", filename);
 		return spirv;
 	}
 }

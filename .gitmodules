@@ -10,3 +10,9 @@
 [submodule "deps/glslang"]
 	path = deps/glslang
 	url = https://github.com/KhronosGroup/glslang.git
+[submodule "deps/spdlog"]
+	path = deps/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "deps/fmt"]
+	path = deps/fmt
+	url = https://github.com/fmtlib/fmt.git
