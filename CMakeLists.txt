@@ -1,7 +1,7 @@
 ﻿# CMakeList.txt: CMake project for Lingze, includes source code and defines
 # project-specific logic.
 #
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.10)
 
 # Enable hot reload for MSVC compiler if supported.
 if (POLICY CMP0141)

@@ -12,7 +12,7 @@ namespace lz::application
 		std::string config_file_name = SCENE_DIR "SponzaScene.json";
 		bool result = load_scene_from_file(config_file_name, lz::Scene::GeometryTypes::eTriangles);
 
-		if (result && core_->mesh_shader_supported())
+		if (result)
 		{
 			scene_->create_global_buffers();
 			scene_->create_draw_buffer();

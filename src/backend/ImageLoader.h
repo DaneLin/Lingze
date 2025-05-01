@@ -32,7 +32,7 @@ namespace lz
 
 	static ImageTexelData create_test_cube_texel_data()
 	{
-		constexpr glm::uvec3 size = {64, 64, 1};
+		glm::uvec3 size = glm::uvec3(64, 64, 1);
 		ImageTexelData texel_data;
 		texel_data.layers_count = 6;
 		texel_data.format = vk::Format::eR8G8B8A8Snorm;

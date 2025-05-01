@@ -251,38 +251,28 @@ namespace lz
 		const std::vector<vk::PhysicalDevice> physical_devices = instance.enumeratePhysicalDevices();
 		std::cout << "Found " << physical_devices.size() << " physical device(s)\n";
 		vk::PhysicalDevice physical_device = nullptr;
+
+		bool has_discrete_gpu = false;
 		for (const auto& device : physical_devices)
 		{
 			vk::PhysicalDeviceProperties device_properties = device.getProperties();
 			std::cout << "  Physical device found: " << device_properties.deviceName;
 			vk::PhysicalDeviceFeatures device_features = device.getFeatures();
 
-			// check if the device supports mesh shader extension
-			bool mesh_shader_supported = false;
-			auto extensions = device.enumerateDeviceExtensionProperties();
-			for (const auto& extension : extensions)
+			if (device_properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
 			{
-				if (strcmp(extension.extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME) == 0)
-				{
-					mesh_shader_supported_ = true;
-					break;
-				}
-			}
-			
-			if (mesh_shader_supported_)
-			{
-				std::cout << " (Mesh Shader Supported)";
+				has_discrete_gpu = true;
+				physical_device = device;
 			}
 			else
 			{
-				std::cout << " (Mesh Shader NOT Supported)";
+				if (!has_discrete_gpu)
+				{
+					physical_device = device;
+				}
 			}
 
-			if (device_properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
-			{
-				physical_device = device;
-				std::cout << " <-- Using this device";
-			}
+
 			std::cout << "\n";
 		}
 		if (!physical_device)
@@ -337,6 +327,7 @@ namespace lz
 		// check if the device supports mesh shader extension
 		auto extensions = physical_device.enumerateDeviceExtensionProperties();
 		bool shader_draw_parameters_extension_supported = false;
+		mesh_shader_supported_ = false;
 		for (const auto& extension : extensions)
 		{
 			if (strcmp(extension.extensionName, VK_EXT_MESH_SHADER_EXTENSION_NAME) == 0)
