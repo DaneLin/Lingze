@@ -8,6 +8,9 @@
 
 namespace lz
 {
+/**
+ * @brief Meshlet is used to store the meshlet information for each mesh
+ */
 struct Meshlet
 {
 	uint32_t data_offset;
@@ -16,6 +19,47 @@ struct Meshlet
 	uint8_t  vertex_count;
 };
 
+/**
+ * @brief MeshInfo is used to store the mesh information for each mesh
+ */
+struct alignas(16) MeshInfo
+{
+	glm::vec4 sphere_bound;         // bounding sphere, xyz = center, w = radius
+	uint32_t  vertex_offset;        // vertex offset in the buffer
+	uint32_t  index_offset;         // index offset in the buffer
+	uint32_t  index_count;          // number of indices
+};
+
+/**
+ * @brief MeshDraw is used to store the draw call information for each mesh
+ */
+#pragma pack(push, 1)
+struct MeshDraw
+{
+	uint32_t mesh_index;
+	glm::mat4 model_matrix;
+};
+#pragma pack(pop)
+
+/**
+ * @brief MeshDrawCommand is used to store the draw call command for each mesh
+ */
+
+struct MeshDrawCommand
+{
+	// VkDrawIndexedIndirectCommand
+	uint32_t index_count;
+	uint32_t instance_count;
+	uint32_t first_index;
+	uint32_t vertex_offset;
+	uint32_t first_instance;
+
+	uint32_t draw_index;
+};
+
+/**
+ * @brief MeshData is used to store the mesh data for each mesh
+ */
 struct MeshData
 {
 	MeshData();
@@ -33,10 +77,12 @@ struct MeshData
 	static MeshData generate_point_mesh_sized(MeshData src_mesh, size_t points_per_triangle_count);
 
 	void append_meshlets(std::vector<Meshlet> &meshlets_datum, std::vector<uint32_t> &meshlet_data_datum, const uint32_t vertex_offset);
-
+/**
+ * @brief Vertex is used to store the vertex information for each mesh
+ */
 #pragma pack(push, 1)
-	struct Vertex
-	{
+struct Vertex
+{
 		glm::vec3 pos;
 		glm::vec3 normal;
 		glm::vec2 uv;
@@ -45,6 +91,10 @@ struct MeshData
 
 	static Vertex triangle_vertex_sample(Vertex triangle_vertices[3], glm::vec2 rand_val);
 
+	// bounding sphere
+	glm::vec4 sphere_bound;
+
+	// use uint32_t as index type
 	using IndexType = uint32_t;
 	std::vector<Vertex>    vertices;
 	std::vector<IndexType> indices;
@@ -54,6 +104,9 @@ struct MeshData
 	vk::PrimitiveTopology primitive_topology;
 };
 
+/**
+ * @brief Mesh is used to store the mesh data for each mesh
+ */
 struct Mesh
 {
 	Mesh(const MeshData &mesh_data, vk::PhysicalDevice physical_device, vk::Device logical_device,
@@ -68,5 +121,8 @@ struct Mesh
 	size_t   vertices_count;
 
 	vk::PrimitiveTopology primitive_topology;
+
+	// index of the mesh in the global mesh array
+	uint32_t global_mesh_index;
 };
 }        // namespace lz

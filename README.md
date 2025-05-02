@@ -128,6 +128,7 @@ cmake --build .
 
 - **开源引擎和框架**
   - [LegitEngine](https://github.com/Raikiri/LegitEngine) - 一个基于Vulkan的现代渲染引擎  
+  - [Xihe](https://github.com/zoheth/Xihe) - 整合了最先进技术的现代渲染引擎
   - [Filament](https://github.com/google/filament) - Google的物理渲染引擎
   - [Granite](https://github.com/Themaister/Granite) - 现代Vulkan渲染引擎
   - [V-EZ](https://github.com/GPUOpen-LibrariesAndSDKs/V-EZ) - 简化Vulkan开发
@@ -273,6 +274,7 @@ The following documentation and repositories were referenced during development:
 
 - **Open Source Engines and Frameworks**
   - [LegitEngine](https://github.com/Raikiri/LegitEngine) - A modern rendering engine based on Vulkan
+  - [Xihe](https://github.com/zoheth/Xihe) - A modern rendering engine base on most advanced graphics technique
   - [Filament](https://github.com/google/filament) - Google's physically-based rendering engine
   - [Granite](https://github.com/Themaister/Granite) - Modern Vulkan rendering engine
   - [V-EZ](https://github.com/GPUOpen-LibrariesAndSDKs/V-EZ) - Simplified Vulkan development

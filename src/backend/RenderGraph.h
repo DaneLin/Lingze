@@ -86,7 +86,7 @@ class ImageViewCache
   public:
 	struct ImageViewKey
 	{
-		lz::ImageData        *image;
+		lz::ImageData *       image;
 		ImageSubresourceRange subresource_range;
 		std::string           debug_name;
 
@@ -182,7 +182,7 @@ class RenderGraph
 		void set_debug_name(std::string name) const;
 
 	  private:
-		RenderGraph     *render_graph_;
+		RenderGraph *    render_graph_;
 		ImageViewProxyId image_view_proxy_id_;
 		friend class RenderGraph;
 	};
@@ -198,7 +198,7 @@ class RenderGraph
 		BufferProxyId id() const;
 
 	  private:
-		RenderGraph  *render_graph_;
+		RenderGraph * render_graph_;
 		BufferProxyId buffer_proxy_id_;
 		friend class RenderGraph;
 	};
@@ -210,11 +210,9 @@ class RenderGraph
 	using ImageViewProxyUnique = UniqueHandle<ImageViewHandleInfo, RenderGraph>;
 	using BufferProxyUnique    = UniqueHandle<BufferHandleInfo, RenderGraph>;
 
-	ImageProxyUnique add_image(vk::Format format, uint32_t mips_count, uint32_t array_layers_count, glm::uvec2 size,
-	                           vk::ImageUsageFlags usage_flags);
+	ImageProxyUnique add_image(vk::Format format, uint32_t mips_count, uint32_t array_layers_count, glm::uvec2 size, vk::ImageUsageFlags usage_flags);
 
-	ImageProxyUnique add_image(vk::Format format, uint32_t mips_count, uint32_t array_layers_count, glm::uvec3 size,
-	                           vk::ImageUsageFlags usage_flags);
+	ImageProxyUnique add_image(vk::Format format, uint32_t mips_count, uint32_t array_layers_count, glm::uvec3 size, vk::ImageUsageFlags usage_flags);
 
 	ImageProxyUnique add_external_image(lz::ImageData *image);
 
@@ -222,8 +220,7 @@ class RenderGraph
 	                                    uint32_t mip_levels_count,
 	                                    uint32_t base_array_layer, uint32_t array_layers_count);
 
-	ImageViewProxyUnique add_external_image_view(lz::ImageView      *image_view,
-	                                             lz::ImageUsageTypes usage_type = lz::ImageUsageTypes::eUnknown);
+	ImageViewProxyUnique add_external_image_view(lz::ImageView *image_view, lz::ImageUsageTypes usage_type = lz::ImageUsageTypes::eUnknown);
 
   private:
 	void delete_image(ImageProxyId image_id);
@@ -299,7 +296,7 @@ class RenderGraph
 		RenderPassDesc &set_depth_attachment(
 		    ImageViewProxyId     depth_attachment_view_proxy_id,
 		    vk::AttachmentLoadOp load_op     = vk::AttachmentLoadOp::eDontCare,
-		    vk::ClearValue       _clearValue = vk::ClearDepthStencilValue(1.0f, 0));
+		    vk::ClearValue       clear_value = vk::ClearDepthStencilValue(1.0f, 0));
 
 		RenderPassDesc &set_depth_attachment(Attachment depth_attachment);
 
@@ -422,8 +419,7 @@ class RenderGraph
 	void execute(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu_profiler, lz::GpuProfiler *gpu_profiler);
 
   private:
-	void flush_external_images(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu_profiler,
-	                           lz::GpuProfiler *gpu_profiler);
+	void flush_external_images(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu_profiler, lz::GpuProfiler *gpu_profiler);
 
 	static bool image_view_contains_subresource(lz::ImageView *image_view, lz::ImageData *image_data,
 	                                            uint32_t mip_level,
@@ -453,7 +449,7 @@ class RenderGraph
 
 	void flush_buffer_transition_barriers(lz::Buffer *buffer, BufferUsageTypes src_usage_type,
 	                                      BufferUsageTypes dst_usage_type, vk::PipelineStageFlags &src_stage,
-	                                      vk::PipelineStageFlags               &dst_stage,
+	                                      vk::PipelineStageFlags &              dst_stage,
 	                                      std::vector<vk::BufferMemoryBarrier> &buffer_barriers);
 
 	void add_buffer_barriers(lz::Buffer *buffer, BufferUsageTypes dstUsageType, size_t dst_task_index,
@@ -470,7 +466,7 @@ class RenderGraph
 		};
 
 		ImageCache::ImageKey image_key;
-		lz::ImageData       *external_image;
+		lz::ImageData *      external_image;
 
 		lz::ImageData *resolved_image;
 
@@ -490,7 +486,7 @@ class RenderGraph
 		ImageProxyId          image_proxy_id;
 		ImageSubresourceRange subresource_range;
 
-		lz::ImageView      *external_view;
+		lz::ImageView *     external_view;
 		lz::ImageUsageTypes external_usage_type;
 
 		lz::ImageView *resolved_image_view;
@@ -508,8 +504,8 @@ class RenderGraph
 		};
 
 		BufferCache::BufferKey buffer_key;
-		lz::Buffer            *external_buffer;
-		lz::Buffer            *resolved_buffer;
+		lz::Buffer *           external_buffer;
+		lz::Buffer *           resolved_buffer;
 
 		Types type;
 	};
@@ -540,12 +536,12 @@ class RenderGraph
 	ImageViewCache     image_view_cache_;
 	ImageViewProxyPool image_view_proxies_;
 	void               resolve_image_views();
-	lz::ImageView     *get_resolved_image_view(size_t task_index, ImageViewProxyId image_view_proxy_id);
+	lz::ImageView *    get_resolved_image_view(size_t task_index, ImageViewProxyId image_view_proxy_id);
 
 	BufferCache     buffer_cache_;
 	BufferProxyPool buffer_proxies_;
 	void            resolve_buffers();
-	lz::Buffer     *get_resolved_buffer(size_t task_index, BufferProxyId buffer_proxy_id);
+	lz::Buffer *    get_resolved_buffer(size_t task_index, BufferProxyId buffer_proxy_id);
 
 	std::vector<Task> tasks_;
 	void              add_task(Task task);

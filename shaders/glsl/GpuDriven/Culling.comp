@@ -1,0 +1,73 @@
+// Using compute shader to do gpu driven culling and draw command generation
+#version 450
+
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_GOOGLE_include_directive : require
+
+#include "Mesh.h"
+
+// TODO: AMD wavefront size
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+
+// uniform buffer
+layout(set = 0, binding = 0, scalar) uniform UboData
+{
+	CullData cull_data;
+};
+
+// storage buffer for meshes
+layout(set = 0, binding = 1) readonly buffer MeshData
+{
+	Mesh meshes[];
+};
+
+// storage buffer for mesh draws
+layout(set = 0, binding = 2, scalar) readonly buffer MeshDrawData
+{
+	MeshDraw mesh_draws[];
+};
+
+// storage buffer for draw commands
+layout(set = 0, binding = 3) writeonly buffer VisibleMeshDrawCommand
+{
+	MeshDrawCommand draw_cmds[];
+};
+
+// storage buffer for visible mesh draw commands count
+layout(set = 0, binding = 4, scalar) writeonly buffer VisibleMeshDrawCommandCount
+{
+	uint visible_mesh_draw_cmd_count;
+};
+
+void main()
+{
+    uint draw_index = gl_GlobalInvocationID.x;
+
+    if (draw_index >= cull_data.draw_count)
+    {
+        return;
+    }
+
+    if (draw_index == 0)
+    {
+        visible_mesh_draw_cmd_count = 0;
+    }
+
+    MeshDraw mesh_draw = mesh_draws[draw_index];
+    Mesh mesh = meshes[mesh_draw.mesh_index];
+
+    bool is_visible = true;
+
+    // TODO: culling
+    if (is_visible)
+    {
+        uint draw_cmd_index = atomicAdd(visible_mesh_draw_cmd_count, 1);
+
+        draw_cmds[draw_cmd_index].draw_index = draw_index;
+        draw_cmds[draw_cmd_index].index_count = mesh.index_count;
+        draw_cmds[draw_cmd_index].instance_count = 1;
+        draw_cmds[draw_cmd_index].first_index = mesh.index_offset;
+        draw_cmds[draw_cmd_index].vertex_offset = mesh.vertex_offset;
+        draw_cmds[draw_cmd_index].first_instance = 0;
+    }
+}

@@ -550,6 +550,10 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 	// Request physical device features
 	vk::PhysicalDeviceFeatures device_features;
 	device_features.setMultiDrawIndirect(true);
+	
+	vk::PhysicalDeviceVulkan12Features device_vulkan12_features;
+	device_vulkan12_features.setScalarBlockLayout(true);
+	device_vulkan12_features.setDrawIndirectCount(true);
 
 	// Setup mesh shader feature structure if needed
 	vk::PhysicalDeviceMeshShaderFeaturesEXT mesh_shader_features;
@@ -567,7 +571,7 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 	    .setPpEnabledLayerNames(validation_layers.data());
 
 	// Add mesh shader feature to pNext chain if enabled
-	void *pNext = nullptr;
+	void *pNext = &device_vulkan12_features;
 	if (mesh_shader_supported_)
 	{
 		mesh_shader_features.pNext = pNext;

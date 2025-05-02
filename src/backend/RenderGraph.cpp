@@ -117,7 +117,7 @@ lz::Buffer *BufferCache::get_buffer(BufferKey buffer_key)
 		    physical_device_,
 		    logical_device_,
 		    buffer_key.element_size * buffer_key.elements_count,
-		    vk::BufferUsageFlagBits::eStorageBuffer,
+		    vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndirectBuffer,
 		    vk::MemoryPropertyFlagBits::eDeviceLocal);
 		cache_entry.buffers.emplace_back(std::move(new_buffer));
 	}
@@ -158,7 +158,7 @@ RenderGraph::ImageViewHandleInfo::ImageViewHandleInfo()
 {
 }
 
-RenderGraph::ImageViewHandleInfo::ImageViewHandleInfo(RenderGraph     *render_graph,
+RenderGraph::ImageViewHandleInfo::ImageViewHandleInfo(RenderGraph *    render_graph,
                                                       ImageViewProxyId image_view_proxy_id)
 {
 	this->render_graph_        = render_graph;
@@ -265,7 +265,7 @@ RenderGraph::ImageViewProxyUnique RenderGraph::add_image_view(ImageProxyId image
 	return ImageViewProxyUnique(ImageViewHandleInfo(this, image_view_proxies_.add(std::move(image_view_proxy))));
 }
 
-RenderGraph::ImageViewProxyUnique RenderGraph::add_external_image_view(lz::ImageView      *image_view,
+RenderGraph::ImageViewProxyUnique RenderGraph::add_external_image_view(lz::ImageView *     image_view,
                                                                        lz::ImageUsageTypes usage_type)
 {
 	ImageViewProxy image_view_proxy;
@@ -399,11 +399,11 @@ RenderGraph::RenderPassDesc &RenderGraph::RenderPassDesc::set_color_attachments(
 }
 
 RenderGraph::RenderPassDesc &RenderGraph::RenderPassDesc::set_depth_attachment(
-    ImageViewProxyId depth_attachment_view_proxy_id, vk::AttachmentLoadOp load_op, vk::ClearValue _clearValue)
+    ImageViewProxyId depth_attachment_view_proxy_id, vk::AttachmentLoadOp load_op, vk::ClearValue clear_value)
 {
 	this->depth_attachment.image_view_proxy_id = depth_attachment_view_proxy_id;
 	this->depth_attachment.load_op             = load_op;
-	this->depth_attachment.clear_value         = _clearValue;
+	this->depth_attachment.clear_value         = clear_value;
 	return *this;
 }
 
@@ -685,7 +685,7 @@ void RenderGraph::execute(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu
 				auto &render_pass_desc = render_pass_descs_[task.index];
 				auto  profiler_task    = create_profiler_task(render_pass_desc);
 				auto  gpu_task         = gpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color,
-				                                                         vk::PipelineStageFlagBits::eBottomOfPipe);
+                                                                vk::PipelineStageFlagBits::eBottomOfPipe);
 				auto  cpu_task         = cpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color);
 
 				RenderPassContext pass_context;
@@ -817,7 +817,7 @@ void RenderGraph::execute(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu
 				auto &compute_pass_desc = compute_pass_descs_[task.index];
 				auto  profiler_task     = create_profiler_task(compute_pass_desc);
 				auto  gpu_task          = gpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color,
-				                                                          vk::PipelineStageFlagBits::eBottomOfPipe);
+                                                                vk::PipelineStageFlagBits::eBottomOfPipe);
 				auto  cpu_task          = cpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color);
 
 				PassContext pass_context;
@@ -886,7 +886,7 @@ void RenderGraph::execute(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu
 				auto &transfer_pass_desc = transfer_pass_descs_[task.index];
 				auto  profiler_task      = create_profiler_task(transfer_pass_desc);
 				auto  gpu_task           = gpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color,
-				                                                           vk::PipelineStageFlagBits::eBottomOfPipe);
+                                                                vk::PipelineStageFlagBits::eBottomOfPipe);
 				auto  cpu_task           = cpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color);
 
 				PassContext pass_context;
@@ -963,7 +963,7 @@ void RenderGraph::execute(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu
 				auto &image_present_desc = image_present_descs_[task.index];
 				auto  profiler_task      = create_profiler_task(image_present_desc);
 				auto  gpu_task           = gpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color,
-				                                                           vk::PipelineStageFlagBits::eBottomOfPipe);
+                                                                vk::PipelineStageFlagBits::eBottomOfPipe);
 				auto  cpu_task           = cpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color);
 
 				vk::PipelineStageFlags              src_stage;
@@ -986,7 +986,7 @@ void RenderGraph::execute(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu
 				auto &frame_sync_desc = frame_sync_begin_descs_[task.index];
 				auto  profiler_task   = create_profiler_task(frame_sync_desc);
 				auto  gpu_task        = gpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color,
-				                                                        vk::PipelineStageFlagBits::eBottomOfPipe);
+                                                                vk::PipelineStageFlagBits::eBottomOfPipe);
 				auto  cpu_task        = cpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color);
 
 				std::vector<vk::ImageMemoryBarrier> image_barriers;
@@ -1003,7 +1003,7 @@ void RenderGraph::execute(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu
 				auto &frame_sync_desc = frame_sync_end_descs_[task.index];
 				auto  profiler_task   = create_profiler_task(frame_sync_desc);
 				auto  gpu_task        = gpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color,
-				                                                        vk::PipelineStageFlagBits::eBottomOfPipe);
+                                                                vk::PipelineStageFlagBits::eBottomOfPipe);
 				auto  cpu_task        = cpu_profiler->start_scoped_task(profiler_task.name, profiler_task.color);
 
 				std::vector<vk::ImageMemoryBarrier> image_barriers;
@@ -1275,8 +1275,8 @@ BufferUsageTypes RenderGraph::get_last_buffer_usage_type(size_t task_index, lz::
 
 void RenderGraph::flush_image_transition_barriers(lz::ImageData *image_data, vk::ImageSubresourceRange range,
                                                   ImageUsageTypes src_usage_type, ImageUsageTypes dst_usage_type,
-                                                  vk::PipelineStageFlags              &src_stage,
-                                                  vk::PipelineStageFlags              &dst_stage,
+                                                  vk::PipelineStageFlags &             src_stage,
+                                                  vk::PipelineStageFlags &             dst_stage,
                                                   std::vector<vk::ImageMemoryBarrier> &image_barriers)
 {
 	if (is_image_barrier_needed(src_usage_type, dst_usage_type) && range.layerCount > 0 && range.levelCount > 0)
@@ -1314,7 +1314,7 @@ void RenderGraph::flush_image_transition_barriers(lz::ImageData *image_data, vk:
 
 void RenderGraph::add_image_transition_barriers(lz::ImageView *image_view, ImageUsageTypes dst_usage_type,
                                                 size_t dst_task_index, vk::PipelineStageFlags &src_stage,
-                                                vk::PipelineStageFlags              &dst_stage,
+                                                vk::PipelineStageFlags &             dst_stage,
                                                 std::vector<vk::ImageMemoryBarrier> &image_barriers)
 {
 	auto range = vk::ImageSubresourceRange()
@@ -1356,8 +1356,8 @@ void RenderGraph::add_image_transition_barriers(lz::ImageView *image_view, Image
 
 void RenderGraph::flush_buffer_transition_barriers(lz::Buffer *buffer, BufferUsageTypes src_usage_type,
                                                    BufferUsageTypes                      dst_usage_type,
-                                                   vk::PipelineStageFlags               &src_stage,
-                                                   vk::PipelineStageFlags               &dst_stage,
+                                                   vk::PipelineStageFlags &              src_stage,
+                                                   vk::PipelineStageFlags &              dst_stage,
                                                    std::vector<vk::BufferMemoryBarrier> &buffer_barriers)
 {
 	if (is_buffer_barrier_needed(src_usage_type, dst_usage_type))
