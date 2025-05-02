@@ -7,63 +7,61 @@
 
 namespace lz
 {
-	class GpuProfiler
+class GpuProfiler
+{
+  public:
+	GpuProfiler(vk::PhysicalDevice physical_device, vk::Device logical_device, uint32_t max_timestamps_count);
+
+	size_t start_task(const std::string &task_name, uint32_t task_color, vk::PipelineStageFlagBits pipeline_stage_flags);
+
+	void end_task(size_t task_id) const;
+
+	size_t start_frame(vk::CommandBuffer command_buffer);
+
+	void end_frame(size_t frame_id);
+
+	const std::vector<ProfilerTask> &get_profiler_tasks();
+
+  private:
+	struct TaskHandleInfo
 	{
-	public:
-		GpuProfiler(vk::PhysicalDevice physical_device, vk::Device logical_device, uint32_t max_timestamps_count);
+		TaskHandleInfo(GpuProfiler *profiler, size_t task_id);
 
-		size_t start_task(const std::string& task_name, uint32_t task_color,
-		                  vk::PipelineStageFlagBits pipeline_stage_flags);
+		void reset() const;
 
-		void end_task(size_t task_id) const;
-
-		size_t start_frame(vk::CommandBuffer command_buffer);
-
-		void end_frame(size_t frame_id);
-
-		const std::vector<ProfilerTask>& get_profiler_tasks();
-
-	private:
-		struct TaskHandleInfo
-		{
-			TaskHandleInfo(GpuProfiler* profiler, size_t task_id);
-
-			void reset() const;
-
-			GpuProfiler* profiler;
-			size_t task_id;
-		};
-
-		struct FrameHandleInfo
-		{
-			FrameHandleInfo(GpuProfiler* profiler, size_t frame_id);
-
-			void reset() const;
-
-			GpuProfiler* profiler;
-			size_t frame_id;
-		};
-
-	public:
-		using ScopedTask = UniqueHandle<TaskHandleInfo, GpuProfiler>;
-
-		ScopedTask start_scoped_task(const std::string& task_name, uint32_t task_color,
-		                             vk::PipelineStageFlagBits pipeline_stage_flags);
-
-		using ScopedFrame = UniqueHandle<FrameHandleInfo, GpuProfiler>;
-
-		ScopedFrame start_scoped_frame(vk::CommandBuffer command_buffer);
-
-		const std::vector<lz::ProfilerTask>& get_profiler_data();
-
-		void gather_timestamps();
-
-	private:
-		vk::Device logical_device_;
-		TimestampQuery timestamp_query_;
-		size_t frame_index_;
-		std::vector<lz::ProfilerTask> profiler_tasks_;
-		vk::CommandBuffer frame_command_buffer_;
-		friend struct UniqueHandle<TaskHandleInfo, GpuProfiler>;
+		GpuProfiler *profiler;
+		size_t       task_id;
 	};
-}
+
+	struct FrameHandleInfo
+	{
+		FrameHandleInfo(GpuProfiler *profiler, size_t frame_id);
+
+		void reset() const;
+
+		GpuProfiler *profiler;
+		size_t       frame_id;
+	};
+
+  public:
+	using ScopedTask = UniqueHandle<TaskHandleInfo, GpuProfiler>;
+
+	ScopedTask start_scoped_task(const std::string &task_name, uint32_t task_color, vk::PipelineStageFlagBits pipeline_stage_flags);
+
+	using ScopedFrame = UniqueHandle<FrameHandleInfo, GpuProfiler>;
+
+	ScopedFrame start_scoped_frame(vk::CommandBuffer command_buffer);
+
+	const std::vector<lz::ProfilerTask> &get_profiler_data();
+
+	void gather_timestamps();
+
+  private:
+	vk::Device                    logical_device_;
+	TimestampQuery                timestamp_query_;
+	size_t                        frame_index_;
+	std::vector<lz::ProfilerTask> profiler_tasks_;
+	vk::CommandBuffer             frame_command_buffer_;
+	friend struct UniqueHandle<TaskHandleInfo, GpuProfiler>;
+};
+}        // namespace lz
