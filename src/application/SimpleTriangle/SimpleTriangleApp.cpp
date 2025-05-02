@@ -4,12 +4,6 @@
 
 namespace lz::application
 {
-
-bool SimpleMeshShadingApp::load_scene()
-{
-	return true;
-}
-
 std::unique_ptr<lz::render::BaseRenderer> SimpleMeshShadingApp::create_renderer()
 {
 	// Use simple renderer

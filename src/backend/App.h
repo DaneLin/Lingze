@@ -76,7 +76,7 @@ class App
 	virtual bool init();
 
 	// Load scene
-	virtual bool load_scene() = 0;
+	virtual bool load_scene();
 
 	// Create renderer
 	virtual std::unique_ptr<render::BaseRenderer> create_renderer() = 0;
@@ -105,8 +105,8 @@ class App
 
 	// Member variables
 	std::string app_name_;
-	int         window_width_;
-	int         window_height_;
+	uint32_t    window_width_;
+	uint32_t    window_height_;
 
 	GLFWwindow *window_ = nullptr;
 	static bool framebuffer_resized_;

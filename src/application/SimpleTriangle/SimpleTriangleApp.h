@@ -12,15 +12,12 @@ class SimpleMeshShadingApp : public lz::App
 {
   public:
 	SimpleMeshShadingApp() :
-	    lz::App("Lingze Simple Triangle", 1280, 760)
+	    lz::App("Lingze Simple Triangle Example", 1280, 760)
 	{}
 
 	virtual ~SimpleMeshShadingApp() = default;
 
   protected:
-	// Load scene
-	virtual bool load_scene() override;
-
 	// Create renderer
 	virtual std::unique_ptr<lz::render::BaseRenderer> create_renderer() override;
 };
