@@ -41,10 +41,10 @@ void GpuDrivenRenderer::render_frame(
 #pragma pack(push, 1)
 	struct CullData
 	{
-		glm::mat4  view;
-		float P00, P11, znear, zfar;        // symmetirc projection parameters
-		float frustum[4];                   // data for left / right / top / bottom
-		uint32_t   draw_count;                   // number of draw commands
+		glm::mat4 view;
+		float     P00, P11, znear, zfar;        // symmetirc projection parameters
+		float     frustum[4];                   // data for left / right / top / bottom
+		uint32_t  draw_count;                   // number of draw commands
 	};
 #pragma pack(pop)
 
@@ -55,39 +55,54 @@ void GpuDrivenRenderer::render_frame(
 	        .set_record_func([&](lz::RenderGraph::PassContext context) {
 		        auto pipeline_info = core_->get_pipeline_cache()->bind_compute_pipeline(context.get_command_buffer(), culling_shader_.compute_shader.get());
 
-				const lz::DescriptorSetLayoutKey *shader_data_set_info = culling_shader_.compute_shader->get_set_info(k_shader_data_set_index);
-				
-				// uniform data
-				auto shader_data = frame_info.memory_pool->begin_set(shader_data_set_info);
-				{
-					auto cull_data = frame_info.memory_pool->get_uniform_buffer_data<CullData>("UboData");
+		        const lz::DescriptorSetLayoutKey *shader_data_set_info = culling_shader_.compute_shader->get_set_info(k_shader_data_set_index);
+
+		        // uniform data
+		        auto shader_data = frame_info.memory_pool->begin_set(shader_data_set_info);
+		        {
+			        auto cull_data        = frame_info.memory_pool->get_uniform_buffer_data<CullData>("UboData");
 			        cull_data->draw_count = scene->get_draw_count();
-				}
-				
-				frame_info.memory_pool->end_set();
-				
-				std::vector<lz::StorageBufferBinding> storage_buffer_bindings;
-				storage_buffer_bindings.push_back(
+		        }
+
+		        frame_info.memory_pool->end_set();
+
+		        std::vector<lz::StorageBufferBinding> storage_buffer_bindings;
+		        storage_buffer_bindings.push_back(
 		            shader_data_set_info->make_storage_buffer_binding(
 		                "MeshData", &scene->get_global_mesh_info_buffer()));
 		        storage_buffer_bindings.push_back(
 		            shader_data_set_info->make_storage_buffer_binding(
 		                "MeshDrawData", &scene->get_global_mesh_draw_buffer()));
-				auto visible_mesh_draw_proxy = context.get_buffer(scene_resource_->visible_mesh_draw_proxy_.get().id());
-				storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("VisibleMeshDrawCommand", visible_mesh_draw_proxy));
-				auto visible_mesh_count_proxy = context.get_buffer(scene_resource_->visible_mesh_count_proxy_.get().id());
-				storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("VisibleMeshDrawCommandCount", visible_mesh_count_proxy));
-				
-				auto shader_data_set = core_->get_descriptor_set_cache()->get_descriptor_set(*shader_data_set_info, shader_data.uniform_buffer_bindings, storage_buffer_bindings, {});
+		        auto visible_mesh_draw_proxy = context.get_buffer(scene_resource_->visible_mesh_draw_proxy_.get().id());
+		        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("VisibleMeshDrawCommand", visible_mesh_draw_proxy));
+		        auto visible_mesh_count_proxy = context.get_buffer(scene_resource_->visible_mesh_count_proxy_.get().id());
+		        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("VisibleMeshDrawCommandCount", visible_mesh_count_proxy));
 
-				//context.get_command_buffer().fillBuffer(visible_mesh_count_proxy->get_handle(), 0, sizeof(uint32_t), 0);
-				
-				context.get_command_buffer().bindDescriptorSets(
+		        auto shader_data_set = core_->get_descriptor_set_cache()->get_descriptor_set(*shader_data_set_info, shader_data.uniform_buffer_bindings, storage_buffer_bindings, {});
+
+		        // Clear visible mesh count buffer
+		        context.get_command_buffer().fillBuffer(
+		            visible_mesh_count_proxy->get_handle(), 0, sizeof(uint32_t), 0);
+
+		        vk::BufferMemoryBarrier clear_barrier = vk::BufferMemoryBarrier()
+		                                                    .setBuffer(visible_mesh_count_proxy->get_handle())
+		                                                    .setSize(sizeof(uint32_t))
+		                                                    .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+		                                                    .setDstAccessMask(vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite | vk::AccessFlagBits::eIndirectCommandRead);
+		        context.get_command_buffer().pipelineBarrier(
+		            vk::PipelineStageFlagBits::eTransfer,
+		            vk::PipelineStageFlagBits::eComputeShader | vk::PipelineStageFlagBits::eDrawIndirect,
+		            vk::DependencyFlags(),
+		            {},
+		            {clear_barrier},
+		            {});
+
+		        context.get_command_buffer().bindDescriptorSets(
 		            vk::PipelineBindPoint::eCompute,
 		            pipeline_info.pipeline_layout, k_shader_data_set_index,
 		            {shader_data_set}, {shader_data.dynamic_offset});
 
-				context.get_command_buffer().dispatch((scene->get_draw_count() + 31)/ 32, 1, 1);
+		        context.get_command_buffer().dispatch((scene->get_draw_count() + 31) / 32, 1, 1);
 	        }));
 
 	// pass 2 : rendering
@@ -98,8 +113,11 @@ void GpuDrivenRenderer::render_frame(
 	            frame_resource->depth_stencil_proxy_.image_view_proxy.get().id(),
 	            vk::AttachmentLoadOp::eClear)
 	        .set_render_area_extent(viewport_extent_)
-			.set_storage_buffers({scene_resource_->visible_mesh_draw_proxy_.get().id(), scene_resource_->visible_mesh_count_proxy_.get().id()})
+	        .set_storage_buffers({scene_resource_->visible_mesh_draw_proxy_.get().id(), scene_resource_->visible_mesh_count_proxy_.get().id()})
 	        .set_record_func([&](lz::RenderGraph::RenderPassContext context) {
+		        auto visible_mesh_draw_proxy  = context.get_buffer(scene_resource_->visible_mesh_draw_proxy_.get().id());
+		        auto visible_mesh_count_proxy = context.get_buffer(scene_resource_->visible_mesh_count_proxy_.get().id());
+
 		        auto shader_program = base_shape_shader_.shader_program.get();
 		        auto pipeline_info  = core_->get_pipeline_cache()->bind_graphics_pipeline(
                     context.get_command_buffer(),
@@ -123,13 +141,10 @@ void GpuDrivenRenderer::render_frame(
 		        }
 		        frame_info.memory_pool->end_set();
 
-				auto visible_mesh_draw_proxy = context.get_buffer(scene_resource_->visible_mesh_draw_proxy_.get().id());
-				auto visible_mesh_count_proxy = context.get_buffer(scene_resource_->visible_mesh_count_proxy_.get().id());
-
 		        // create storage binding
 		        std::vector<lz::StorageBufferBinding> storage_buffer_bindings;
 		        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("VertexBuffer", &scene->get_global_vertex_buffer()));
-				storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("VisibleMeshDrawCommand", visible_mesh_draw_proxy));
+		        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("VisibleMeshDrawCommand", visible_mesh_draw_proxy));
 		        storage_buffer_bindings.push_back(
 		            shader_data_set_info->make_storage_buffer_binding(
 		                "MeshDrawData", &scene->get_global_mesh_draw_buffer()));
@@ -145,17 +160,12 @@ void GpuDrivenRenderer::render_frame(
 		            {shader_data_set}, {shader_data.dynamic_offset});
 
 		        context.get_command_buffer().bindIndexBuffer(scene->get_global_index_buffer(), 0, vk::IndexType::eUint32);
-		        // context.get_command_buffer().drawIndexedIndirect(
-		        //     scene->get_draw_indirect_buffer().get_handle(), 0,
-		        //     uint32_t(scene->get_draw_count()),
-		        //     sizeof(vk::DrawIndexedIndirectCommand));
-				context.get_command_buffer().drawIndexedIndirectCount(
-					visible_mesh_draw_proxy->get_handle(), 0,
-					visible_mesh_count_proxy->get_handle(), 0,
-					uint32_t(scene->get_draw_count()),
-					sizeof(MeshDrawCommand),
-					core_->get_dynamic_loader());
-
+		        context.get_command_buffer().drawIndexedIndirectCount(
+		            visible_mesh_draw_proxy->get_handle(), 0,
+		            visible_mesh_count_proxy->get_handle(), 0,
+		            uint32_t(scene->get_draw_count()),
+		            sizeof(MeshDrawCommand),
+		            core_->get_dynamic_loader());
 	        }));
 }
 

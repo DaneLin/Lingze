@@ -48,11 +48,6 @@ void main()
         return;
     }
 
-    if (draw_index == 0)
-    {
-        visible_mesh_draw_cmd_count = 0;
-    }
-
     MeshDraw mesh_draw = mesh_draws[draw_index];
     Mesh mesh = meshes[mesh_draw.mesh_index];
 
