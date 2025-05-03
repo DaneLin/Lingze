@@ -532,10 +532,11 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 				extension_found = true;
 				enabled_extensions.push_back(ext_name);
 
-				if (strcmp(supported_ext.extensionName, "VK_EXT_MESH_SHADER_EXTENSION_NAME") == 0)
+				if (strcmp(ext_name, "VK_EXT_mesh_shader") == 0)
 				{
 					mesh_shader_supported_ = true;
 				}
+				break;
 			}
 		}
 
