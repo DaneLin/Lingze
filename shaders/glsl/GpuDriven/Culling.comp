@@ -10,7 +10,7 @@
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
 // uniform buffer
-layout(set = 0, binding = 0, scalar) uniform UboData
+layout(std430,set = 0, binding = 0) uniform UboData
 {
 	CullData cull_data;
 };
@@ -51,7 +51,15 @@ void main()
     MeshDraw mesh_draw = mesh_draws[draw_index];
     Mesh mesh = meshes[mesh_draw.mesh_index];
 
+    vec4 center = mesh_draw.model_matrix * vec4(mesh.sphere_bound.xyz,1.0);
+    float radius = mesh.sphere_bound.w;
+
     bool is_visible = true;
+    // the left/top/right/bottom plane culling utilizes frustum symmetry to cull against two planes at the same time
+	// is_visible = is_visible && center.z * cull_data.frustum[1] - abs(center.x) * cull_data.frustum[0] > -radius;
+	// is_visible = is_visible && center.z * cull_data.frustum[3] - abs(center.y) * cull_data.frustum[2] > -radius;
+	// // the near/far plane culling uses camera space Z directly
+	// is_visible = is_visible && center.z + radius > cull_data.znear && center.z - radius < cull_data.zfar;
 
     // TODO: culling
     if (is_visible)

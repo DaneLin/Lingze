@@ -38,15 +38,20 @@ void GpuDrivenRenderer::render_frame(
 		frame_resource.reset(new ViewportResource(render_graph, size));
 	}
 
-#pragma pack(push, 1)
-	struct CullData
+	struct alignas(4) CullData
 	{
-		glm::mat4 view;
 		float     P00, P11, znear, zfar;        // symmetirc projection parameters
 		float     frustum[4];                   // data for left / right / top / bottom
 		uint32_t  draw_count;                   // number of draw commands
 	};
-#pragma pack(pop)
+
+	// TODO: move these parameters to camera;
+	float aspect = static_cast<float>(viewport_extent_.width) / static_cast<float>(viewport_extent_.height);
+	auto  znear         = 0.01f;
+	auto  proj_matrix = glm::perspectiveZO(1.0f, aspect, znear, 1000.0f) * glm::scale(glm::vec3(1.0f, -1.0f, -1.0f));
+	auto  proj_matrix_t = glm::transpose(proj_matrix);
+	glm::vec4 frustum_x = glm::normalize(proj_matrix_t[3] + proj_matrix_t[0]);
+	glm::vec4 frustum_y = glm::normalize(proj_matrix_t[3] + proj_matrix_t[1]);
 
 	// pass 1 : culling
 	render_graph->add_pass(
@@ -61,6 +66,12 @@ void GpuDrivenRenderer::render_frame(
 		        auto shader_data = frame_info.memory_pool->begin_set(shader_data_set_info);
 		        {
 			        auto cull_data        = frame_info.memory_pool->get_uniform_buffer_data<CullData>("UboData");
+			        cull_data->P00        = proj_matrix[0][0];
+			        cull_data->P11        = proj_matrix[1][1];
+					cull_data->frustum[0] = frustum_x.x;
+					cull_data->frustum[1] = frustum_x.z;
+					cull_data->frustum[2] = frustum_y.y;
+					cull_data->frustum[3] = frustum_y.z;
 			        cull_data->draw_count = scene->get_draw_count();
 		        }
 
@@ -132,12 +143,10 @@ void GpuDrivenRenderer::render_frame(
 		        auto shader_data =
 		            frame_info.memory_pool->begin_set(shader_data_set_info);
 		        {
-			        float aspect = static_cast<float>(viewport_extent_.width) / static_cast<float>(viewport_extent_.height);
-
 			        auto shader_data_buffer = frame_info.memory_pool->get_uniform_buffer_data<DataBuffer>("GlobalData");
 			        // same name from shader
 			        shader_data_buffer->view_matrix = glm::inverse(camera.get_transform_matrix());
-			        shader_data_buffer->proj_matrix = glm::perspectiveZO(1.0f, aspect, 0.01f, 1000.0f) * glm::scale(glm::vec3(1.0f, -1.0f, -1.0f));
+			        shader_data_buffer->proj_matrix = proj_matrix;
 		        }
 		        frame_info.memory_pool->end_set();
 

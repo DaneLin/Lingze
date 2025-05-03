@@ -7,7 +7,6 @@ struct Vertex
 
 struct CullData
 {
-	mat4  view;
 	float P00, P11, znear, zfar;        // symmetirc projection parameters
 	float frustum[4];                   // data for left / right / top / bottom
 	uint  draw_count;        // number of draw commands

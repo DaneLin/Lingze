@@ -9,8 +9,8 @@ bool GpuDrivenApp::load_scene()
 {
 	// std::string config_file_name = SCENE_DIR "SingleHornbug.json";
 	// std::string config_file_name = SCENE_DIR "SingleKitten.json";
-	std::string config_file_name = SCENE_DIR "SponzaScene.json";
-	//std::string config_file_name = SCENE_DIR "CubeScene.json";
+	//std::string config_file_name = SCENE_DIR "SponzaScene.json";
+	std::string config_file_name = SCENE_DIR "CubeScene.json";
 	return load_scene_from_file(config_file_name, lz::Scene::GeometryTypes::eTriangles);
 }
 
