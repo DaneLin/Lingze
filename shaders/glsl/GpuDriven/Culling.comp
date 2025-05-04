@@ -1,0 +1,90 @@
+// Using compute shader to do gpu driven culling and draw command generation
+#version 450
+
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_GOOGLE_include_directive : require
+
+#include "Mesh.h"
+
+// TODO: AMD wavefront size
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+
+// uniform buffer
+layout(std430,set = 0, binding = 0) uniform UboData
+{
+	CullData cull_data;
+};
+
+// storage buffer for meshes
+layout(set = 0, binding = 1) readonly buffer MeshData
+{
+	Mesh meshes[];
+};
+
+// storage buffer for mesh draws
+layout(scalar, set = 0, binding = 2) readonly buffer MeshDrawData
+{
+	MeshDraw mesh_draws[];
+};
+
+// storage buffer for draw commands
+layout(set = 0, binding = 3) writeonly buffer VisibleMeshDrawCommand
+{
+	MeshDrawCommand draw_cmds[];
+};
+
+// storage buffer for visible mesh draw commands count
+layout(std430, set = 0, binding = 4) writeonly buffer VisibleMeshDrawCommandCount
+{
+	uint visible_mesh_draw_cmd_count;
+};
+
+void main()
+{
+    uint draw_index = gl_GlobalInvocationID.x;
+
+    if (draw_index >= cull_data.draw_count)
+    {
+        return;
+    }
+
+    MeshDraw mesh_draw = mesh_draws[draw_index];
+    Mesh mesh = meshes[mesh_draw.mesh_index];
+
+    // calculate center in view space
+    vec3 sphere_center = mesh.sphere_bound.xyz;
+    float sphere_radius = mesh.sphere_bound.w;
+    vec3 world_center = (mesh_draw.model_matrix * vec4(sphere_center, 1.0)).xyz;
+    vec3 view_center = (cull_data.view_matrix * vec4(world_center, 1.0)).xyz;
+
+    // calculate maximum scale to get final scale parameter
+    float scale_x = length(vec3(mesh_draw.model_matrix[0][0], mesh_draw.model_matrix[0][1], mesh_draw.model_matrix[0][2]));
+    float scale_y = length(vec3(mesh_draw.model_matrix[1][0], mesh_draw.model_matrix[1][1], mesh_draw.model_matrix[1][2]));
+    float scale_z = length(vec3(mesh_draw.model_matrix[2][0], mesh_draw.model_matrix[2][1], mesh_draw.model_matrix[2][2]));
+    float max_scale = max(max(scale_x, scale_y), scale_z);
+
+    float transformed_radius = sphere_radius * max_scale;
+
+    vec4 center = vec4(view_center, transformed_radius);
+    float radius = center.w;
+
+    bool is_visible = true;
+    // the left/top/right/bottom plane culling utilizes frustum symmetry to cull against two planes at the same time
+	is_visible = is_visible && center.z * cull_data.frustum[1] - abs(center.x) * cull_data.frustum[0] > -radius;
+	is_visible = is_visible && center.z * cull_data.frustum[3] - abs(center.y) * cull_data.frustum[2] > -radius;
+	// the near/far plane culling uses camera space Z directly
+	is_visible = is_visible && center.z + radius > cull_data.znear && center.z - radius < cull_data.zfar;
+
+    // TODO: culling
+    if (is_visible)
+    {
+        uint draw_cmd_index = atomicAdd(visible_mesh_draw_cmd_count, 1);
+
+        draw_cmds[draw_cmd_index].draw_index = draw_index;
+        draw_cmds[draw_cmd_index].index_count = mesh.index_count;
+        draw_cmds[draw_cmd_index].instance_count = 1;
+        draw_cmds[draw_cmd_index].first_index = mesh.index_offset;
+        draw_cmds[draw_cmd_index].vertex_offset = mesh.vertex_offset;
+        draw_cmds[draw_cmd_index].first_instance = 0;
+    }
+}

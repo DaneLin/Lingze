@@ -12,7 +12,7 @@ class SimpleMeshShadingApp : public lz::App
 {
   public:
 	SimpleMeshShadingApp() :
-	    lz::App("Lingze Simple Mesh Shading", 1280, 760)
+	    lz::App("Lingze Simple Mesh Shading Example", 1280, 760)
 	{
 		add_device_extension(VK_EXT_MESH_SHADER_EXTENSION_NAME, true);
 	}
@@ -20,9 +20,6 @@ class SimpleMeshShadingApp : public lz::App
 	virtual ~SimpleMeshShadingApp() = default;
 
   protected:
-	// Load scene
-	virtual bool load_scene() override;
-
 	// Create renderer
 	virtual std::unique_ptr<lz::render::BaseRenderer> create_renderer() override;
 };

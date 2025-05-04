@@ -8,29 +8,27 @@ namespace application
 {
 
 // Define DemoApp class, inherits from App base class
-class BasicShapeApp : public lz::App
+class GpuDrivenApp : public lz::App
 {
   public:
-	BasicShapeApp() :
-	    lz::App("Lingze Basic Shape Example", 1280, 760)
+	GpuDrivenApp() :
+	    lz::App("Lingze Gpu Driven Example", 1280, 760)
 	{
-		// Clear the default instance extensions and set our own
-		clear_instance_extensions();
-		// Add additional device extensions if needed
-		// Add required instance extensions
-		add_instance_extension("VK_KHR_surface", true);
-		add_instance_extension("VK_KHR_win32_surface", true);
 		add_device_extension(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME, true);
 	}
 
-	virtual ~BasicShapeApp() = default;
+	virtual ~GpuDrivenApp() override = default;
 
   protected:
 	// Load scene
 	virtual bool load_scene() override;
 
+	virtual void render_ui() override;
+
 	// Create renderer
 	virtual std::unique_ptr<lz::render::BaseRenderer> create_renderer() override;
+
+  private:
 };
 
 }        // namespace application

@@ -12,7 +12,7 @@ class MeshShadingApp : public lz::App
 {
   public:
 	MeshShadingApp() :
-	    lz::App("Lingze Mesh Shading", 1280, 760)
+	    lz::App("Lingze Mesh Shading Example", 1280, 760)
 	{
 		add_device_extension(VK_EXT_MESH_SHADER_EXTENSION_NAME, true);
 		add_device_extension(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME, true);

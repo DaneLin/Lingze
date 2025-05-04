@@ -11,7 +11,10 @@ MeshShadingRenderer::MeshShadingRenderer(lz::Core *core) :
 }
 
 void MeshShadingRenderer::recreate_scene_resources(lz::Scene *scene)
-{}
+{
+	scene->create_global_buffers(true);
+	scene->create_draw_buffer();
+}
 
 void MeshShadingRenderer::recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count)
 {

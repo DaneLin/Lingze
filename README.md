@@ -85,34 +85,38 @@ cmake --build .
 
 ## 功能实现状态
 
-
-- **渲染特性**
+- **核心渲染功能**
+  - [x] 基础几何渲染
+  - [x] Mesh Shader & Task Shader
+  - [ ] 计算着色器
   - [ ] 渲染图架构
   - [ ] PBR材质系统
   - [ ] 实时阴影
-  - [ ] SSAO
+  - [ ] 环境光遮蔽 (SSAO)
   - [ ] 延迟渲染
-  - [x] Mesh Shader & Task Shader
-  - [ ] 计算着色器
   - [ ] 光线追踪
 
-- **资源系统**
-  - [ ] 自动内存管理
-  - [ ] 资源热重载
+- **渲染优化技术**
+  - [x] 视锥剔除 (Frustum Culling)
+  - [ ] 遮挡剔除 (Occlusion Culling)
+  - [ ] 背面剔除 (Backface Culling)
+  - [ ] 细节层次 (LOD)
+  - [ ] 实例化渲染
 
-- **工具与性能**
-  - [x] 基础ImGui集成
-  - [ ] 高级性能分析
-  - [ ] 多线程命令生成
-
-
-- **场景管理**
+- **场景系统**
   - [x] 网格加载
     - [x] OBJ模型导入
-  - [ ] 高级场景图
+    - [ ] glTF模型导入
+  - [ ] 场景图
   - [ ] 加速结构
-  - [ ] 实例化渲染
   - [ ] 场景编辑器
+
+- **系统与工具**
+  - [x] 基础ImGui集成
+  - [ ] 自动内存管理
+  - [ ] 资源热重载
+  - [ ] 性能分析
+  - [ ] 多线程命令生成
 
 ## 运行截图
 ![Mesh Shading演示](docs/imgs/meshshading.png)
@@ -128,6 +132,7 @@ cmake --build .
 
 - **开源引擎和框架**
   - [LegitEngine](https://github.com/Raikiri/LegitEngine) - 一个基于Vulkan的现代渲染引擎  
+  - [Xihe](https://github.com/zoheth/Xihe) - 整合了最先进技术的现代渲染引擎
   - [Filament](https://github.com/google/filament) - Google的物理渲染引擎
   - [Granite](https://github.com/Themaister/Granite) - 现代Vulkan渲染引擎
   - [V-EZ](https://github.com/GPUOpen-LibrariesAndSDKs/V-EZ) - 简化Vulkan开发
@@ -230,34 +235,38 @@ cmake --build .
 
 ## Feature Implementation Status
 
-
-- **Rendering Features**
-  - [ ] Render graph architecture
-  - [ ] PBR material system
-  - [ ] Real-time shadows
-  - [ ] SSAO
-  - [ ] Deferred rendering
+- **Core Rendering Features**
+  - [x] Basic Geometry Rendering
   - [x] Mesh Shader & Task Shader
-  - [ ] Compute shaders
-  - [ ] Ray tracing
+  - [ ] Compute Shaders
+  - [ ] Render Graph Architecture
+  - [ ] PBR Material System
+  - [ ] Real-time Shadows
+  - [ ] Ambient Occlusion (SSAO)
+  - [ ] Deferred Rendering
+  - [ ] Ray Tracing
 
-- **Resource System**
-  - [ ] Automatic memory management
-  - [ ] Resource hot reloading
+- **Rendering Optimization**
+  - [x] Frustum Culling
+  - [ ] Occlusion Culling
+  - [ ] Backface Culling
+  - [ ] Level of Detail (LOD)
+  - [ ] Instanced Rendering
 
-- **Tools & Performance**
-  - [x] Basic ImGui integration
-  - [ ] Advanced profiling
-  - [ ] Multi-threaded command generation
+- **Scene System**
+  - [x] Mesh Loading
+    - [x] OBJ Model Import
+    - [ ] glTF Model Import
+  - [ ] Scene Graph
+  - [ ] Acceleration Structures
+  - [ ] Scene Editor
 
-
-- **Scene Management**
-  - [x] Mesh loading
-    - [x] OBJ model import
-  - [ ] Advanced scene graph
-  - [ ] Acceleration structures
-  - [ ] Instanced rendering
-  - [ ] Scene editor
+- **Systems & Tools**
+  - [x] Basic ImGui Integration
+  - [ ] Automatic Memory Management
+  - [ ] Resource Hot Reloading
+  - [ ] Performance Profiling
+  - [ ] Multi-threaded Command Generation
 
 ## Screenshots
 ![Mesh Shading Demo](docs/imgs/meshshading.png)
@@ -273,6 +282,7 @@ The following documentation and repositories were referenced during development:
 
 - **Open Source Engines and Frameworks**
   - [LegitEngine](https://github.com/Raikiri/LegitEngine) - A modern rendering engine based on Vulkan
+  - [Xihe](https://github.com/zoheth/Xihe) - A modern rendering engine base on most advanced graphics technique
   - [Filament](https://github.com/google/filament) - Google's physically-based rendering engine
   - [Granite](https://github.com/Themaister/Granite) - Modern Vulkan rendering engine
   - [V-EZ](https://github.com/GPUOpen-LibrariesAndSDKs/V-EZ) - Simplified Vulkan development

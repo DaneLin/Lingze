@@ -346,7 +346,6 @@ void App::recreate_swapchain()
 		}
 		else
 		{
-			LOGI("Create frame queue");
 			core_->clear_caches();
 			WindowDesc window_desc = {};
 			window_desc.h_instance = GetModuleHandle(NULL);
@@ -430,5 +429,10 @@ void App::cleanup()
 	}
 
 	glfwTerminate();
+}
+
+bool App::load_scene()
+{
+	return true;
 }
 }        // namespace lz

@@ -73,17 +73,25 @@ class Scene
 	void iterate_objects(ObjectCallback object_callback);
 
 	// Create global buffers (CPU side)
-	void create_global_buffers();
+	void create_global_buffers(bool build_meshlet = false);
 
-	// Create buffer for draw call
+	// Create indirect buffer for draw call (CPU side)
 	void create_draw_buffer();
+
+	// Create necessary buffers for compute shader to generate draw commands
+	void create_draw_call_info_buffer();
 
 	Buffer    &get_global_vertex_buffer() const;
 	vk::Buffer get_global_index_buffer() const;
 	Buffer    &get_draw_call_buffer() const;
 	Buffer    &get_draw_indirect_buffer() const;
+	Buffer    &get_draw_call_info_buffer() const;
 	Buffer    &get_global_meshlet_buffer() const;
 	Buffer    &get_global_meshlet_data_buffer() const;
+
+	Buffer    &get_global_mesh_info_buffer() const;
+	Buffer    &get_global_mesh_draw_buffer() const;
+	
 	size_t     get_global_vertices_count() const
 	{
 		return global_vertices_count_;
@@ -110,6 +118,13 @@ class Scene
 	// Global vertex buffer and index buffer
 	std::unique_ptr<lz::StagedBuffer> global_vertex_buffer_;
 	std::unique_ptr<lz::StagedBuffer> global_index_buffer_;
+	std::unique_ptr<lz::StagedBuffer> global_mesh_info_buffer_;
+
+	// Draw call info buffer
+	std::unique_ptr<lz::StagedBuffer> draw_call_info_buffer_;
+	std::unique_ptr<lz::StagedBuffer> global_mesh_draw_buffer_;
+
+	// Meshlet buffer and data buffer
 	std::unique_ptr<lz::StagedBuffer> global_meshlet_buffer_;
 	std::unique_ptr<lz::StagedBuffer> global_meshlet_data_buffer_;
 

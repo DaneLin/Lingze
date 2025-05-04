@@ -41,10 +41,10 @@ MeshData::MeshData(const std::string file_name, glm::vec3 scale)
 		LOGE("Error: {}", err);
 		throw std::runtime_error("Failed to load mesh");
 	}
-	else
-	{
-		LOGI("Loaded mesh: {}", file_name);
-	}
+
+	// bounding sphere
+	glm::vec3 min_bound = glm::vec3(std::numeric_limits<float>::infinity());
+	glm::vec3 max_bound = glm::vec3(-std::numeric_limits<float>::infinity());
 
 	std::vector<Vertex> triangle_vertices;
 	for (auto &shape : shapes)
@@ -56,6 +56,9 @@ MeshData::MeshData(const std::string file_name, glm::vec3 scale)
 			    attrib.vertices[3 * index.vertex_index + 0] * scale.x,
 			    attrib.vertices[3 * index.vertex_index + 1] * scale.y,
 			    attrib.vertices[3 * index.vertex_index + 2] * scale.z);
+
+			min_bound = glm::min(min_bound, vertex.pos);
+			max_bound = glm::max(max_bound, vertex.pos);
 
 			if (index.normal_index != -1)
 			{
@@ -101,8 +104,7 @@ MeshData::MeshData(const std::string file_name, glm::vec3 scale)
 	this->vertices = std::move(tmp_vertices);
 	this->indices  = std::move(tmp_indices);
 
-	// TODO: build lod
-	// TODO: build meshlet
+	sphere_bound = glm::vec4(0.5f * (min_bound + max_bound), glm::length(max_bound - min_bound) * 0.5f);
 }
 
 float MeshData::get_triangle_area(glm::vec3 points[3])
@@ -290,7 +292,7 @@ void MeshData::append_meshlets(std::vector<Meshlet> &meshlets_datum, std::vector
 
 	for (auto &meshlet : tmp_meshlets)
 	{
-		size_t data_offset = meshlet_data_datum.size();
+		uint32_t data_offset = uint32_t(meshlet_data_datum.size());
 
 		for (size_t i = 0; i < meshlet.vertex_count; ++i)
 		{
