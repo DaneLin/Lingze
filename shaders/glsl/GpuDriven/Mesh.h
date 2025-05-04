@@ -7,6 +7,7 @@ struct Vertex
 
 struct CullData
 {
+	mat4 view_matrix;           // 视图矩阵，用于将世界坐标转换为视图坐标
 	float P00, P11, znear, zfar;        // symmetirc projection parameters
 	float frustum[4];                   // data for left / right / top / bottom
 	uint  draw_count;        // number of draw commands

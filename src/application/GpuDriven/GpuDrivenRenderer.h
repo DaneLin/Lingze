@@ -24,16 +24,16 @@ class GpuDrivenRenderer final : public BaseRenderer
   private:
 	constexpr static uint32_t k_shader_data_set_index = 0;
 
-#pragma pack(push, 1)
-	struct DataBuffer
-	{
-		glm::mat4 view_matrix;
-		glm::mat4 proj_matrix;
-	};
-#pragma pack(pop)
-
 	struct BasicShapeShader
 	{
+
+#pragma pack(push, 1)
+		struct DataBuffer
+		{
+			glm::mat4 view_matrix;
+			glm::mat4 proj_matrix;
+		};
+#pragma pack(pop)
 		std::unique_ptr<lz::Shader>        vertex_shader;
 		std::unique_ptr<lz::Shader>        fragment_shader;
 		std::unique_ptr<lz::ShaderProgram> shader_program;
