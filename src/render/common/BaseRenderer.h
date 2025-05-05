@@ -3,6 +3,7 @@
 #include "backend/LingzeVK.h"
 #include "backend/PresentQueue.h"
 #include "scene/Scene.h"
+#include "backend/Camera.h"
 
 namespace lz::render
 {
@@ -19,7 +20,7 @@ class BaseRenderer
 	{}
 	
 	// Recreates renderer resources when the scene changes
-	virtual void recreate_scene_resources(lz::Scene *scene)
+	virtual void recreate_scene_resources(lz::JsonScene *scene)
 	{}
 	
 	// Recreates renderer resources when the swapchain is recreated (e.g. window resize)
@@ -27,7 +28,7 @@ class BaseRenderer
 	{}
 	
 	// Main render function called each frame
-	virtual void render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera, const lz::Camera &light, lz::Scene *scene, GLFWwindow *window)
+	virtual void render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera, const lz::Camera &light, lz::JsonScene *scene, GLFWwindow *window)
 	{}
 	
 	// Reloads shader resources (typically called when shaders are modified)

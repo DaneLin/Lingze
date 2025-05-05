@@ -14,7 +14,7 @@ BasicShapeRenderer::BasicShapeRenderer(lz::Core *core) :
 	reload_shaders();
 }
 
-void BasicShapeRenderer::recreate_scene_resources(lz::Scene *scene)
+void BasicShapeRenderer::recreate_scene_resources(lz::JsonScene *scene)
 {
 	// we don't need to recreate scene resources for this renderer
 }
@@ -26,7 +26,7 @@ void BasicShapeRenderer::recreate_swapchain_resources(vk::Extent2D viewport_exte
 }
 
 void BasicShapeRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera,
-                                      const lz::Camera &light, lz::Scene *scene, GLFWwindow *window)
+                                      const lz::Camera &light, lz::JsonScene *scene, GLFWwindow *window)
 {
 	auto  render_graph   = core_->get_render_graph();
 	auto &frame_resource = frame_resource_datum_[render_graph];
@@ -68,29 +68,30 @@ void BasicShapeRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_
 
 		                           const auto draw_call_set_info = shader_program->get_set_info(k_drawcall_data_set_index);
 
-		                           scene->iterate_objects([&](glm::mat4 object_to_world, glm::vec3 albedo_color,
-		                                                      glm::vec3 emissive_color, vk::Buffer vertex_buffer,
-		                                                      vk::Buffer index_buffer, uint32_t vertices_count,
-		                                                      uint32_t indices_count) {
-			                           auto draw_call_data_offset = frame_info.memory_pool->begin_set(draw_call_set_info);
-			                           {
-				                           auto draw_call_data          = frame_info.memory_pool->get_uniform_buffer_data<DrawCallDataBuffer>("draw_call_data");
-				                           draw_call_data->model_matrix = object_to_world;
-			                           }
-			                           frame_info.memory_pool->end_set();
-			                           auto draw_call_set = core_->get_descriptor_set_cache()->get_descriptor_set(*draw_call_set_info, draw_call_data_offset.uniform_buffer_bindings, {}, {});
+								   // TODO: replace with SSBO vertex buffer
+		                           //scene->iterate_objects([&](glm::mat4 object_to_world, glm::vec3 albedo_color,
+		                           //                           glm::vec3 emissive_color, vk::Buffer vertex_buffer,
+		                           //                           vk::Buffer index_buffer, uint32_t vertices_count,
+		                           //                           uint32_t indices_count) {
+			                          // auto draw_call_data_offset = frame_info.memory_pool->begin_set(draw_call_set_info);
+			                          // {
+				                         //  auto draw_call_data          = frame_info.memory_pool->get_uniform_buffer_data<DrawCallDataBuffer>("draw_call_data");
+				                         //  draw_call_data->model_matrix = object_to_world;
+			                          // }
+			                          // frame_info.memory_pool->end_set();
+			                          // auto draw_call_set = core_->get_descriptor_set_cache()->get_descriptor_set(*draw_call_set_info, draw_call_data_offset.uniform_buffer_bindings, {}, {});
 
-			                           // bind shader data set
+			                          // // bind shader data set
 
-			                           context.get_command_buffer().bindDescriptorSets(
-			                               vk::PipelineBindPoint::eGraphics, pipeline_info.pipeline_layout,
-			                               k_shader_data_set_index, {shader_data_set, draw_call_set}, {shader_data.dynamic_offset, draw_call_data_offset.dynamic_offset});
+			                          // context.get_command_buffer().bindDescriptorSets(
+			                          //     vk::PipelineBindPoint::eGraphics, pipeline_info.pipeline_layout,
+			                          //     k_shader_data_set_index, {shader_data_set, draw_call_set}, {shader_data.dynamic_offset, draw_call_data_offset.dynamic_offset});
 
-			                           context.get_command_buffer().bindVertexBuffers(0, {vertex_buffer}, {0});
-			                           context.get_command_buffer().bindIndexBuffer(
-			                               index_buffer, 0, vk::IndexType::eUint32);
-			                           context.get_command_buffer().drawIndexed(indices_count, 1, 0, 0, 0);
-		                           });
+			                          // context.get_command_buffer().bindVertexBuffers(0, {vertex_buffer}, {0});
+			                          // context.get_command_buffer().bindIndexBuffer(
+			                          //     index_buffer, 0, vk::IndexType::eUint32);
+			                          // context.get_command_buffer().drawIndexed(indices_count, 1, 0, 0, 0);
+		                           //});
 	                           }));
 }
 

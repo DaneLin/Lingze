@@ -1,7 +1,7 @@
 #include "Scene.h"
 
-#include "backend/Logging.h"
 #include "backend/Core.h"
+#include "backend/Logging.h"
 #include "backend/PresentQueue.h"
 
 namespace lz
@@ -21,7 +21,7 @@ static glm::uvec3 read_json_vec3_u(Json::Value vectorValue)
 	return glm::uvec3(vectorValue[0].asUInt(), vectorValue[1].asUInt(), vectorValue[2].asUInt());
 }
 
-Scene::Scene(Json::Value scene_config, lz::Core *core, GeometryTypes geometry_type)
+JsonScene::JsonScene(Json::Value scene_config, lz::Core *core, GeometryTypes geometry_type)
 {
 	this->core_ = core;
 
@@ -99,18 +99,18 @@ Scene::Scene(Json::Value scene_config, lz::Core *core, GeometryTypes geometry_ty
 	}
 }
 
-void Scene::iterate_objects(ObjectCallback object_callback)
-{
-	for (auto &object : objects_)
-	{
-		object_callback(object.obj_to_world, object.albedo_color, object.emissive_color,
-		                object.mesh->vertex_buffer->get_buffer().get_handle(),
-		                object.mesh->index_buffer ? object.mesh->index_buffer->get_buffer().get_handle() : nullptr,
-		                uint32_t(object.mesh->vertices_count), uint32_t(object.mesh->indices_count));
-	}
-}
+//void JsonScene::iterate_objects(ObjectCallback object_callback)
+//{
+//	for (auto &object : objects_)
+//	{
+//		object_callback(object.obj_to_world, object.albedo_color, object.emissive_color,
+//		                object.mesh->vertex_buffer->get_buffer().get_handle(),
+//		                object.mesh->index_buffer ? object.mesh->index_buffer->get_buffer().get_handle() : nullptr,
+//		                uint32_t(object.mesh->vertices_count), uint32_t(object.mesh->indices_count));
+//	}
+//}
 
-void Scene::create_global_buffers(bool build_meshlet)
+void JsonScene::create_global_buffers(bool build_meshlet)
 {
 	// calc total vertex and index offset
 	uint32_t total_vertex_size = 0;
@@ -139,7 +139,7 @@ void Scene::create_global_buffers(bool build_meshlet)
 		}
 
 		mesh_to_offsets[mesh] = {global_vertices_count_, global_indices_count_};
-		total_vertex_size += uint32_t(mesh->vertices_count) * sizeof(MeshData::Vertex);
+		total_vertex_size += uint32_t(mesh->vertices_count) * sizeof(lz::Vertex);
 		total_index_size += uint32_t(mesh->indices_count) * sizeof(MeshData::IndexType);
 
 		if (build_meshlet)
@@ -154,7 +154,7 @@ void Scene::create_global_buffers(bool build_meshlet)
 	}
 
 	// create temp buffer to collect all data
-	std::vector<MeshData::Vertex>    all_vertices;
+	std::vector<lz::Vertex>    all_vertices;
 	std::vector<MeshData::IndexType> all_indices;
 	all_vertices.reserve(global_vertices_count_);
 	all_indices.reserve(global_indices_count_);
@@ -232,7 +232,7 @@ void Scene::create_global_buffers(bool build_meshlet)
 	transfer_queue.end_command_buffer();
 }
 
-void Scene::create_draw_buffer()
+void JsonScene::create_draw_buffer()
 {
 	// Debug code
 	LOGD("generating draw indirect buffer");
@@ -241,7 +241,7 @@ void Scene::create_draw_buffer()
 	// Iterate through objects and record draw commands
 	for (size_t index = 0; index < objects_.size(); ++index)
 	{
-		const auto &                   object = objects_[index];
+		const auto                    &object = objects_[index];
 		vk::DrawIndexedIndirectCommand draw_command;
 		draw_command.firstInstance = 0;
 		draw_command.firstIndex    = object.global_index_offset;
@@ -272,7 +272,7 @@ void Scene::create_draw_buffer()
 	transfer_queue.end_command_buffer();
 }
 
-void Scene::create_draw_call_info_buffer()
+void JsonScene::create_draw_call_info_buffer()
 {
 	// Debug code
 	LOGD("generating draw call info buffer");
@@ -298,50 +298,49 @@ void Scene::create_draw_call_info_buffer()
 	transfer_queue.end_command_buffer();
 }
 
-Buffer &Scene::get_global_vertex_buffer() const
+Buffer &JsonScene::get_global_vertex_buffer() const
 {
 	return global_vertex_buffer_->get_buffer();
 }
 
-vk::Buffer Scene::get_global_index_buffer() const
+vk::Buffer JsonScene::get_global_index_buffer() const
 {
 	return global_index_buffer_ ? global_index_buffer_->get_buffer().get_handle() : nullptr;
 }
 
-Buffer &Scene::get_draw_call_buffer() const
+Buffer &JsonScene::get_draw_call_buffer() const
 {
 	return draw_call_buffer_->get_buffer();
 }
 
-Buffer &Scene::get_draw_indirect_buffer() const
+Buffer &JsonScene::get_draw_indirect_buffer() const
 {
 	return draw_indirect_buffer_->get_buffer();
 }
 
-Buffer &Scene::get_global_meshlet_buffer() const
+Buffer &JsonScene::get_global_meshlet_buffer() const
 {
 	return global_meshlet_buffer_->get_buffer();
 }
 
-Buffer &Scene::get_global_meshlet_data_buffer() const
+Buffer &JsonScene::get_global_meshlet_data_buffer() const
 {
 	return global_meshlet_data_buffer_->get_buffer();
 }
 
-Buffer &Scene::get_draw_call_info_buffer() const
+Buffer &JsonScene::get_draw_call_info_buffer() const
 {
 	return draw_call_info_buffer_->get_buffer();
 }
 
-Buffer &Scene::get_global_mesh_info_buffer() const
+Buffer &JsonScene::get_global_mesh_info_buffer() const
 {
 	return global_mesh_info_buffer_->get_buffer();
-}	
+}
 
-Buffer &Scene::get_global_mesh_draw_buffer() const
+Buffer &JsonScene::get_global_mesh_draw_buffer() const
 {
 	return global_mesh_draw_buffer_->get_buffer();
 }
-
 
 }        // namespace lz

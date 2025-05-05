@@ -11,7 +11,7 @@ GpuDrivenRenderer::GpuDrivenRenderer(lz::Core *core) :
 	reload_shaders();
 }
 
-void GpuDrivenRenderer::recreate_scene_resources(lz::Scene *scene)
+void GpuDrivenRenderer::recreate_scene_resources(lz::JsonScene *scene)
 {
 	// TODO: separate these buffer creation
 	scene->create_global_buffers(true);
@@ -28,7 +28,7 @@ void GpuDrivenRenderer::recreate_swapchain_resources(vk::Extent2D viewport_exten
 
 void GpuDrivenRenderer::render_frame(
     const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera,
-    const lz::Camera &light, lz::Scene *scene, GLFWwindow *window)
+    const lz::Camera &light, lz::JsonScene *scene, GLFWwindow *window)
 {
 	auto  render_graph   = core_->get_render_graph();
 	auto &frame_resource = viewport_resource_datum_[render_graph];
@@ -200,7 +200,7 @@ void GpuDrivenRenderer::reload_shaders()
 void GpuDrivenRenderer::change_view()
 {}
 
-GpuDrivenRenderer::SceneResource::SceneResource(lz::Core *core, lz::Scene *scene)
+GpuDrivenRenderer::SceneResource::SceneResource(lz::Core *core, lz::JsonScene *scene)
 {
 	visible_mesh_draw_proxy_  = core->get_render_graph()->add_buffer<lz::MeshDrawCommand>(uint32_t(scene->get_draw_count()));
 	visible_mesh_count_proxy_ = core->get_render_graph()->add_buffer<uint32_t>(1);

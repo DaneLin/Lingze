@@ -47,6 +47,7 @@ add_compile_definitions(
     SHADER_SPIRV_GLSL_DIR="${CMAKE_SOURCE_DIR}/shaders/spirv_glsl/"
     SHADER_SPIRV_HLSL_DIR="${CMAKE_SOURCE_DIR}/shaders/spirv_hlsl/"
     SCENE_DIR="${CMAKE_SOURCE_DIR}/data/scenes/"
+    DATA_DIR="${CMAKE_SOURCE_DIR}/data/"
     # Resolve macro conflicts between GLFW and Windows headers
     GLFW_INCLUDE_NONE
 )

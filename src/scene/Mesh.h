@@ -58,6 +58,18 @@ struct MeshDrawCommand
 };
 
 /**
+ * @brief Vertex is used to store the vertex information for each mesh
+ */
+#pragma pack(push, 1)
+struct Vertex
+{
+		glm::vec3 pos;
+		glm::vec3 normal;
+		glm::vec2 uv;
+	};
+#pragma pack(pop)
+
+/**
  * @brief MeshData is used to store the mesh data for each mesh
  */
 struct MeshData
@@ -77,17 +89,7 @@ struct MeshData
 	static MeshData generate_point_mesh_sized(MeshData src_mesh, size_t points_per_triangle_count);
 
 	void append_meshlets(std::vector<Meshlet> &meshlets_datum, std::vector<uint32_t> &meshlet_data_datum, const uint32_t vertex_offset);
-/**
- * @brief Vertex is used to store the vertex information for each mesh
- */
-#pragma pack(push, 1)
-struct Vertex
-{
-		glm::vec3 pos;
-		glm::vec3 normal;
-		glm::vec2 uv;
-	};
-#pragma pack(pop)
+
 
 	static Vertex triangle_vertex_sample(Vertex triangle_vertices[3], glm::vec2 rand_val);
 
@@ -105,20 +107,80 @@ struct Vertex
 };
 
 /**
+ * @brief MeshLoader abstract class for loading different mesh formats
+ */
+class MeshLoader
+{
+public:
+	virtual ~MeshLoader() = default;
+	
+	/**
+	 * @brief Load mesh from file
+	 * @param file_name File path
+	 * @param scale Scale to apply to the mesh
+	 * @return MeshData structure with loaded mesh
+	 */
+	virtual MeshData load(const std::string& file_name, glm::vec3 scale) = 0;
+	
+	/**
+	 * @brief Check if this loader can handle the given file
+	 * @param file_name File path
+	 * @return True if this loader can handle the file
+	 */
+	virtual bool can_load(const std::string& file_name) = 0;
+	
+	/**
+	 * @brief Get a mesh loader for the given file
+	 * @param file_name File path
+	 * @return Appropriate mesh loader instance
+	 */
+	static std::shared_ptr<MeshLoader> get_loader(const std::string& file_name);
+};
+
+/**
+ * @brief ObjLoader for loading OBJ format meshes
+ */
+class ObjLoader : public MeshLoader
+{
+public:
+	MeshData load(const std::string& file_name, glm::vec3 scale) override;
+	bool can_load(const std::string& file_name) override;
+};
+
+/**
+ * @brief GltfLoader for loading GLTF/GLB format meshes
+ */
+class GltfLoader : public MeshLoader
+{
+public:
+	MeshData load(const std::string& file_name, glm::vec3 scale) override;
+	bool can_load(const std::string& file_name) override;
+};
+
+/**
  * @brief Mesh is used to store the mesh data for each mesh
  */
 struct Mesh
 {
 	Mesh(const MeshData &mesh_data, vk::PhysicalDevice physical_device, vk::Device logical_device,
 	     vk::CommandBuffer transfer_command_buffer);
+	     
+	Mesh(const std::string &file_name, glm::vec3 scale, vk::PhysicalDevice physical_device, vk::Device logical_device,
+	     vk::CommandBuffer transfer_command_buffer);
+	     
 	static lz::VertexDeclaration get_vertex_declaration();
 
-	std::unique_ptr<lz::StagedBuffer> vertex_buffer;
-	std::unique_ptr<lz::StagedBuffer> index_buffer;
+	// 移除独立缓冲区，不再为每个Mesh创建单独的VkBuffer
+	// std::unique_ptr<lz::StagedBuffer> vertex_buffer;
+	// std::unique_ptr<lz::StagedBuffer> index_buffer;
 
 	MeshData mesh_data;
 	size_t   indices_count;
 	size_t   vertices_count;
+
+	// 添加全局缓冲区的偏移量
+	uint32_t global_vertex_offset = 0; // 在全局顶点缓冲区中的偏移
+	uint32_t global_index_offset = 0;  // 在全局索引缓冲区中的偏移
 
 	vk::PrimitiveTopology primitive_topology;
 

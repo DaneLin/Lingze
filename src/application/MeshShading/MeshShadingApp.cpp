@@ -10,7 +10,7 @@ bool MeshShadingApp::load_scene()
 	// std::string config_file_name = SCENE_DIR "SingleHornbug.json";
 	// std::string config_file_name = SCENE_DIR "SingleKitten.json";
 	std::string config_file_name = SCENE_DIR "SponzaScene.json";
-	return load_scene_from_file(config_file_name, lz::Scene::GeometryTypes::eTriangles);
+	return load_scene_from_file(config_file_name, lz::JsonScene::GeometryTypes::eTriangles);
 }
 
 void MeshShadingApp::render_ui()

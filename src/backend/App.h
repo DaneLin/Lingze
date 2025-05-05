@@ -25,8 +25,8 @@
 #include <string>
 #include <vector>
 
+#include "backend/Camera.h"
 #include "backend/Core.h"
-
 #include "backend/ImGuiProfilerRenderer.h"
 #include "imgui.h"
 #include "render/common/BaseRenderer.h"
@@ -101,7 +101,7 @@ class App
 	static void framebuffer_resize_callback(GLFWwindow *window, int width, int height);
 
 	// Helper function to load scene from file
-	bool load_scene_from_file(const std::string &config_file_name, lz::Scene::GeometryTypes geo_type);
+	bool load_scene_from_file(const std::string &config_file_name, lz::JsonScene::GeometryTypes geo_type);
 
 	// Member variables
 	std::string app_name_;
@@ -113,7 +113,7 @@ class App
 
 	std::unique_ptr<Core>                  core_;
 	std::unique_ptr<render::BaseRenderer>  renderer_;
-	std::unique_ptr<Scene>                 scene_;
+	std::unique_ptr<JsonScene>             scene_;
 	std::unique_ptr<render::ImGuiRenderer> imgui_renderer_;
 
 	std::unique_ptr<InFlightQueue> in_flight_queue_;

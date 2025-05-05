@@ -11,7 +11,7 @@ bool BasicShapeApp::load_scene()
 {
 	std::string config_file_name = SCENE_DIR "CubeScene.json";
 	// std::string config_file_name = SCENE_DIR "SponzaScene.json";
-	lz::Scene::GeometryTypes geo_type = lz::Scene::GeometryTypes::eTriangles;
+	lz::JsonScene::GeometryTypes geo_type = lz::JsonScene::GeometryTypes::eTriangles;
 
 	return load_scene_from_file(config_file_name, geo_type);
 }

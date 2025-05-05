@@ -13,11 +13,11 @@ class GpuDrivenRenderer final : public BaseRenderer
   public:
 	explicit GpuDrivenRenderer(lz::Core *core);
 
-	virtual void recreate_scene_resources(lz::Scene *scene) override;
+	virtual void recreate_scene_resources(lz::JsonScene *scene) override;
 	virtual void recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count) override;
 	virtual void render_frame(const lz::InFlightQueue::FrameInfo &frame_info,
 	                          const lz::Camera &camera, const lz::Camera &light,
-	                          lz::Scene *scene, GLFWwindow *window) override;
+	                          lz::JsonScene *scene, GLFWwindow *window) override;
 	virtual void reload_shaders() override;
 	virtual void change_view() override;
 
@@ -48,7 +48,7 @@ class GpuDrivenRenderer final : public BaseRenderer
 
 	struct SceneResource
 	{
-		SceneResource(lz::Core *core, lz::Scene *scene);
+		SceneResource(lz::Core *core, lz::JsonScene *scene);
 
 		lz::RenderGraph::BufferProxyUnique visible_mesh_draw_proxy_;
 		lz::RenderGraph::BufferProxyUnique mesh_draw_proxy_;

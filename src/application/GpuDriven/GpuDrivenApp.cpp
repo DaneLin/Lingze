@@ -1,6 +1,7 @@
 #include "GpuDrivenApp.h"
 
 #include "GpuDrivenRenderer.h"
+#include "scene/SceneGraph.h"
 #include "application/EntryPoint.h"
 
 namespace lz::application
@@ -9,9 +10,13 @@ bool GpuDrivenApp::load_scene()
 {
 	// std::string config_file_name = SCENE_DIR "SingleHornbug.json";
 	// std::string config_file_name = SCENE_DIR "SingleKitten.json";
-	std::string config_file_name = SCENE_DIR "SponzaScene.json";
-	//std::string config_file_name = SCENE_DIR "CubeScene.json";
-	return load_scene_from_file(config_file_name, lz::Scene::GeometryTypes::eTriangles);
+	// std::string config_file_name = SCENE_DIR "SponzaScene.json";
+	std::string config_file_name = SCENE_DIR "CubeScene.json";
+
+	std::unique_ptr<SceneGraph> scene_graph = std::make_unique<SceneGraph>(core_.get());
+	scene_graph->load_model(DATA_DIR "glTF-Sample-Assets/Models/Sponza/glTF/Sponza.gltf");
+	
+	return load_scene_from_file(config_file_name, lz::JsonScene::GeometryTypes::eTriangles);
 }
 
 void GpuDrivenApp::render_ui()

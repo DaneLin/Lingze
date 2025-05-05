@@ -10,7 +10,7 @@ SimpleMeshShadingRenderer::SimpleMeshShadingRenderer(lz::Core *core) :
 	reload_shaders();
 }
 
-void SimpleMeshShadingRenderer::recreate_scene_resources(lz::Scene *scene)
+void SimpleMeshShadingRenderer::recreate_scene_resources(lz::JsonScene *scene)
 {
 }
 
@@ -21,7 +21,7 @@ void SimpleMeshShadingRenderer::recreate_swapchain_resources(vk::Extent2D viewpo
 }
 
 void SimpleMeshShadingRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_info,
-                                             const lz::Camera &camera, const lz::Camera &light, lz::Scene *scene, GLFWwindow *window)
+                                             const lz::Camera &camera, const lz::Camera &light, lz::JsonScene *scene, GLFWwindow *window)
 {
 	auto render_graph = core_->get_render_graph();
 	render_graph->add_pass(lz::RenderGraph::RenderPassDesc()

@@ -10,7 +10,7 @@ MeshShadingRenderer::MeshShadingRenderer(lz::Core *core) :
 	reload_shaders();
 }
 
-void MeshShadingRenderer::recreate_scene_resources(lz::Scene *scene)
+void MeshShadingRenderer::recreate_scene_resources(lz::JsonScene *scene)
 {
 	scene->create_global_buffers(true);
 	scene->create_draw_buffer();
@@ -24,7 +24,7 @@ void MeshShadingRenderer::recreate_swapchain_resources(vk::Extent2D viewport_ext
 
 void MeshShadingRenderer::render_frame(
     const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera,
-    const lz::Camera &light, lz::Scene *scene, GLFWwindow *window)
+    const lz::Camera &light, lz::JsonScene *scene, GLFWwindow *window)
 {
 	auto  render_graph   = core_->get_render_graph();
 	auto &frame_resource = frame_resource_datum_[render_graph];

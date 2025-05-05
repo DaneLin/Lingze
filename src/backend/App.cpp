@@ -188,7 +188,7 @@ bool App::init()
 	return true;
 }
 
-bool App::load_scene_from_file(const std::string &config_file_name, lz::Scene::GeometryTypes geo_type)
+bool App::load_scene_from_file(const std::string &config_file_name, lz::JsonScene::GeometryTypes geo_type)
 {
 	Json::Value  config_root;
 	Json::Reader reader;
@@ -207,8 +207,7 @@ bool App::load_scene_from_file(const std::string &config_file_name, lz::Scene::G
 		return false;
 	}
 
-	LOGI("File {} parsed successfully", config_file_name);
-	scene_ = std::make_unique<lz::Scene>(config_root["scene"], core_.get(), geo_type);
+	scene_ = std::make_unique<lz::JsonScene>(config_root["scene"], core_.get(), geo_type);
 
 	return true;
 }

@@ -34,26 +34,8 @@ struct Object
 	uint32_t global_index_offset;
 };
 
-struct Camera
-{
-	Camera()
-	{
-		pos        = glm::vec3(0.0f);
-		vert_angle = 0.0f;
-		hor_angle  = 0.0f;
-	}
 
-	glm::mat4 get_transform_matrix() const
-	{
-		return glm::translate(pos) * glm::rotate(hor_angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(vert_angle, glm::vec3(1.0f, 0.0f, 0.0f));
-	}
-
-	glm::vec3 pos;
-	float     vert_angle;
-	float     hor_angle;
-};
-
-class Scene
+class JsonScene
 {
   public:
 	enum struct GeometryTypes : uint8_t
@@ -63,14 +45,14 @@ class Scene
 		eSizedPoints
 	};
 
-	Scene(Json::Value scene_config, lz::Core *core, GeometryTypes geometry_type);
+	JsonScene(Json::Value scene_config, lz::Core *core, GeometryTypes geometry_type);
 
-	// Legacy function: using vertex input binding
-	using ObjectCallback = std::function<void(glm::mat4 object_to_world, glm::vec3 albedo_color,
-	                                          glm::vec3 emissive_color, vk::Buffer vertex_buffer,
-	                                          vk::Buffer index_buffer, uint32_t vertices_count,
-	                                          uint32_t indices_count)>;
-	void iterate_objects(ObjectCallback object_callback);
+	//// Legacy function: using vertex input binding
+	//using ObjectCallback = std::function<void(glm::mat4 object_to_world, glm::vec3 albedo_color,
+	//                                          glm::vec3 emissive_color, vk::Buffer vertex_buffer,
+	//                                          vk::Buffer index_buffer, uint32_t vertices_count,
+	//                                          uint32_t indices_count)>;
+	//void iterate_objects(ObjectCallback object_callback);
 
 	// Create global buffers (CPU side)
 	void create_global_buffers(bool build_meshlet = false);
@@ -89,10 +71,10 @@ class Scene
 	Buffer    &get_global_meshlet_buffer() const;
 	Buffer    &get_global_meshlet_data_buffer() const;
 
-	Buffer    &get_global_mesh_info_buffer() const;
-	Buffer    &get_global_mesh_draw_buffer() const;
-	
-	size_t     get_global_vertices_count() const
+	Buffer &get_global_mesh_info_buffer() const;
+	Buffer &get_global_mesh_draw_buffer() const;
+
+	size_t get_global_vertices_count() const
 	{
 		return global_vertices_count_;
 	}
