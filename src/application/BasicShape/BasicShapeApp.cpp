@@ -9,8 +9,12 @@ namespace application
 {
 bool BasicShapeApp::load_scene()
 {
-	std::string config_file_name = SCENE_DIR "CubeScene.json";
-	// std::string config_file_name = SCENE_DIR "SponzaScene.json";
+	// Standard JSON scene loading
+	//std::string config_file_name = SCENE_DIR "CubeScene.json";
+	
+	// Direct GLTF loading example
+	std::string config_file_name = DATA_DIR "glTF-Sample-Assets/Models/Cube/glTF/Cube.gltf";
+	
 	lz::JsonScene::GeometryTypes geo_type = lz::JsonScene::GeometryTypes::eTriangles;
 
 	return load_scene_from_file(config_file_name, geo_type);

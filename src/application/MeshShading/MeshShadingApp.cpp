@@ -9,7 +9,8 @@ bool MeshShadingApp::load_scene()
 {
 	// std::string config_file_name = SCENE_DIR "SingleHornbug.json";
 	// std::string config_file_name = SCENE_DIR "SingleKitten.json";
-	std::string config_file_name = SCENE_DIR "SponzaScene.json";
+	//std::string config_file_name = SCENE_DIR "SponzaScene.json";
+	std::string config_file_name = DATA_DIR "glTF-Sample-Assets/Models/Sponza/glTF/Sponza.gltf";
 	return load_scene_from_file(config_file_name, lz::JsonScene::GeometryTypes::eTriangles);
 }
 

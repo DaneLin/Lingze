@@ -6,6 +6,7 @@
 #include <chrono>
 #include <iostream>
 #include <sstream>
+#include <filesystem>
 
 namespace lz
 {
@@ -190,26 +191,43 @@ bool App::init()
 
 bool App::load_scene_from_file(const std::string &config_file_name, lz::JsonScene::GeometryTypes geo_type)
 {
-	Json::Value  config_root;
-	Json::Reader reader;
+	std::filesystem::path path(config_file_name);
+	std::string ext = path.extension().string();
+	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+	
+	// Check if file is a GLTF/GLB file
+	if (ext == ".gltf" || ext == ".glb") {
+		try {
+			// Load GLTF scene directly
+			scene_ = std::make_unique<lz::JsonScene>(config_file_name, core_.get(), geo_type);
+			return true;
+		} catch (const std::exception& e) {
+			LOGE("Error: Failed to load GLTF file {}: {}", config_file_name, e.what());
+			return false;
+		}
+	} else {
+		// Original JSON loading code
+		Json::Value  config_root;
+		Json::Reader reader;
 
-	std::ifstream file_stream(config_file_name);
-	if (!file_stream.is_open())
-	{
-		LOGE("Unable to open scene file!");
-		return false;
+		std::ifstream file_stream(config_file_name);
+		if (!file_stream.is_open())
+		{
+			LOGE("Unable to open scene file!");
+			return false;
+		}
+
+		bool result = reader.parse(file_stream, config_root);
+		if (!result)
+		{
+			LOGE("Error: Failed to parse file {}: {}", config_file_name, reader.getFormattedErrorMessages());
+			return false;
+		}
+
+		scene_ = std::make_unique<lz::JsonScene>(config_root["scene"], core_.get(), geo_type);
+
+		return true;
 	}
-
-	bool result = reader.parse(file_stream, config_root);
-	if (!result)
-	{
-		LOGE("Error: Failed to parse file {}: {}", config_file_name, reader.getFormattedErrorMessages());
-		return false;
-	}
-
-	scene_ = std::make_unique<lz::JsonScene>(config_root["scene"], core_.get(), geo_type);
-
-	return true;
 }
 
 // Update logic

@@ -6,6 +6,8 @@
 #include "json/json.h"
 #include <functional>
 #include <glm/gtx/transform.hpp>
+#include <filesystem> // Adding for filesystem path operations
+#include "tiny_gltf.h" // Include tiny_gltf header
 
 namespace lz
 {
@@ -15,7 +17,7 @@ struct Object
 	{
 		mesh                 = nullptr;
 		obj_to_world         = glm::mat4();
-		albedo_color         = glm::vec4(1.0f, 1.0f, 1.0f, 1.f);
+		albedo_color         = glm::vec3(1.0f, 1.0f, 1.0f);
 		emissive_color       = glm::vec3(1.0f, 1.0f, 1.0f);
 		is_shadow_receiver   = true;
 		global_vertex_offset = 0;
@@ -45,7 +47,11 @@ class JsonScene
 		eSizedPoints
 	};
 
+	// Constructor for JSON scene config
 	JsonScene(Json::Value scene_config, lz::Core *core, GeometryTypes geometry_type);
+	
+	// New constructor for GLTF file loading
+	JsonScene(const std::string &file_path, lz::Core *core, GeometryTypes geometry_type);
 
 	//// Legacy function: using vertex input binding
 	//using ObjectCallback = std::function<void(glm::mat4 object_to_world, glm::vec3 albedo_color,
@@ -93,6 +99,14 @@ class JsonScene
 	}
 
   private:
+	// Helper method to load meshes and create objects from a GLTF file
+	void load_from_gltf(const std::string &file_path);
+	
+	// Helper to recursively process GLTF nodes
+	void process_node(const tinygltf::Model& model, int node_idx, 
+	                 const std::map<int, Mesh*>& mesh_map, 
+	                 const glm::mat4& parent_transform);
+	
 	std::vector<std::unique_ptr<Mesh>> meshes_;
 	std::vector<Object>                objects_;
 	size_t                             marker_object_index_;
@@ -100,25 +114,28 @@ class JsonScene
 	// Global vertex buffer and index buffer
 	std::unique_ptr<lz::StagedBuffer> global_vertex_buffer_;
 	std::unique_ptr<lz::StagedBuffer> global_index_buffer_;
-	std::unique_ptr<lz::StagedBuffer> global_mesh_info_buffer_;
-
-	// Draw call info buffer
-	std::unique_ptr<lz::StagedBuffer> draw_call_info_buffer_;
-	std::unique_ptr<lz::StagedBuffer> global_mesh_draw_buffer_;
-
-	// Meshlet buffer and data buffer
-	std::unique_ptr<lz::StagedBuffer> global_meshlet_buffer_;
-	std::unique_ptr<lz::StagedBuffer> global_meshlet_data_buffer_;
-
-	// Draw indirect
 	std::unique_ptr<lz::StagedBuffer> draw_call_buffer_;
 	std::unique_ptr<lz::StagedBuffer> draw_indirect_buffer_;
 
-	uint32_t global_indices_count_;
-	uint32_t global_vertices_count_;
-	uint32_t global_meshlet_count_;
+	// Compute Shader buffer
+	std::unique_ptr<lz::StagedBuffer> draw_call_info_buffer_;
 
+	// Meshlet buffer
+	std::unique_ptr<lz::StagedBuffer> global_meshlet_buffer_;
+	std::unique_ptr<lz::StagedBuffer> global_meshlet_data_buffer_;
+
+	// Buffer for geometry shader to generate draw commands
+	std::unique_ptr<lz::StagedBuffer> global_mesh_info_buffer_;
+	std::unique_ptr<lz::StagedBuffer> global_mesh_draw_buffer_;
+
+	// Meta data
+	size_t global_indices_count_  = 0;
+	size_t global_vertices_count_ = 0;
+	size_t global_meshlet_count_  = 0;
+
+	// Vertex format
 	lz::VertexDeclaration vertex_decl_;
-	lz::Core             *core_;
+
+	lz::Core *core_ = nullptr;
 };
 }        // namespace lz

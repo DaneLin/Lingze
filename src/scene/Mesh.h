@@ -162,11 +162,9 @@ public:
  */
 struct Mesh
 {
-	Mesh(const MeshData &mesh_data, vk::PhysicalDevice physical_device, vk::Device logical_device,
-	     vk::CommandBuffer transfer_command_buffer);
+	Mesh(const MeshData &mesh_data);
 	     
-	Mesh(const std::string &file_name, glm::vec3 scale, vk::PhysicalDevice physical_device, vk::Device logical_device,
-	     vk::CommandBuffer transfer_command_buffer);
+	Mesh(const std::string &file_name, glm::vec3 scale);
 	     
 	static lz::VertexDeclaration get_vertex_declaration();
 

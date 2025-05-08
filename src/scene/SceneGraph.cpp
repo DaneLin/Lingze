@@ -75,15 +75,9 @@ size_t SceneGraph::load_model(const std::string &filepath, const glm::vec3 &scal
 		throw std::runtime_error("Failed to load GLTF model");
 	}
 
-	// 保存原始节点数用于根节点引用
 	size_t original_node_count = nodes_.size();
 	size_t mesh_start_index    = meshes_.size();
 
-	// 创建一个传输命令用于加载网格
-	lz::ExecuteOnceQueue transfer_queue(core_);
-	auto                 transfer_command_buffer = transfer_queue.begin_command_buffer();
-
-	// 加载模型中的所有网格
 	for (size_t i = 0; i < model.meshes.size(); i++)
 	{
 		const tinygltf::Mesh &gltf_mesh = model.meshes[i];
@@ -98,12 +92,7 @@ size_t SceneGraph::load_model(const std::string &filepath, const glm::vec3 &scal
 				continue;
 			}
 
-			// 创建Mesh对象，但不创建独立的VkBuffer
-			auto mesh = std::make_unique<Mesh>(
-			    MeshData(),
-			    core_->get_physical_device(),
-			    core_->get_logical_device(),
-			    transfer_command_buffer);
+			auto mesh = std::make_unique<Mesh>(MeshData());
 
 			// Extract positions
 			const tinygltf::Accessor &  pos_accessor = model.accessors[primitive.attributes.at("POSITION")];
@@ -265,16 +254,13 @@ size_t SceneGraph::load_model(const std::string &filepath, const glm::vec3 &scal
 			meshopt_optimizeVertexCache(tmp_indices.data(), tmp_indices.data(), index_count, vertex_count);
 			meshopt_optimizeVertexFetch(tmp_vertices.data(), tmp_indices.data(), index_count, tmp_vertices.data(), vertex_count, sizeof(lz::Vertex));
 
-			// 在完成网格处理后初始化indices_count和vertices_count
 			mesh->mesh_data.vertices = std::move(tmp_vertices);
 			mesh->mesh_data.indices  = std::move(tmp_indices);
 			mesh->vertices_count     = mesh->mesh_data.vertices.size();
 			mesh->indices_count      = mesh->mesh_data.indices.size();
 
-			// 设置边界球
 			mesh->mesh_data.sphere_bound = glm::vec4(0.5f * (min_bound + max_bound), glm::length(max_bound - min_bound) * 0.5f);
 
-			// 添加对应的SubMesh
 			SubMesh submesh;
 			submesh.mesh_index   = meshes_.size();
 			submesh.index_offset = 0;        // 将在创建全局缓冲区时调整
@@ -308,9 +294,6 @@ size_t SceneGraph::load_model(const std::string &filepath, const glm::vec3 &scal
 			meshes_.push_back(std::move(mesh));
 		}
 	}
-
-	// 完成传输命令
-	transfer_queue.end_command_buffer();
 
 	// Load nodes
 	for (size_t i = 0; i < model.nodes.size(); i++)

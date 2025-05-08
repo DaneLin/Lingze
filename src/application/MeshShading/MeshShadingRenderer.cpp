@@ -59,29 +59,19 @@ void MeshShadingRenderer::render_frame(
 			        auto shader_data =
 			            frame_info.memory_pool->begin_set(shader_data_set_info);
 			        {
-				        float aspect = static_cast<float>(viewport_extent_.width) /
-				                       static_cast<float>(viewport_extent_.height);
+				        float aspect = static_cast<float>(viewport_extent_.width) / static_cast<float>(viewport_extent_.height);
 
-				        auto shader_data_buffer =
-				            frame_info.memory_pool->get_uniform_buffer_data<DataBuffer>(
-				                "ubo_data");
+				        auto shader_data_buffer = frame_info.memory_pool->get_uniform_buffer_data<DataBuffer>("ubo_data");
 				        // same name from shader
-				        shader_data_buffer->view_matrix =
-				            glm::inverse(camera.get_transform_matrix());
-				        shader_data_buffer->proj_matrix =
-				            glm::perspectiveZO(1.0f, aspect, 0.01f, 1000.0f) *
-				            glm::scale(glm::vec3(1.0f, -1.0f, -1.0f));
+				        shader_data_buffer->view_matrix = glm::inverse(camera.get_transform_matrix());
+				        shader_data_buffer->proj_matrix = glm::perspectiveZO(1.0f, aspect, 0.01f, 1000.0f) * glm::scale(glm::vec3(1.0f, -1.0f, -1.0f));
 			        }
 			        frame_info.memory_pool->end_set();
 
 			        // create storage binding
 			        std::vector<lz::StorageBufferBinding> storage_buffer_bindings;
-			        storage_buffer_bindings.push_back(
-			            shader_data_set_info->make_storage_buffer_binding(
-			                "VertexBuffer", &scene->get_global_vertex_buffer()));
-			        storage_buffer_bindings.push_back(
-			            shader_data_set_info->make_storage_buffer_binding(
-			                "DrawCallDataBuffer", &scene->get_draw_call_buffer()));
+			        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("VertexBuffer", &scene->get_global_vertex_buffer()));
+			        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("DrawCallDataBuffer", &scene->get_draw_call_buffer()));
 
 			        auto shader_data_set =
 			            core_->get_descriptor_set_cache()->get_descriptor_set(
@@ -94,8 +84,7 @@ void MeshShadingRenderer::render_frame(
 			            pipeline_info.pipeline_layout, k_shader_data_set_index,
 			            {shader_data_set}, {shader_data.dynamic_offset});
 
-			        context.get_command_buffer().bindIndexBuffer(
-			            scene->get_global_index_buffer(), 0, vk::IndexType::eUint32);
+			        context.get_command_buffer().bindIndexBuffer(scene->get_global_index_buffer(), 0, vk::IndexType::eUint32);
 			        context.get_command_buffer().drawIndexedIndirect(
 			            scene->get_draw_indirect_buffer().get_handle(), 0,
 			            uint32_t(scene->get_draw_count()),
@@ -124,33 +113,20 @@ void MeshShadingRenderer::render_frame(
 					        float aspect = static_cast<float>(viewport_extent_.width) /
 					                       static_cast<float>(viewport_extent_.height);
 
-					        auto shader_data_buffer =
-					            frame_info.memory_pool
-					                ->get_uniform_buffer_data<DataBuffer>("ubo_data");
+					        auto shader_data_buffer = frame_info.memory_pool->get_uniform_buffer_data<DataBuffer>("ubo_data");
 					        // same name from shader
-					        shader_data_buffer->view_matrix =
-					            glm::inverse(camera.get_transform_matrix());
-					        shader_data_buffer->proj_matrix =
-					            glm::perspectiveZO(1.0f, aspect, 0.01f, 1000.0f) *
-					            glm::scale(glm::vec3(1.0f, -1.0f, -1.0f));
+					        shader_data_buffer->view_matrix = glm::inverse(camera.get_transform_matrix());
+					        shader_data_buffer->proj_matrix = glm::perspectiveZO(1.0f, aspect, 0.01f, 10000.0f) * glm::scale(glm::vec3(1.0f, -1.0f, -1.0f));
 				        }
 				        frame_info.memory_pool->end_set();
 
 				        // create storage binding
 				        std::vector<lz::StorageBufferBinding> storage_buffer_bindings;
-				        storage_buffer_bindings.push_back(
-				            shader_data_set_info->make_storage_buffer_binding(
-				                "Vertices", &scene->get_global_vertex_buffer()));
-				        storage_buffer_bindings.push_back(
-				            shader_data_set_info->make_storage_buffer_binding(
-				                "Meshlets", &scene->get_global_meshlet_buffer()));
-				        storage_buffer_bindings.push_back(
-				            shader_data_set_info->make_storage_buffer_binding(
-				                "MeshletDataBuffer",
-				                &scene->get_global_meshlet_data_buffer()));
+				        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("Vertices", &scene->get_global_vertex_buffer()));
+				        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("Meshlets", &scene->get_global_meshlet_buffer()));
+				        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("MeshletDataBuffer", &scene->get_global_meshlet_data_buffer()));
 
 				        // TODO: add draw call buffer for model matrix
-
 				        auto shader_data_set =
 				            core_->get_descriptor_set_cache()->get_descriptor_set(
 				                *shader_data_set_info,

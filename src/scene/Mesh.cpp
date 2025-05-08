@@ -1,10 +1,10 @@
 #include "Mesh.h"
-#include "meshoptimizer.h"
-#include "tiny_obj_loader.h"
-#include "tiny_gltf.h"
 #include "../backend/Logging.h"
-#include <iostream>
+#include "meshoptimizer.h"
+#include "tiny_gltf.h"
+#include "tiny_obj_loader.h"
 #include <filesystem>
+#include <iostream>
 
 namespace tinyobj
 {
@@ -24,45 +24,47 @@ MeshData::MeshData() :
 MeshData::MeshData(const std::string file_name, glm::vec3 scale)
 {
 	auto loader = MeshLoader::get_loader(file_name);
-	if (!loader) {
+	if (!loader)
+	{
 		LOGE("Failed to find an appropriate loader for file: {}", file_name);
 		throw std::runtime_error("Failed to load mesh: no appropriate loader found");
 	}
-	
+
 	*this = loader->load(file_name, scale);
 }
 
 // Static MeshLoader factory method
-std::shared_ptr<MeshLoader> MeshLoader::get_loader(const std::string& file_name)
+std::shared_ptr<MeshLoader> MeshLoader::get_loader(const std::string &file_name)
 {
 	static std::vector<std::shared_ptr<MeshLoader>> loaders = {
-		std::make_shared<ObjLoader>(),
-		std::make_shared<GltfLoader>()
-	};
-	
-	for (auto& loader : loaders) {
-		if (loader->can_load(file_name)) {
+	    std::make_shared<ObjLoader>(),
+	    std::make_shared<GltfLoader>()};
+
+	for (auto &loader : loaders)
+	{
+		if (loader->can_load(file_name))
+		{
 			return loader;
 		}
 	}
-	
+
 	return nullptr;
 }
 
 // ObjLoader implementation
-bool ObjLoader::can_load(const std::string& file_name)
+bool ObjLoader::can_load(const std::string &file_name)
 {
 	std::filesystem::path path(file_name);
-	std::string ext = path.extension().string();
+	std::string           ext = path.extension().string();
 	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 	return ext == ".obj";
 }
 
-MeshData ObjLoader::load(const std::string& file_name, glm::vec3 scale)
+MeshData ObjLoader::load(const std::string &file_name, glm::vec3 scale)
 {
 	MeshData mesh_data;
 	mesh_data.primitive_topology = vk::PrimitiveTopology::eTriangleList;
-	
+
 	tinyobj::attrib_t                attrib;
 	std::vector<tinyobj::shape_t>    shapes;
 	std::vector<tinyobj::material_t> materials;
@@ -131,10 +133,10 @@ MeshData ObjLoader::load(const std::string& file_name, glm::vec3 scale)
 	size_t index_count = triangle_vertices.size();
 	// mesh optimizer
 	std::vector<uint32_t> remap(index_count);
-	size_t vertex_count = meshopt_generateVertexRemap(remap.data(), 0, index_count, triangle_vertices.data(), index_count, sizeof(lz::Vertex));
+	size_t                vertex_count = meshopt_generateVertexRemap(remap.data(), 0, index_count, triangle_vertices.data(), index_count, sizeof(lz::Vertex));
 
-	std::vector<lz::Vertex>   tmp_vertices(vertex_count);
-	std::vector<uint32_t> tmp_indices(index_count);
+	std::vector<lz::Vertex> tmp_vertices(vertex_count);
+	std::vector<uint32_t>   tmp_indices(index_count);
 
 	meshopt_remapVertexBuffer(tmp_vertices.data(), triangle_vertices.data(), index_count, sizeof(lz::Vertex), remap.data());
 	meshopt_remapIndexBuffer(tmp_indices.data(), 0, index_count, remap.data());
@@ -143,133 +145,152 @@ MeshData ObjLoader::load(const std::string& file_name, glm::vec3 scale)
 	meshopt_optimizeVertexFetch(tmp_vertices.data(), tmp_indices.data(), index_count, tmp_vertices.data(), vertex_count, sizeof(lz::Vertex));
 
 	mesh_data.vertices = std::move(tmp_vertices);
-	mesh_data.indices = std::move(tmp_indices);
+	mesh_data.indices  = std::move(tmp_indices);
 
 	mesh_data.sphere_bound = glm::vec4(0.5f * (min_bound + max_bound), glm::length(max_bound - min_bound) * 0.5f);
-	
+
 	return mesh_data;
 }
 
 // GltfLoader implementation
-bool GltfLoader::can_load(const std::string& file_name)
+bool GltfLoader::can_load(const std::string &file_name)
 {
 	std::filesystem::path path(file_name);
-	std::string ext = path.extension().string();
+	std::string           ext = path.extension().string();
 	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 	return ext == ".gltf" || ext == ".glb";
 }
 
-MeshData GltfLoader::load(const std::string& file_name, glm::vec3 scale)
+MeshData GltfLoader::load(const std::string &file_name, glm::vec3 scale)
 {
 	MeshData mesh_data;
 	mesh_data.primitive_topology = vk::PrimitiveTopology::eTriangleList;
-	
+
 	LOGI("Loading GLTF mesh: {}", file_name);
-	
-	tinygltf::Model model;
+
+	tinygltf::Model    model;
 	tinygltf::TinyGLTF loader;
-	std::string err;
-	std::string warn;
-	
+	std::string        err;
+	std::string        warn;
+
 	// Detect if we need to load binary or ASCII glTF
-	bool ret = false;
+	bool                  ret = false;
 	std::filesystem::path path(file_name);
-	if (path.extension() == ".glb") {
+	if (path.extension() == ".glb")
+	{
 		ret = loader.LoadBinaryFromFile(&model, &err, &warn, file_name);
-	} else {
+	}
+	else
+	{
 		ret = loader.LoadASCIIFromFile(&model, &err, &warn, file_name);
 	}
-	
-	if (!warn.empty()) {
+
+	if (!warn.empty())
+	{
 		LOGW("Warning: {}", warn);
 	}
-	
-	if (!err.empty()) {
+
+	if (!err.empty())
+	{
 		LOGE("Error: {}", err);
 	}
-	
-	if (!ret) {
+
+	if (!ret)
+	{
 		throw std::runtime_error("Failed to load GLTF mesh");
 	}
-	
+
 	// For simplicity, we'll load just the first mesh with its first primitive
-	if (model.meshes.empty()) {
+	if (model.meshes.empty())
+	{
 		throw std::runtime_error("GLTF file contains no meshes");
 	}
-	
+
 	// Get the first mesh
-	const tinygltf::Mesh& gltf_mesh = model.meshes[0];
-	
-	if (gltf_mesh.primitives.empty()) {
+	const tinygltf::Mesh &gltf_mesh = model.meshes[0];
+
+	if (gltf_mesh.primitives.empty())
+	{
 		throw std::runtime_error("GLTF mesh contains no primitives");
 	}
-	
+
 	// Get the first primitive
-	const tinygltf::Primitive& primitive = gltf_mesh.primitives[0];
-	
+	const tinygltf::Primitive &primitive = gltf_mesh.primitives[0];
+
 	// Check if we have position data
-	if (primitive.attributes.find("POSITION") == primitive.attributes.end()) {
+	if (primitive.attributes.find("POSITION") == primitive.attributes.end())
+	{
 		throw std::runtime_error("GLTF primitive has no POSITION attribute");
 	}
-	
+
 	// bounding sphere
 	glm::vec3 min_bound = glm::vec3(std::numeric_limits<float>::infinity());
 	glm::vec3 max_bound = glm::vec3(-std::numeric_limits<float>::infinity());
-	
+
 	// Get accessors for vertex data
-	const tinygltf::Accessor& pos_accessor = model.accessors[primitive.attributes.at("POSITION")];
-	const tinygltf::BufferView& pos_view = model.bufferViews[pos_accessor.bufferView];
-	const tinygltf::Buffer& pos_buffer = model.buffers[pos_view.buffer];
-	
+	const tinygltf::Accessor   &pos_accessor = model.accessors[primitive.attributes.at("POSITION")];
+	const tinygltf::BufferView &pos_view     = model.bufferViews[pos_accessor.bufferView];
+	const tinygltf::Buffer     &pos_buffer   = model.buffers[pos_view.buffer];
+
 	// Optional normal and texcoord accessors
-	const tinygltf::Accessor* normal_accessor = nullptr;
-	const tinygltf::BufferView* normal_view = nullptr;
-	const tinygltf::Buffer* normal_buffer = nullptr;
-	
-	if (primitive.attributes.find("NORMAL") != primitive.attributes.end()) {
+	const tinygltf::Accessor   *normal_accessor = nullptr;
+	const tinygltf::BufferView *normal_view     = nullptr;
+	const tinygltf::Buffer     *normal_buffer   = nullptr;
+
+	if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
+	{
 		normal_accessor = &model.accessors[primitive.attributes.at("NORMAL")];
-		normal_view = &model.bufferViews[normal_accessor->bufferView];
-		normal_buffer = &model.buffers[normal_view->buffer];
+		normal_view     = &model.bufferViews[normal_accessor->bufferView];
+		normal_buffer   = &model.buffers[normal_view->buffer];
 	}
-	
-	const tinygltf::Accessor* texcoord_accessor = nullptr;
-	const tinygltf::BufferView* texcoord_view = nullptr;
-	const tinygltf::Buffer* texcoord_buffer = nullptr;
-	
-	if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()) {
+
+	const tinygltf::Accessor   *texcoord_accessor = nullptr;
+	const tinygltf::BufferView *texcoord_view     = nullptr;
+	const tinygltf::Buffer     *texcoord_buffer   = nullptr;
+
+	if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
+	{
 		texcoord_accessor = &model.accessors[primitive.attributes.at("TEXCOORD_0")];
-		texcoord_view = &model.bufferViews[texcoord_accessor->bufferView];
-		texcoord_buffer = &model.buffers[texcoord_view->buffer];
+		texcoord_view     = &model.bufferViews[texcoord_accessor->bufferView];
+		texcoord_buffer   = &model.buffers[texcoord_view->buffer];
 	}
-	
+
 	// Get indices
 	std::vector<uint32_t> indices;
-	if (primitive.indices >= 0) {
-		const tinygltf::Accessor& index_accessor = model.accessors[primitive.indices];
-		const tinygltf::BufferView& index_view = model.bufferViews[index_accessor.bufferView];
-		const tinygltf::Buffer& index_buffer = model.buffers[index_view.buffer];
-		
+	if (primitive.indices >= 0)
+	{
+		const tinygltf::Accessor   &index_accessor = model.accessors[primitive.indices];
+		const tinygltf::BufferView &index_view     = model.bufferViews[index_accessor.bufferView];
+		const tinygltf::Buffer     &index_buffer   = model.buffers[index_view.buffer];
+
 		// Extract indices - convert from whatever type to uint32_t
 		indices.resize(index_accessor.count);
-		
-		const unsigned char* data = &index_buffer.data[index_view.byteOffset + index_accessor.byteOffset];
-		switch (index_accessor.componentType) {
-			case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE: {
-				for (size_t i = 0; i < index_accessor.count; i++) {
+
+		const unsigned char *data = &index_buffer.data[index_view.byteOffset + index_accessor.byteOffset];
+		switch (index_accessor.componentType)
+		{
+			case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+			{
+				for (size_t i = 0; i < index_accessor.count; i++)
+				{
 					indices[i] = static_cast<uint32_t>(data[i]);
 				}
 				break;
 			}
-			case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: {
-				const uint16_t* short_data = reinterpret_cast<const uint16_t*>(data);
-				for (size_t i = 0; i < index_accessor.count; i++) {
+			case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+			{
+				const uint16_t *short_data = reinterpret_cast<const uint16_t *>(data);
+				for (size_t i = 0; i < index_accessor.count; i++)
+				{
 					indices[i] = static_cast<uint32_t>(short_data[i]);
 				}
 				break;
 			}
-			case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT: {
-				const uint32_t* int_data = reinterpret_cast<const uint32_t*>(data);
-				for (size_t i = 0; i < index_accessor.count; i++) {
+			case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+			{
+				const uint32_t *int_data = reinterpret_cast<const uint32_t *>(data);
+				for (size_t i = 0; i < index_accessor.count; i++)
+				{
 					indices[i] = int_data[i];
 				}
 				break;
@@ -278,93 +299,98 @@ MeshData GltfLoader::load(const std::string& file_name, glm::vec3 scale)
 				throw std::runtime_error("Unsupported index component type");
 		}
 	}
-	
+
 	// Create vertices
 	std::vector<lz::Vertex> vertices;
 	vertices.resize(pos_accessor.count);
-	
+
 	// Extract positions
-	const float* pos_data = reinterpret_cast<const float*>(&pos_buffer.data[pos_view.byteOffset + pos_accessor.byteOffset]);
+	const float *pos_data   = reinterpret_cast<const float *>(&pos_buffer.data[pos_view.byteOffset + pos_accessor.byteOffset]);
 	const size_t pos_stride = pos_view.byteStride ? pos_view.byteStride / sizeof(float) : 3;
-	
-	for (size_t i = 0; i < pos_accessor.count; i++) {
+
+	for (size_t i = 0; i < pos_accessor.count; i++)
+	{
 		vertices[i].pos.x = pos_data[i * pos_stride + 0] * scale.x;
 		vertices[i].pos.y = pos_data[i * pos_stride + 1] * scale.y;
 		vertices[i].pos.z = pos_data[i * pos_stride + 2] * scale.z;
-		
+
 		min_bound = glm::min(min_bound, vertices[i].pos);
 		max_bound = glm::max(max_bound, vertices[i].pos);
 	}
-	
+
 	// Extract normals if present
-	if (normal_accessor) {
-		const float* normal_data = reinterpret_cast<const float*>(&normal_buffer->data[normal_view->byteOffset + normal_accessor->byteOffset]);
+	if (normal_accessor)
+	{
+		const float *normal_data   = reinterpret_cast<const float *>(&normal_buffer->data[normal_view->byteOffset + normal_accessor->byteOffset]);
 		const size_t normal_stride = normal_view->byteStride ? normal_view->byteStride / sizeof(float) : 3;
-		
-		for (size_t i = 0; i < normal_accessor->count; i++) {
+
+		for (size_t i = 0; i < normal_accessor->count; i++)
+		{
 			vertices[i].normal.x = normal_data[i * normal_stride + 0];
 			vertices[i].normal.y = normal_data[i * normal_stride + 1];
 			vertices[i].normal.z = normal_data[i * normal_stride + 2];
 		}
-	} else {
+	}
+	else
+	{
 		// Default normals
-		for (size_t i = 0; i < vertices.size(); i++) {
+		for (size_t i = 0; i < vertices.size(); i++)
+		{
 			vertices[i].normal = glm::vec3(1.0f, 0.0f, 0.0f);
 		}
 	}
-	
+
 	// Extract texture coordinates if present
-	if (texcoord_accessor) {
-		const float* texcoord_data = reinterpret_cast<const float*>(&texcoord_buffer->data[texcoord_view->byteOffset + texcoord_accessor->byteOffset]);
+	if (texcoord_accessor)
+	{
+		const float *texcoord_data   = reinterpret_cast<const float *>(&texcoord_buffer->data[texcoord_view->byteOffset + texcoord_accessor->byteOffset]);
 		const size_t texcoord_stride = texcoord_view->byteStride ? texcoord_view->byteStride / sizeof(float) : 2;
-		
-		for (size_t i = 0; i < texcoord_accessor->count; i++) {
+
+		for (size_t i = 0; i < texcoord_accessor->count; i++)
+		{
 			vertices[i].uv.x = texcoord_data[i * texcoord_stride + 0];
 			vertices[i].uv.y = texcoord_data[i * texcoord_stride + 1];
 		}
-	} else {
+	}
+	else
+	{
 		// Default UVs
-		for (size_t i = 0; i < vertices.size(); i++) {
+		for (size_t i = 0; i < vertices.size(); i++)
+		{
 			vertices[i].uv = glm::vec2(0.0f, 0.0f);
 		}
 	}
-	
+
 	// If no indices were provided, create them (just sequential)
-	if (indices.empty()) {
+	if (indices.empty())
+	{
 		indices.resize(vertices.size());
-		for (size_t i = 0; i < vertices.size(); i++) {
+		for (size_t i = 0; i < vertices.size(); i++)
+		{
 			indices[i] = static_cast<uint32_t>(i);
 		}
 	}
-	
+
 	// Optimize the mesh
-	size_t index_count = indices.size();
+	size_t                index_count = indices.size();
 	std::vector<uint32_t> remap(index_count);
-	size_t vertex_count = meshopt_generateVertexRemap(remap.data(), indices.data(), index_count, vertices.data(), vertices.size(), sizeof(lz::Vertex));
-	
+	size_t                vertex_count = meshopt_generateVertexRemap(remap.data(), indices.data(), index_count, vertices.data(), vertices.size(), sizeof(lz::Vertex));
+
 	std::vector<lz::Vertex> tmp_vertices(vertex_count);
-	std::vector<uint32_t> tmp_indices(index_count);
-	
+	std::vector<uint32_t>   tmp_indices(index_count);
+
 	meshopt_remapVertexBuffer(tmp_vertices.data(), vertices.data(), vertices.size(), sizeof(lz::Vertex), remap.data());
 	meshopt_remapIndexBuffer(tmp_indices.data(), indices.data(), index_count, remap.data());
-	
+
 	meshopt_optimizeVertexCache(tmp_indices.data(), tmp_indices.data(), index_count, vertex_count);
 	meshopt_optimizeVertexFetch(tmp_vertices.data(), tmp_indices.data(), index_count, tmp_vertices.data(), vertex_count, sizeof(lz::Vertex));
-	
-	mesh_data.vertices = std::move(tmp_vertices);
-	mesh_data.indices = std::move(tmp_indices);
-	
-	mesh_data.sphere_bound = glm::vec4(0.5f * (min_bound + max_bound), glm::length(max_bound - min_bound) * 0.5f);
-	
-	return mesh_data;
-}
 
-// Add second constructor for Mesh to load directly from file
-Mesh::Mesh(const std::string &file_name, glm::vec3 scale, vk::PhysicalDevice physical_device, vk::Device logical_device,
-         vk::CommandBuffer transfer_command_buffer)
-    : mesh_data(file_name, scale), indices_count(mesh_data.indices.size()), vertices_count(mesh_data.vertices.size()),
-      primitive_topology(mesh_data.primitive_topology)
-{
+	mesh_data.vertices = std::move(tmp_vertices);
+	mesh_data.indices  = std::move(tmp_indices);
+
+	mesh_data.sphere_bound = glm::vec4(0.5f * (min_bound + max_bound), glm::length(max_bound - min_bound) * 0.5f);
+
+	return mesh_data;
 }
 
 float MeshData::get_triangle_area(glm::vec3 points[3])
@@ -598,10 +624,14 @@ lz::Vertex MeshData::triangle_vertex_sample(Vertex triangle_vertices[3], glm::ve
 	return res;
 }
 
-Mesh::Mesh(const MeshData &mesh_data, vk::PhysicalDevice physical_device, vk::Device logical_device,
-           vk::CommandBuffer transfer_command_buffer)
-    : mesh_data(mesh_data), indices_count(mesh_data.indices.size()), vertices_count(mesh_data.vertices.size()),
-      primitive_topology(mesh_data.primitive_topology)
+Mesh::Mesh(const MeshData &mesh_data) :
+    mesh_data(mesh_data), indices_count(mesh_data.indices.size()), vertices_count(mesh_data.vertices.size()), primitive_topology(mesh_data.primitive_topology)
+{
+}
+
+// Add second constructor for Mesh to load directly from file
+Mesh::Mesh(const std::string &file_name, glm::vec3 scale) :
+    mesh_data(file_name, scale), indices_count(mesh_data.indices.size()), vertices_count(mesh_data.vertices.size()), primitive_topology(mesh_data.primitive_topology)
 {
 }
 
