@@ -555,6 +555,7 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 	vk::PhysicalDeviceVulkan12Features device_vulkan12_features;
 	device_vulkan12_features.setScalarBlockLayout(true);
 	device_vulkan12_features.setDrawIndirectCount(true);
+	device_vulkan12_features.setStorageBuffer8BitAccess(true);
 
 	// Setup mesh shader feature structure if needed
 	vk::PhysicalDeviceMeshShaderFeaturesEXT mesh_shader_features;
