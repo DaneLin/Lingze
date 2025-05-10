@@ -1,6 +1,6 @@
 #include "SimpleTriangleApp.h"
-#include "../EntryPoint.h"
 #include "SimpleRenderer.h"
+#include "application/EntryPoint.h"
 
 namespace lz::application
 {

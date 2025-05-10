@@ -29,8 +29,9 @@
 #include "backend/Core.h"
 #include "backend/ImGuiProfilerRenderer.h"
 #include "imgui.h"
-#include "render/common/BaseRenderer.h"
-#include "render/common/ImguiRenderer.h"
+#include "render/BaseRenderer.h"
+#include "render/ImguiRenderer.h"
+#include "render/RenderContext.h"
 #include "scene/Scene.h"
 
 namespace lz
@@ -75,8 +76,8 @@ class App
 	// Initialize the application
 	virtual bool init();
 
-	// Load scene
-	virtual bool load_scene();
+	// Prepare scene
+	virtual void prepare_render_context();
 
 	// Create renderer
 	virtual std::unique_ptr<render::BaseRenderer> create_renderer() = 0;
@@ -114,6 +115,7 @@ class App
 	std::unique_ptr<Core>                  core_;
 	std::unique_ptr<render::BaseRenderer>  renderer_;
 	std::unique_ptr<JsonScene>             scene_;
+	std::unique_ptr<render::RenderContext> render_context_;
 	std::unique_ptr<render::ImGuiRenderer> imgui_renderer_;
 
 	std::unique_ptr<InFlightQueue> in_flight_queue_;

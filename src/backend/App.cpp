@@ -2,11 +2,12 @@
 #include "backend/ImGuiProfilerRenderer.h"
 #include "backend/Logging.h"
 
+#include "App.h"
 #include "imgui.h"
 #include <chrono>
+#include <filesystem>
 #include <iostream>
 #include <sstream>
-#include <filesystem>
 
 namespace lz
 {
@@ -162,12 +163,11 @@ bool App::init()
 	    enable_debugging,
 	    device_extension_names);
 
-	// Load scene
-	if (!load_scene())
-	{
-		LOGE("Scene loading failed");
-		return false;
-	}
+	// Create render context
+	render_context_ = std::make_unique<render::RenderContext>(core_.get());
+
+	// Prepare scene
+	prepare_render_context();
 
 	// Create renderer
 	renderer_ = create_renderer();
@@ -179,6 +179,7 @@ bool App::init()
 
 	// Create scene resources
 	renderer_->recreate_scene_resources(scene_.get());
+	renderer_->recreate_render_context_resources(render_context_.get());
 
 	// Initialize ImGui renderer
 	imgui_renderer_ = std::make_unique<render::ImGuiRenderer>(core_.get(), window_);
@@ -189,23 +190,32 @@ bool App::init()
 	return true;
 }
 
+void App::prepare_render_context()
+{
+}
 bool App::load_scene_from_file(const std::string &config_file_name, lz::JsonScene::GeometryTypes geo_type)
 {
 	std::filesystem::path path(config_file_name);
-	std::string ext = path.extension().string();
+	std::string           ext = path.extension().string();
 	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-	
+
 	// Check if file is a GLTF/GLB file
-	if (ext == ".gltf" || ext == ".glb") {
-		try {
+	if (ext == ".gltf" || ext == ".glb")
+	{
+		try
+		{
 			// Load GLTF scene directly
 			scene_ = std::make_unique<lz::JsonScene>(config_file_name, core_.get(), geo_type);
 			return true;
-		} catch (const std::exception& e) {
+		}
+		catch (const std::exception &e)
+		{
 			LOGE("Error: Failed to load GLTF file {}: {}", config_file_name, e.what());
 			return false;
 		}
-	} else {
+	}
+	else
+	{
 		// Original JSON loading code
 		Json::Value  config_root;
 		Json::Reader reader;
@@ -287,11 +297,11 @@ void App::process_input()
 			}
 			if (glfwGetKey(window_, GLFW_KEY_Q) == GLFW_PRESS)
 			{
-				dir += glm::vec3(0.0f, 1.0f, 0.0f);
+				dir += glm::vec3(0.0f, -1.0f, 0.0f);
 			}
 			if (glfwGetKey(window_, GLFW_KEY_E) == GLFW_PRESS)
 			{
-				dir += glm::vec3(0.0f, -1.0f, 0.0f);
+				dir += glm::vec3(0.0f, 1.0f, 0.0f);
 			}
 
 			if (glm::length(dir) > 0.0f)
@@ -389,6 +399,7 @@ void App::render_frame()
 				auto pass_creation_task = in_flight_queue_->get_cpu_profiler().start_scoped_task(
 				    "Pass creation", lz::Colors::orange);
 				renderer_->render_frame(frame_info, camera_, light_, scene_.get(), window_);
+				renderer_->render_frame(frame_info, camera_, light_, render_context_.get(), window_);
 			}
 
 			// Performance statistics
@@ -448,8 +459,4 @@ void App::cleanup()
 	glfwTerminate();
 }
 
-bool App::load_scene()
-{
-	return true;
-}
 }        // namespace lz

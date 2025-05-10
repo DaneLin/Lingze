@@ -2,7 +2,7 @@
 
 #include "backend/ShaderProgram.h"
 #include "backend/VertexDeclaration.h"
-#include "render/common/BaseRenderer.h"
+#include "render/BaseRenderer.h"
 
 namespace lz::render
 {

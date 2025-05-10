@@ -11,8 +11,7 @@ endif()
 
 project(LingzeEngineCMake VERSION 0.1.0)
 
-# Set C++17 standard
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -48,6 +47,7 @@ add_compile_definitions(
     SHADER_SPIRV_HLSL_DIR="${CMAKE_SOURCE_DIR}/shaders/spirv_hlsl/"
     SCENE_DIR="${CMAKE_SOURCE_DIR}/data/scenes/"
     DATA_DIR="${CMAKE_SOURCE_DIR}/data/"
+    GLTF_DIR="${CMAKE_SOURCE_DIR}/data/glTF-Sample-Assets/Models/"
     # Resolve macro conflicts between GLFW and Windows headers
     GLFW_INCLUDE_NONE
 )
@@ -63,8 +63,8 @@ file(GLOB_RECURSE lingze_backend_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/
 file(GLOB_RECURSE lingze_backend_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/backend/*.h")
 
 # Render common files
-file(GLOB_RECURSE lingze_render_common_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/render/common/*.cpp")
-file(GLOB_RECURSE lingze_render_common_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/render/common/*.h")
+file(GLOB_RECURSE lingze_render_common_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/render/*.cpp")
+file(GLOB_RECURSE lingze_render_common_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/render/*.h")
 
 # Scene files
 file(GLOB_RECURSE lingze_scene_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/scene/*.cpp")
@@ -102,8 +102,7 @@ source_group("Application\\SimpleTriangle" FILES ${lingze_simpletriangle_sources
 source_group("Application\\SimpleMeshShading" FILES ${lingze_simplemesh_sources} ${lingze_simplemesh_headers})
 source_group("Application\\BasicShape" FILES ${lingze_basicshape_sources} ${lingze_basicshape_headers})
 source_group("Backend" FILES ${lingze_backend_sources} ${lingze_backend_headers})
-source_group("Render\\Common" FILES ${lingze_render_common_sources} ${lingze_render_common_headers})
-source_group("Render\\Renderers" FILES ${lingze_renderers_sources} ${lingze_renderers_headers})
+source_group("Render" FILES ${lingze_render_common_sources} ${lingze_render_common_headers})
 source_group("Scene" FILES ${lingze_scene_sources} ${lingze_scene_headers})
 source_group("Shaders" FILES ${shader_files})
 

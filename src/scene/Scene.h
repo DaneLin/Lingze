@@ -3,11 +3,11 @@
 #include "glm/glm.hpp"
 #include "scene/Mesh.h"
 #define GLM_ENABLE_EXPERIMENTAL
+#include "tiny_gltf.h"        // Include tiny_gltf header
 #include "json/json.h"
+#include <filesystem>        // Adding for filesystem path operations
 #include <functional>
 #include <glm/gtx/transform.hpp>
-#include <filesystem> // Adding for filesystem path operations
-#include "tiny_gltf.h" // Include tiny_gltf header
 
 namespace lz
 {
@@ -36,7 +36,6 @@ struct Object
 	uint32_t global_index_offset;
 };
 
-
 class JsonScene
 {
   public:
@@ -49,16 +48,9 @@ class JsonScene
 
 	// Constructor for JSON scene config
 	JsonScene(Json::Value scene_config, lz::Core *core, GeometryTypes geometry_type);
-	
+
 	// New constructor for GLTF file loading
 	JsonScene(const std::string &file_path, lz::Core *core, GeometryTypes geometry_type);
-
-	//// Legacy function: using vertex input binding
-	//using ObjectCallback = std::function<void(glm::mat4 object_to_world, glm::vec3 albedo_color,
-	//                                          glm::vec3 emissive_color, vk::Buffer vertex_buffer,
-	//                                          vk::Buffer index_buffer, uint32_t vertices_count,
-	//                                          uint32_t indices_count)>;
-	//void iterate_objects(ObjectCallback object_callback);
 
 	// Create global buffers (CPU side)
 	void create_global_buffers(bool build_meshlet = false);
@@ -101,12 +93,12 @@ class JsonScene
   private:
 	// Helper method to load meshes and create objects from a GLTF file
 	void load_from_gltf(const std::string &file_path);
-	
+
 	// Helper to recursively process GLTF nodes
-	void process_node(const tinygltf::Model& model, int node_idx, 
-	                 const std::map<int, Mesh*>& mesh_map, 
-	                 const glm::mat4& parent_transform);
-	
+	void process_node(const tinygltf::Model &model, int node_idx,
+	                  const std::map<int, Mesh *> &mesh_map,
+	                  const glm::mat4             &parent_transform);
+
 	std::vector<std::unique_ptr<Mesh>> meshes_;
 	std::vector<Object>                objects_;
 	size_t                             marker_object_index_;

@@ -21,7 +21,7 @@ class GpuDrivenApp : public lz::App
 
   protected:
 	// Load scene
-	virtual bool load_scene() override;
+	virtual void prepare_render_context() override;
 
 	virtual void render_ui() override;
 

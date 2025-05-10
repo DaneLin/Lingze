@@ -78,16 +78,6 @@ struct MeshData
 
 	MeshData(const std::string file_name, glm::vec3 scale);
 
-	static float get_triangle_area(glm::vec3 points[3]);
-
-	static MeshData generate_point_mesh(MeshData src_mesh, float density);
-
-	static glm::vec2 hammersley_norm(glm::uint i, glm::uint n);
-
-	static MeshData generate_point_mesh_regular(MeshData src_mesh, float density);
-
-	static MeshData generate_point_mesh_sized(MeshData src_mesh, size_t points_per_triangle_count);
-
 	void append_meshlets(std::vector<Meshlet> &meshlets_datum, std::vector<uint32_t> &meshlet_data_datum, const uint32_t vertex_offset);
 
 
@@ -168,17 +158,13 @@ struct Mesh
 	     
 	static lz::VertexDeclaration get_vertex_declaration();
 
-	// 移除独立缓冲区，不再为每个Mesh创建单独的VkBuffer
-	// std::unique_ptr<lz::StagedBuffer> vertex_buffer;
-	// std::unique_ptr<lz::StagedBuffer> index_buffer;
 
 	MeshData mesh_data;
 	size_t   indices_count;
 	size_t   vertices_count;
 
-	// 添加全局缓冲区的偏移量
-	uint32_t global_vertex_offset = 0; // 在全局顶点缓冲区中的偏移
-	uint32_t global_index_offset = 0;  // 在全局索引缓冲区中的偏移
+	uint32_t global_vertex_offset = 0; // offset in the global vertex buffer
+	uint32_t global_index_offset  = 0;  // offset in the global index buffer
 
 	vk::PrimitiveTopology primitive_topology;
 

@@ -377,20 +377,6 @@ JsonScene::JsonScene(Json::Value scene_config, lz::Core *core, GeometryTypes geo
 			glm::vec3   scale          = read_json_vec3_f(curr_mesh_node["scale"]);
 
 			auto mesh_data = MeshData(mesh_file_name, scale);
-			switch (geometry_type)
-			{
-				case GeometryTypes::eRegularPoints:
-				{
-					float splat_size = 0.1f;
-					mesh_data        = MeshData::generate_point_mesh_regular(mesh_data, std::pow(1.0f / splat_size, 2.0f));
-				}
-				break;
-				case GeometryTypes::eSizedPoints:
-				{
-					mesh_data = MeshData::generate_point_mesh_sized(mesh_data, 1);
-				}
-				break;
-			}
 
 			auto mesh               = std::unique_ptr<Mesh>(new Mesh(mesh_data));
 			mesh->global_mesh_index = uint32_t(meshes_.size());
@@ -435,17 +421,6 @@ JsonScene::JsonScene(Json::Value scene_config, lz::Core *core, GeometryTypes geo
 	}
 }
 
-// void JsonScene::iterate_objects(ObjectCallback object_callback)
-//{
-//	for (auto &object : objects_)
-//	{
-//		object_callback(object.obj_to_world, object.albedo_color, object.emissive_color,
-//		                object.mesh->vertex_buffer->get_buffer().get_handle(),
-//		                object.mesh->index_buffer ? object.mesh->index_buffer->get_buffer().get_handle() : nullptr,
-//		                uint32_t(object.mesh->vertices_count), uint32_t(object.mesh->indices_count));
-//	}
-// }
-
 void JsonScene::create_global_buffers(bool build_meshlet)
 {
 	// calc total vertex and index offset
@@ -483,7 +458,6 @@ void JsonScene::create_global_buffers(bool build_meshlet)
 			mesh->mesh_data.append_meshlets(all_meshlets, all_meshlet_datas, global_vertices_count_);
 		}
 
-		// 使用static_cast显式转换size_t到uint32_t，避免编译警告
 		all_mesh_infos[mesh->global_mesh_index] = {
 		    mesh->mesh_data.sphere_bound,
 		    static_cast<uint32_t>(global_vertices_count_),

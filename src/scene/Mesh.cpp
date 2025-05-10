@@ -1,10 +1,16 @@
 #include "Mesh.h"
-#include "../backend/Logging.h"
+#include "backend/Logging.h"
 #include "meshoptimizer.h"
 #include "tiny_gltf.h"
 #include "tiny_obj_loader.h"
 #include <filesystem>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <functional>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include <iostream>
+
+#include "Config.h"
 
 namespace tinyobj
 {
@@ -200,187 +206,278 @@ MeshData GltfLoader::load(const std::string &file_name, glm::vec3 scale)
 		throw std::runtime_error("Failed to load GLTF mesh");
 	}
 
-	// For simplicity, we'll load just the first mesh with its first primitive
-	if (model.meshes.empty())
+	int scene_index = model.defaultScene >= 0 ? model.defaultScene : 0;
+	if (model.scenes.empty() || scene_index >= model.scenes.size())
 	{
-		throw std::runtime_error("GLTF file contains no meshes");
+		throw std::runtime_error("GLTF file contains no valid scenes");
 	}
 
-	// Get the first mesh
-	const tinygltf::Mesh &gltf_mesh = model.meshes[0];
-
-	if (gltf_mesh.primitives.empty())
-	{
-		throw std::runtime_error("GLTF mesh contains no primitives");
-	}
-
-	// Get the first primitive
-	const tinygltf::Primitive &primitive = gltf_mesh.primitives[0];
-
-	// Check if we have position data
-	if (primitive.attributes.find("POSITION") == primitive.attributes.end())
-	{
-		throw std::runtime_error("GLTF primitive has no POSITION attribute");
-	}
+	std::vector<lz::Vertex> all_vertices;
+	std::vector<uint32_t>   all_indices;
+	uint32_t                vertex_offset = 0;
 
 	// bounding sphere
 	glm::vec3 min_bound = glm::vec3(std::numeric_limits<float>::infinity());
 	glm::vec3 max_bound = glm::vec3(-std::numeric_limits<float>::infinity());
 
-	// Get accessors for vertex data
-	const tinygltf::Accessor   &pos_accessor = model.accessors[primitive.attributes.at("POSITION")];
-	const tinygltf::BufferView &pos_view     = model.bufferViews[pos_accessor.bufferView];
-	const tinygltf::Buffer     &pos_buffer   = model.buffers[pos_view.buffer];
+	// Define process_node function type for recursive lambda
+	std::function<void(int, const glm::mat4 &)> process_node;
 
-	// Optional normal and texcoord accessors
-	const tinygltf::Accessor   *normal_accessor = nullptr;
-	const tinygltf::BufferView *normal_view     = nullptr;
-	const tinygltf::Buffer     *normal_buffer   = nullptr;
+	// Recursive function to process nodes and their children
+	process_node = [&](int node_index, const glm::mat4 &parent_transform) {
+		if (node_index < 0 || node_index >= model.nodes.size())
+			return;
 
-	if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
-	{
-		normal_accessor = &model.accessors[primitive.attributes.at("NORMAL")];
-		normal_view     = &model.bufferViews[normal_accessor->bufferView];
-		normal_buffer   = &model.buffers[normal_view->buffer];
-	}
+		const auto &node = model.nodes[node_index];
 
-	const tinygltf::Accessor   *texcoord_accessor = nullptr;
-	const tinygltf::BufferView *texcoord_view     = nullptr;
-	const tinygltf::Buffer     *texcoord_buffer   = nullptr;
+		// Calculate node transformation matrix
+		glm::mat4 local_transform(1.0f);
 
-	if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
-	{
-		texcoord_accessor = &model.accessors[primitive.attributes.at("TEXCOORD_0")];
-		texcoord_view     = &model.bufferViews[texcoord_accessor->bufferView];
-		texcoord_buffer   = &model.buffers[texcoord_view->buffer];
-	}
-
-	// Get indices
-	std::vector<uint32_t> indices;
-	if (primitive.indices >= 0)
-	{
-		const tinygltf::Accessor   &index_accessor = model.accessors[primitive.indices];
-		const tinygltf::BufferView &index_view     = model.bufferViews[index_accessor.bufferView];
-		const tinygltf::Buffer     &index_buffer   = model.buffers[index_view.buffer];
-
-		// Extract indices - convert from whatever type to uint32_t
-		indices.resize(index_accessor.count);
-
-		const unsigned char *data = &index_buffer.data[index_view.byteOffset + index_accessor.byteOffset];
-		switch (index_accessor.componentType)
+		// Process matrix transformation
+		if (node.matrix.size() == 16)
 		{
-			case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+			// Use matrix directly from glTF
+			local_transform = glm::mat4(
+			    node.matrix[0], node.matrix[1], node.matrix[2], node.matrix[3],
+			    node.matrix[4], node.matrix[5], node.matrix[6], node.matrix[7],
+			    node.matrix[8], node.matrix[9], node.matrix[10], node.matrix[11],
+			    node.matrix[12], node.matrix[13], node.matrix[14], node.matrix[15]);
+		}
+		else
+		{
+			// Use TRS (Translation, Rotation, Scale)
+			if (node.translation.size() == 3)
 			{
-				for (size_t i = 0; i < index_accessor.count; i++)
-				{
-					indices[i] = static_cast<uint32_t>(data[i]);
-				}
-				break;
+				local_transform = glm::translate(local_transform, glm::vec3(
+				                                                      node.translation[0], node.translation[1], node.translation[2]));
 			}
-			case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+
+			if (node.rotation.size() == 4)
 			{
-				const uint16_t *short_data = reinterpret_cast<const uint16_t *>(data);
-				for (size_t i = 0; i < index_accessor.count; i++)
-				{
-					indices[i] = static_cast<uint32_t>(short_data[i]);
-				}
-				break;
+				glm::quat q(
+				    static_cast<float>(node.rotation[3]),        // w
+				    static_cast<float>(node.rotation[0]),        // x
+				    static_cast<float>(node.rotation[1]),        // y
+				    static_cast<float>(node.rotation[2])         // z
+				);
+				local_transform = local_transform * glm::mat4_cast(q);
 			}
-			case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+
+			if (node.scale.size() == 3)
 			{
-				const uint32_t *int_data = reinterpret_cast<const uint32_t *>(data);
-				for (size_t i = 0; i < index_accessor.count; i++)
-				{
-					indices[i] = int_data[i];
-				}
-				break;
+				local_transform = glm::scale(local_transform, glm::vec3(
+				                                                  node.scale[0], node.scale[1], node.scale[2]));
 			}
-			default:
-				throw std::runtime_error("Unsupported index component type");
 		}
-	}
 
-	// Create vertices
-	std::vector<lz::Vertex> vertices;
-	vertices.resize(pos_accessor.count);
+		// Combine parent and local transformations
+		glm::mat4 node_transform = parent_transform * local_transform;
 
-	// Extract positions
-	const float *pos_data   = reinterpret_cast<const float *>(&pos_buffer.data[pos_view.byteOffset + pos_accessor.byteOffset]);
-	const size_t pos_stride = pos_view.byteStride ? pos_view.byteStride / sizeof(float) : 3;
-
-	for (size_t i = 0; i < pos_accessor.count; i++)
-	{
-		vertices[i].pos.x = pos_data[i * pos_stride + 0] * scale.x;
-		vertices[i].pos.y = pos_data[i * pos_stride + 1] * scale.y;
-		vertices[i].pos.z = pos_data[i * pos_stride + 2] * scale.z;
-
-		min_bound = glm::min(min_bound, vertices[i].pos);
-		max_bound = glm::max(max_bound, vertices[i].pos);
-	}
-
-	// Extract normals if present
-	if (normal_accessor)
-	{
-		const float *normal_data   = reinterpret_cast<const float *>(&normal_buffer->data[normal_view->byteOffset + normal_accessor->byteOffset]);
-		const size_t normal_stride = normal_view->byteStride ? normal_view->byteStride / sizeof(float) : 3;
-
-		for (size_t i = 0; i < normal_accessor->count; i++)
+		// Process this node's mesh
+		if (node.mesh >= 0 && node.mesh < model.meshes.size())
 		{
-			vertices[i].normal.x = normal_data[i * normal_stride + 0];
-			vertices[i].normal.y = normal_data[i * normal_stride + 1];
-			vertices[i].normal.z = normal_data[i * normal_stride + 2];
+			const auto &mesh = model.meshes[node.mesh];
+
+			// Process all primitives in the mesh
+			for (const auto &primitive : mesh.primitives)
+			{
+				// Check if we have position data
+				if (primitive.attributes.find("POSITION") == primitive.attributes.end())
+				{
+					continue;        // Skip primitives without position data
+				}
+
+				// Get accessors for vertex data
+				const auto &pos_accessor = model.accessors[primitive.attributes.at("POSITION")];
+				const auto &pos_view     = model.bufferViews[pos_accessor.bufferView];
+				const auto &pos_buffer   = model.buffers[pos_view.buffer];
+
+				// Optional normal and texcoord accessors
+				const tinygltf::Accessor   *normal_accessor = nullptr;
+				const tinygltf::BufferView *normal_view     = nullptr;
+				const tinygltf::Buffer     *normal_buffer   = nullptr;
+
+				if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
+				{
+					normal_accessor = &model.accessors[primitive.attributes.at("NORMAL")];
+					normal_view     = &model.bufferViews[normal_accessor->bufferView];
+					normal_buffer   = &model.buffers[normal_view->buffer];
+				}
+
+				const tinygltf::Accessor   *texcoord_accessor = nullptr;
+				const tinygltf::BufferView *texcoord_view     = nullptr;
+				const tinygltf::Buffer     *texcoord_buffer   = nullptr;
+
+				if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
+				{
+					texcoord_accessor = &model.accessors[primitive.attributes.at("TEXCOORD_0")];
+					texcoord_view     = &model.bufferViews[texcoord_accessor->bufferView];
+					texcoord_buffer   = &model.buffers[texcoord_view->buffer];
+				}
+
+				// Extract vertices
+				std::vector<lz::Vertex> vertices;
+				vertices.resize(pos_accessor.count);
+
+				const float *pos_data   = reinterpret_cast<const float *>(&pos_buffer.data[pos_view.byteOffset + pos_accessor.byteOffset]);
+				const size_t pos_stride = pos_view.byteStride ? pos_view.byteStride / sizeof(float) : 3;
+
+				for (size_t i = 0; i < pos_accessor.count; i++)
+				{
+					glm::vec3 pos(
+					    pos_data[i * pos_stride + 0],
+					    pos_data[i * pos_stride + 1],
+					    pos_data[i * pos_stride + 2]);
+
+					// Apply node transformation and global scale
+					glm::vec4 transformed_pos = node_transform * glm::vec4(pos, 1.0f);
+					vertices[i].pos           = glm::vec3(transformed_pos) * scale;
+
+					min_bound = glm::min(min_bound, vertices[i].pos);
+					max_bound = glm::max(max_bound, vertices[i].pos);
+				}
+
+				// Extract normals if present
+				if (normal_accessor)
+				{
+					const float *normal_data   = reinterpret_cast<const float *>(&normal_buffer->data[normal_view->byteOffset + normal_accessor->byteOffset]);
+					const size_t normal_stride = normal_view->byteStride ? normal_view->byteStride / sizeof(float) : 3;
+
+					for (size_t i = 0; i < normal_accessor->count; i++)
+					{
+						glm::vec3 normal(
+						    normal_data[i * normal_stride + 0],
+						    normal_data[i * normal_stride + 1],
+						    normal_data[i * normal_stride + 2]);
+
+						// Apply only rotation part of transform to normals
+						glm::mat3 normal_matrix = glm::transpose(glm::inverse(glm::mat3(node_transform)));
+						vertices[i].normal      = glm::normalize(normal_matrix * normal);
+					}
+				}
+				else
+				{
+					// Default normals
+					for (size_t i = 0; i < vertices.size(); i++)
+					{
+						vertices[i].normal = glm::vec3(1.0f, 0.0f, 0.0f);
+					}
+				}
+
+				// Extract texture coordinates if present
+				if (texcoord_accessor)
+				{
+					const float *texcoord_data   = reinterpret_cast<const float *>(&texcoord_buffer->data[texcoord_view->byteOffset + texcoord_accessor->byteOffset]);
+					const size_t texcoord_stride = texcoord_view->byteStride ? texcoord_view->byteStride / sizeof(float) : 2;
+
+					for (size_t i = 0; i < texcoord_accessor->count; i++)
+					{
+						vertices[i].uv.x = texcoord_data[i * texcoord_stride + 0];
+						vertices[i].uv.y = texcoord_data[i * texcoord_stride + 1];
+					}
+				}
+				else
+				{
+					// Default UVs
+					for (size_t i = 0; i < vertices.size(); i++)
+					{
+						vertices[i].uv = glm::vec2(0.0f, 0.0f);
+					}
+				}
+
+				// Extract indices
+				std::vector<uint32_t> indices;
+				if (primitive.indices >= 0)
+				{
+					const auto &index_accessor = model.accessors[primitive.indices];
+					const auto &index_view     = model.bufferViews[index_accessor.bufferView];
+					const auto &index_buffer   = model.buffers[index_view.buffer];
+
+					// Extract indices - convert from any type to uint32_t
+					indices.resize(index_accessor.count);
+
+					const unsigned char *data = &index_buffer.data[index_view.byteOffset + index_accessor.byteOffset];
+					switch (index_accessor.componentType)
+					{
+						case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+						{
+							for (size_t i = 0; i < index_accessor.count; i++)
+							{
+								indices[i] = static_cast<uint32_t>(data[i]) + vertex_offset;
+							}
+							break;
+						}
+						case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+						{
+							const uint16_t *short_data = reinterpret_cast<const uint16_t *>(data);
+							for (size_t i = 0; i < index_accessor.count; i++)
+							{
+								indices[i] = static_cast<uint32_t>(short_data[i]) + vertex_offset;
+							}
+							break;
+						}
+						case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+						{
+							const uint32_t *int_data = reinterpret_cast<const uint32_t *>(data);
+							for (size_t i = 0; i < index_accessor.count; i++)
+							{
+								indices[i] = int_data[i] + vertex_offset;
+							}
+							break;
+						}
+						default:
+							throw std::runtime_error("Unsupported index component type");
+					}
+				}
+				else
+				{
+					// If no indices provided, create sequential ones
+					indices.resize(vertices.size());
+					for (size_t i = 0; i < vertices.size(); i++)
+					{
+						indices[i] = static_cast<uint32_t>(i) + vertex_offset;
+					}
+				}
+
+				// Add to our collected data
+				all_vertices.insert(all_vertices.end(), vertices.begin(), vertices.end());
+				all_indices.insert(all_indices.end(), indices.begin(), indices.end());
+
+				// Update vertex offset
+				vertex_offset += static_cast<uint32_t>(vertices.size());
+			}
 		}
-	}
-	else
-	{
-		// Default normals
-		for (size_t i = 0; i < vertices.size(); i++)
+
+		// Recursively process child nodes
+		for (int child : node.children)
 		{
-			vertices[i].normal = glm::vec3(1.0f, 0.0f, 0.0f);
+			process_node(child, node_transform);
 		}
+	};
+
+	// Process all root nodes in the scene
+	const auto &scene = model.scenes[scene_index];
+	for (int node_index : scene.nodes)
+	{
+		process_node(node_index, glm::mat4(1.0f));
 	}
 
-	// Extract texture coordinates if present
-	if (texcoord_accessor)
+	// Throw error if no data was loaded
+	if (all_vertices.empty())
 	{
-		const float *texcoord_data   = reinterpret_cast<const float *>(&texcoord_buffer->data[texcoord_view->byteOffset + texcoord_accessor->byteOffset]);
-		const size_t texcoord_stride = texcoord_view->byteStride ? texcoord_view->byteStride / sizeof(float) : 2;
-
-		for (size_t i = 0; i < texcoord_accessor->count; i++)
-		{
-			vertices[i].uv.x = texcoord_data[i * texcoord_stride + 0];
-			vertices[i].uv.y = texcoord_data[i * texcoord_stride + 1];
-		}
-	}
-	else
-	{
-		// Default UVs
-		for (size_t i = 0; i < vertices.size(); i++)
-		{
-			vertices[i].uv = glm::vec2(0.0f, 0.0f);
-		}
-	}
-
-	// If no indices were provided, create them (just sequential)
-	if (indices.empty())
-	{
-		indices.resize(vertices.size());
-		for (size_t i = 0; i < vertices.size(); i++)
-		{
-			indices[i] = static_cast<uint32_t>(i);
-		}
+		throw std::runtime_error("No valid mesh data found in GLTF file");
 	}
 
 	// Optimize the mesh
-	size_t                index_count = indices.size();
+	size_t                index_count = all_indices.size();
 	std::vector<uint32_t> remap(index_count);
-	size_t                vertex_count = meshopt_generateVertexRemap(remap.data(), indices.data(), index_count, vertices.data(), vertices.size(), sizeof(lz::Vertex));
+	size_t                vertex_count = meshopt_generateVertexRemap(remap.data(), all_indices.data(), index_count, all_vertices.data(), all_vertices.size(), sizeof(lz::Vertex));
 
 	std::vector<lz::Vertex> tmp_vertices(vertex_count);
 	std::vector<uint32_t>   tmp_indices(index_count);
 
-	meshopt_remapVertexBuffer(tmp_vertices.data(), vertices.data(), vertices.size(), sizeof(lz::Vertex), remap.data());
-	meshopt_remapIndexBuffer(tmp_indices.data(), indices.data(), index_count, remap.data());
+	meshopt_remapVertexBuffer(tmp_vertices.data(), all_vertices.data(), all_vertices.size(), sizeof(lz::Vertex), remap.data());
+	meshopt_remapIndexBuffer(tmp_indices.data(), all_indices.data(), index_count, remap.data());
 
 	meshopt_optimizeVertexCache(tmp_indices.data(), tmp_indices.data(), index_count, vertex_count);
 	meshopt_optimizeVertexFetch(tmp_vertices.data(), tmp_indices.data(), index_count, tmp_vertices.data(), vertex_count, sizeof(lz::Vertex));
@@ -393,178 +490,9 @@ MeshData GltfLoader::load(const std::string &file_name, glm::vec3 scale)
 	return mesh_data;
 }
 
-float MeshData::get_triangle_area(glm::vec3 points[3])
-{
-	glm::vec3 a = points[0];
-	glm::vec3 b = points[1];
-	glm::vec3 c = points[2];
-
-	glm::vec3 ab = b - a;
-	glm::vec3 ac = c - a;
-
-	return glm::length(glm::cross(ab, ac)) / 2.0f;
-}
-
-MeshData MeshData::generate_point_mesh(MeshData src_mesh, float density)
-{
-	assert(src_mesh.primitive_topology == vk::PrimitiveTopology::eTriangleList);
-	const IndexType triangles_count = IndexType(src_mesh.indices.size() / 3);
-
-	std::vector<float> triangle_areas;
-	triangle_areas.resize(triangles_count);
-
-	float total_area = 0.0f;
-	for (size_t triangle_index = 0; triangle_index < triangles_count; ++triangle_index)
-	{
-		glm::vec3 points[3];
-		for (size_t vertex_number = 0; vertex_number < 3; ++vertex_number)
-		{
-			points[vertex_number] = src_mesh.vertices[src_mesh.indices[triangle_index * 3 + vertex_number]].pos;
-		}
-		float area = get_triangle_area(points);
-		total_area += area;
-		triangle_areas[triangle_index] = total_area;
-	}
-
-	size_t points_count = size_t(total_area * density);
-
-	static std::default_random_engine            eng;
-	static std::uniform_real_distribution<float> dis(0.0f, 1.f);
-
-	MeshData res;
-	res.primitive_topology = vk::PrimitiveTopology::ePointList;
-	for (size_t point_index = 0; point_index < points_count; ++point_index)
-	{
-		float area_val = dis(eng);
-
-		auto it = std::lower_bound(triangle_areas.begin(), triangle_areas.end(), total_area);
-		if (it == triangle_areas.end())
-		{
-			continue;
-		}
-
-		const size_t triangle_index = it - triangle_areas.begin();
-
-		Vertex triangle_vertices[3];
-		for (size_t vertex_number = 0; vertex_number < 3; ++vertex_number)
-		{
-			triangle_vertices[vertex_number] = src_mesh.vertices[src_mesh.indices[triangle_index * 3 + vertex_number]];
-		}
-
-		Vertex vertex = triangle_vertex_sample(triangle_vertices, glm::vec2(dis(eng), dis(eng)));
-		res.vertices.push_back(vertex);
-	}
-	return res;
-}
-
-glm::vec2 MeshData::hammersley_norm(glm::uint i, glm::uint n)
-{
-	// principle: reverse bit sequence of i
-	glm::uint b = (glm::uint(i) << 16u) | (glm::uint(i) >> 16u);
-	b           = (b & 0x55555555u) << 1u | (b & 0xAAAAAAAAu) >> 1u;
-	b           = (b & 0x33333333u) << 2u | (b & 0xCCCCCCCCu) >> 2u;
-	b           = (b & 0x0F0F0F0Fu) << 4u | (b & 0xF0F0F0F0u) >> 4u;
-	b           = (b & 0x00FF00FFu) << 8u | (b & 0xFF00FF00u) >> 8u;
-
-	return glm::vec2(i, b) / glm::vec2(n, 0xffffffffU);
-}
-
-MeshData MeshData::generate_point_mesh_regular(MeshData src_mesh, float density)
-{
-	assert(src_mesh.primitive_topology == vk::PrimitiveTopology::eTriangleList);
-	IndexType triangles_count = IndexType(src_mesh.indices.size() / 3);
-
-	std::vector<float> triangle_areas;
-	triangle_areas.resize(triangles_count);
-
-	static std::default_random_engine            eng;
-	static std::uniform_real_distribution<float> dis(0.0f, 1.f);
-
-	MeshData res;
-	res.primitive_topology = vk::PrimitiveTopology::ePointList;
-
-	size_t points_count = 0;
-	float  total_area   = 0.0f;
-
-	for (size_t triangle_index = 0; triangle_index < triangles_count; ++triangle_index)
-	{
-		glm::vec3 points[3];
-		for (size_t vertex_number = 0; vertex_number < 3; ++vertex_number)
-		{
-			points[vertex_number] = src_mesh.vertices[src_mesh.indices[triangle_index * 3 + vertex_number]].pos;
-		}
-
-		float area               = get_triangle_area(points);
-		float points_count_float = area * density;
-
-		glm::uint points_count = glm::uint(points_count_float);
-		float     ratio        = points_count_float - float(points_count);
-		points_count += (dis(eng) < ratio) ? 1 : 0;
-
-		Vertex triangle_vertices[3];
-		for (size_t vertex_number = 0; vertex_number < 3; ++vertex_number)
-		{
-			triangle_vertices[vertex_number] = src_mesh.vertices[src_mesh.indices[triangle_index * 3 + vertex_number]];
-		}
-
-		for (glm::uint point_number = 0; point_number < points_count; ++point_number)
-		{
-			Vertex vertex = triangle_vertex_sample(triangle_vertices, hammersley_norm(point_number, points_count));
-			vertex.uv.x   = 2.0f / sqrt(density);
-			res.vertices.push_back(vertex);
-		}
-	}
-	return res;
-}
-
-MeshData MeshData::generate_point_mesh_sized(MeshData src_mesh, size_t points_per_triangle_count)
-{
-	static std::default_random_engine            eng;
-	static std::uniform_real_distribution<float> dis(0.0f, 1.0f);
-
-	assert(src_mesh.primitive_topology == vk::PrimitiveTopology::eTriangleList);
-	const IndexType triangles_count = IndexType(src_mesh.indices.size() / 3);
-
-	MeshData res;
-	res.primitive_topology = vk::PrimitiveTopology::ePointList;
-
-	for (size_t triangle_index = 0; triangle_index < triangles_count; triangle_index++)
-	{
-		glm::vec3 points[3];
-		for (size_t vertexNumber = 0; vertexNumber < 3; vertexNumber++)
-			points[vertexNumber] = src_mesh.vertices[src_mesh.indices[triangle_index * 3 + vertexNumber]].pos;
-		float area = get_triangle_area(points);
-
-		Vertex triangle_vertices[3];
-		for (size_t vertex_number = 0; vertex_number < 3; vertex_number++)
-			triangle_vertices[vertex_number] = src_mesh.vertices[src_mesh.indices[triangle_index * 3 + vertex_number]];
-
-		glm::uint       res_points_count = glm::uint(points_per_triangle_count);
-		float           res_point_radius = 2.0f * sqrt(area / points_per_triangle_count);
-		constexpr float max_point_radius = 0.6f;        // 0.6f
-
-		if (res_point_radius > max_point_radius)
-		{
-			res_points_count = glm::uint(res_points_count * std::pow(res_point_radius / max_point_radius, 2.0) + 0.5f);
-			res_point_radius = max_point_radius;
-		}
-		for (glm::uint point_number = 0; point_number < res_points_count; point_number++)
-		{
-			Vertex vertex = triangle_vertex_sample(triangle_vertices, /*HammersleyNorm(pointNumber, resPointsCount)*/ glm::vec2(dis(eng), dis(eng)));
-			vertex.uv.x   = res_point_radius;
-			res.vertices.push_back(vertex);
-		}
-	}
-	return res;
-}
-
 void MeshData::append_meshlets(std::vector<Meshlet> &meshlets_datum, std::vector<uint32_t> &meshlet_data_datum, const uint32_t vertex_offset)
 {
 	assert(primitive_topology == vk::PrimitiveTopology::eTriangleList);
-
-	constexpr size_t k_max_vertices  = 64;
-	constexpr size_t k_max_triangles = 124;        // we use 4 bytes to store indices, so the max triangle count is 124 that is divisible by 4
-	constexpr float  k_cone_weight   = 0.5f;
 
 	std::vector<meshopt_Meshlet> tmp_meshlets(meshopt_buildMeshletsBound(indices.size(), k_max_vertices, k_max_triangles));
 	std::vector<unsigned int>    meshlet_vertices(tmp_meshlets.size() * k_max_vertices);

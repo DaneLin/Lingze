@@ -1,5 +1,5 @@
 #include "SimpleMeshShadingApp.h"
-#include "../EntryPoint.h"
+#include "application/EntryPoint.h"
 #include "SimpleMeshShadingRenderer.h"
 
 namespace lz::application

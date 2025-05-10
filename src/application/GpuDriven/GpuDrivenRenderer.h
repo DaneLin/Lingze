@@ -1,8 +1,8 @@
 #pragma once
 
 #include "backend/ShaderProgram.h"
-#include "render/common/BaseRenderer.h"
-#include "render/common/MipBuilder.h"
+#include "render/BaseRenderer.h"
+#include "render/MipBuilder.h"
 
 namespace lz::render
 {
@@ -14,10 +14,12 @@ class GpuDrivenRenderer final : public BaseRenderer
 	explicit GpuDrivenRenderer(lz::Core *core);
 
 	virtual void recreate_scene_resources(lz::JsonScene *scene) override;
+	virtual void recreate_render_context_resources(lz::render::RenderContext *render_context) override;
 	virtual void recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count) override;
 	virtual void render_frame(const lz::InFlightQueue::FrameInfo &frame_info,
 	                          const lz::Camera &camera, const lz::Camera &light,
 	                          lz::JsonScene *scene, GLFWwindow *window) override;
+	void render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera, const lz::Camera &light, lz::render::RenderContext *render_context, GLFWwindow *window) override;
 	virtual void reload_shaders() override;
 	virtual void change_view() override;
 
@@ -47,7 +49,7 @@ class GpuDrivenRenderer final : public BaseRenderer
 
 	struct SceneResource
 	{
-		SceneResource(lz::Core *core, lz::JsonScene *scene);
+		SceneResource(lz::Core *core, lz::render::RenderContext *render_context);
 
 		lz::RenderGraph::BufferProxyUnique visible_mesh_draw_proxy_;
 		lz::RenderGraph::BufferProxyUnique mesh_draw_proxy_;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "backend/ShaderProgram.h"
-#include "render/common/BaseRenderer.h"
+#include "render/BaseRenderer.h"
 
 namespace lz::render
 {
