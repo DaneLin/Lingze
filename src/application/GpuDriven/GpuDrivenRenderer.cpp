@@ -104,10 +104,10 @@ void GpuDrivenRenderer::render_frame(
 		                                                    .setBuffer(visible_mesh_count_proxy->get_handle())
 		                                                    .setSize(sizeof(uint32_t))
 		                                                    .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
-		                                                    .setDstAccessMask(vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite | vk::AccessFlagBits::eIndirectCommandRead);
+		                                                    .setDstAccessMask(vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite);
 		        context.get_command_buffer().pipelineBarrier(
 		            vk::PipelineStageFlagBits::eTransfer,
-		            vk::PipelineStageFlagBits::eComputeShader | vk::PipelineStageFlagBits::eDrawIndirect,
+		            vk::PipelineStageFlagBits::eComputeShader,
 		            vk::DependencyFlags(),
 		            {},
 		            {clear_barrier},
@@ -119,6 +119,19 @@ void GpuDrivenRenderer::render_frame(
 		            {shader_data_set}, {shader_data.dynamic_offset});
 
 		        context.get_command_buffer().dispatch((scene->get_draw_count() + 31) / 32, 1, 1);
+
+				vk::BufferMemoryBarrier fill_barrier = vk::BufferMemoryBarrier()
+		                                                    .setBuffer(visible_mesh_count_proxy->get_handle())
+		                                                    .setSize(sizeof(uint32_t))
+		                                                    .setSrcAccessMask(vk::AccessFlagBits::eShaderWrite)
+		                                                    .setDstAccessMask(vk::AccessFlagBits::eIndirectCommandRead);
+		        context.get_command_buffer().pipelineBarrier(
+		            vk::PipelineStageFlagBits::eComputeShader,
+		            vk::PipelineStageFlagBits::eDrawIndirect,
+		            vk::DependencyFlags(),
+		            {},
+		            {fill_barrier},
+		            {});
 	        }));
 
 	// pass 2 : rendering
@@ -177,12 +190,12 @@ void GpuDrivenRenderer::render_frame(
 		            {shader_data_set}, {shader_data.dynamic_offset});
 
 		        context.get_command_buffer().bindIndexBuffer(scene->get_global_index_buffer(), 0, vk::IndexType::eUint32);
+		        //context.get_command_buffer().drawIndexedIndirect(visible_mesh_draw_proxy->get_handle(), 0, 1, sizeof(MeshDrawCommand), core_->get_dynamic_loader());
 		        context.get_command_buffer().drawIndexedIndirectCount(
 		            visible_mesh_draw_proxy->get_handle(), 0,
 		            visible_mesh_count_proxy->get_handle(), 0,
-		            uint32_t(scene->get_draw_count()),
-		            sizeof(MeshDrawCommand),
-		            core_->get_dynamic_loader());
+		            static_cast<uint32_t>(scene->get_draw_count()),
+		            sizeof(MeshDrawCommand));
 	        }));
 }
 

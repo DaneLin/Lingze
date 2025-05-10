@@ -26,7 +26,6 @@ class GpuDrivenRenderer final : public BaseRenderer
 
 	struct BasicShapeShader
 	{
-
 #pragma pack(push, 1)
 		struct DataBuffer
 		{
