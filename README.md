@@ -88,7 +88,6 @@ cmake --build .
 - **核心渲染功能**
   - [x] 基础几何渲染
   - [x] Mesh Shader & Task Shader
-  - [ ] 计算着色器
   - [ ] 渲染图架构
   - [ ] PBR材质系统
   - [ ] 实时阴影
@@ -106,8 +105,8 @@ cmake --build .
 - **场景系统**
   - [x] 网格加载
     - [x] OBJ模型导入
-    - [ ] glTF模型导入
-  - [ ] 场景图
+    - [x] glTF模型导入
+  - [x] 场景图
   - [ ] 加速结构
   - [ ] 场景编辑器
 
@@ -238,7 +237,6 @@ cmake --build .
 - **Core Rendering Features**
   - [x] Basic Geometry Rendering
   - [x] Mesh Shader & Task Shader
-  - [ ] Compute Shaders
   - [ ] Render Graph Architecture
   - [ ] PBR Material System
   - [ ] Real-time Shadows
@@ -256,8 +254,8 @@ cmake --build .
 - **Scene System**
   - [x] Mesh Loading
     - [x] OBJ Model Import
-    - [ ] glTF Model Import
-  - [ ] Scene Graph
+    - [x] glTF Model Import
+  - [x] Scene Graph
   - [ ] Acceleration Structures
   - [ ] Scene Editor
 

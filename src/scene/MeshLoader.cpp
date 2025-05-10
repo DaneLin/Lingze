@@ -26,7 +26,6 @@ std::shared_ptr<MeshLoader> MeshLoader::get_loader(const std::string &file_name)
 	{
 		if (loader->can_load(file_name))
 		{
-			// 保存文件路径
 			loader->set_file_path(file_name);
 			return loader;
 		}
@@ -181,7 +180,7 @@ Mesh ObjMeshLoader::load()
 		// Add to mesh
 		mesh.add_sub_mesh(sub_mesh);
 	}
-
+	LOGI("load obj file success: {}", file_path);
 	return mesh;
 }
 
@@ -512,7 +511,7 @@ Mesh GltfMeshLoader::load()
 	{
 		process_node(node_index, glm::mat4(1.0f));
 	}
-
+	LOGI("load gltf file success: {}", file_path);
 	return mesh;
 }
 }        // namespace lz
