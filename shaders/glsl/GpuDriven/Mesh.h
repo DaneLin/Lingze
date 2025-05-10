@@ -17,6 +17,7 @@ struct Mesh
 {
 	vec4 sphere_bound;         // bounding sphere, xyz = center, w = radius
 	uint vertex_offset;        // vertex offset in the buffer
+	uint vertex_count;        // vertex offset in the buffer
 	uint index_offset;         // index offset in the buffer
 	uint index_count;          // number of indices
 };

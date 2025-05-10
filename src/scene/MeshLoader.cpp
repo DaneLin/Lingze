@@ -13,19 +13,21 @@
 namespace lz
 {
 //----------------------------------------
-// LzMeshLoader implement
+// MeshLoader implementation
 //----------------------------------------
 
-std::shared_ptr<LzMeshLoader> LzMeshLoader::get_loader(const std::string &file_name)
+std::shared_ptr<MeshLoader> MeshLoader::get_loader(const std::string &file_name)
 {
-	static std::vector<std::shared_ptr<LzMeshLoader>> loaders = {
-	    std::make_shared<LzObjLoader>(),
-	    std::make_shared<LzGltfLoader>()};
+	static std::vector<std::shared_ptr<MeshLoader>> loaders = {
+	    std::make_shared<ObjMeshLoader>(),
+	    std::make_shared<GltfMeshLoader>()};
 
 	for (auto &loader : loaders)
 	{
 		if (loader->can_load(file_name))
 		{
+			// 保存文件路径
+			loader->set_file_path(file_name);
 			return loader;
 		}
 	}
@@ -34,10 +36,10 @@ std::shared_ptr<LzMeshLoader> LzMeshLoader::get_loader(const std::string &file_n
 }
 
 //----------------------------------------
-// Obj_loader implement
+// Obj_loader implementation
 //----------------------------------------
 
-bool LzObjLoader::can_load(const std::string &file_name)
+bool ObjMeshLoader::can_load(const std::string &file_name)
 {
 	std::filesystem::path path(file_name);
 	std::string           ext = path.extension().string();
@@ -45,114 +47,149 @@ bool LzObjLoader::can_load(const std::string &file_name)
 	return ext == ".obj";
 }
 
-LzMesh LzObjLoader::load(const std::string &file_name)
+Mesh ObjMeshLoader::load()
 {
-	// tinyobj::ObjReader reader;
-	// tinyobj::ObjReaderConfig reader_config;
-	// reader_config.triangulate = true;
+	Mesh mesh;
 
-	// if (!reader.ParseFromFile(file_name, reader_config)) {
-	//     if (!reader.Error().empty()) {
-	//         LOGE("TinyObjReader error: {}", reader.Error());
-	//     }
-	//     throw std::runtime_error("load obj file error: " + file_name);
-	// }
+	tinyobj::attrib_t                attrib;
+	std::vector<tinyobj::shape_t>    shapes;
+	std::vector<tinyobj::material_t> materials;
+	std::string                      warn;
+	std::string                      err;
 
-	// if (!reader.Warning().empty()) {
-	//     LOGW("TinyObjReader warning: {}", reader.Warning());
-	// }
+	// Get base directory for material files
+	std::string base_dir = std::filesystem::path(file_path).parent_path().string();
+	if (!base_dir.empty() && base_dir.back() != '/' && base_dir.back() != '\\')
+		base_dir += '/';
 
-	// auto& attrib = reader.GetAttrib();
-	// auto& shapes = reader.GetShapes();
-	// auto& materials = reader.GetMaterials();
+	// Load the OBJ file
+	bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, file_path.c_str(), base_dir.c_str(), true);
 
-	LzMesh mesh;
+	if (!warn.empty())
+	{
+		LOGW("obj warning: {}", warn);
+	}
 
-	// // 处理每个形状
-	// for (size_t s = 0; s < shapes.size(); s++) {
-	//     SubMesh sub_mesh;
+	if (!err.empty())
+	{
+		LOGE("obj error: {}", err);
+	}
 
-	//     // 如果有材质，保存材质名
-	//     if (!shapes[s].mesh.material_ids.empty() && shapes[s].mesh.material_ids[0] >= 0) {
-	//         size_t material_id = shapes[s].mesh.material_ids[0];
-	//         if (material_id < materials.size()) {
-	//             sub_mesh.material_name = materials[material_id].name;
-	//         }
-	//     }
+	if (!ret)
+	{
+		throw std::runtime_error("load obj file error: " + file_path);
+	}
 
-	//     // 遍历所有面
-	//     size_t index_offset = 0;
-	//     std::unordered_map<tinyobj::index_t, uint32_t, tinyobj::index_t_hash> unique_vertices;
+	// Process each shape in the OBJ file
+	for (size_t s = 0; s < shapes.size(); s++)
+	{
+		SubMesh sub_mesh;
 
-	//     for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
-	//         size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
+		// Set material name if available
+		if (!shapes[s].mesh.material_ids.empty())
+		{
+			int material_id = shapes[s].mesh.material_ids[0];        // Use first material
+			if (material_id >= 0 && material_id < static_cast<int>(materials.size()))
+			{
+				sub_mesh.material_name = materials[material_id].name;
+			}
+		}
 
-	//         // 处理面的顶点
-	//         for (size_t v = 0; v < fv; v++) {
-	//             tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
+		// Count unique vertices using face indices
+		size_t                index_offset = 0;
+		std::vector<Vertex>   temp_vertices;
+		std::vector<uint32_t> temp_indices;
 
-	//             // 检查是否已经存在这个顶点
-	//             if (unique_vertices.count(idx) == 0) {
-	//                 // 创建新顶点
-	//                 LzVertex vertex;
+		// For each face in the shape
+		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++)
+		{
+			// Triangulate polygon if needed - OBJ can have faces with more than 3 vertices
+			int fv = shapes[s].mesh.num_face_vertices[f];
 
-	//                 // 读取位置
-	//                 if (idx.vertex_index >= 0) {
-	//                     vertex.pos = {
-	//                         attrib.vertices[3 * size_t(idx.vertex_index) + 0] * scale.x,
-	//                         attrib.vertices[3 * size_t(idx.vertex_index) + 1] * scale.y,
-	//                         attrib.vertices[3 * size_t(idx.vertex_index) + 2] * scale.z
-	//                     };
-	//                 }
+			// For each vertex in the face
+			for (int v = 0; v < fv; v++)
+			{
+				// Get index data
+				tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
 
-	//                 // 读取法线
-	//                 if (idx.normal_index >= 0) {
-	//                     vertex.normal = {
-	//                         attrib.normals[3 * size_t(idx.normal_index) + 0],
-	//                         attrib.normals[3 * size_t(idx.normal_index) + 1],
-	//                         attrib.normals[3 * size_t(idx.normal_index) + 2]
-	//                     };
-	//                 } else {
-	//                     vertex.normal = {0.0f, 0.0f, 1.0f}; // 默认法线
-	//                 }
+				// Create a new vertex
+				Vertex vertex;
 
-	//                 // 读取纹理坐标
-	//                 if (idx.texcoord_index >= 0) {
-	//                     vertex.uv = {
-	//                         attrib.texcoords[2 * size_t(idx.texcoord_index) + 0],
-	//                         1.0f - attrib.texcoords[2 * size_t(idx.texcoord_index) + 1] // 翻转V坐标
-	//                     };
-	//                 } else {
-	//                     vertex.uv = {0.0f, 0.0f}; // 默认纹理坐标
-	//                 }
+				// Position
+				if (idx.vertex_index >= 0)
+				{
+					vertex.pos.x = attrib.vertices[3 * idx.vertex_index + 0];
+					vertex.pos.y = attrib.vertices[3 * idx.vertex_index + 1];
+					vertex.pos.z = attrib.vertices[3 * idx.vertex_index + 2];
+				}
 
-	//                 // 添加到顶点数组并记录索引
-	//                 unique_vertices[idx] = static_cast<uint32_t>(sub_mesh.vertices.size());
-	//                 sub_mesh.vertices.push_back(vertex);
-	//             }
+				// Normal
+				if (idx.normal_index >= 0)
+				{
+					vertex.normal.x = attrib.normals[3 * idx.normal_index + 0];
+					vertex.normal.y = attrib.normals[3 * idx.normal_index + 1];
+					vertex.normal.z = attrib.normals[3 * idx.normal_index + 2];
+				}
+				else
+				{
+					// Default normal
+					vertex.normal = glm::vec3(0.0f, 0.0f, 1.0f);
+				}
 
-	//             // 添加索引
-	//             sub_mesh.indices.push_back(unique_vertices[idx]);
-	//         }
+				// Texture coordinates
+				if (idx.texcoord_index >= 0)
+				{
+					vertex.uv.x = attrib.texcoords[2 * idx.texcoord_index + 0];
+					vertex.uv.y = attrib.texcoords[2 * idx.texcoord_index + 1];
+				}
+				else
+				{
+					// Default texture coordinates
+					vertex.uv = glm::vec2(0.0f, 0.0f);
+				}
 
-	//         index_offset += fv;
-	//     }
+				// For triangulation - convert polygons to triangles
+				if (v >= 3)
+				{
+					// Add vertices for triangulation (0, n-1, n)
+					temp_indices.push_back(temp_indices[temp_indices.size() - fv]);        // First vertex
+					temp_indices.push_back(temp_indices[temp_indices.size() - 1]);         // Previous vertex
+					temp_vertices.push_back(vertex);
+					temp_indices.push_back(uint32_t(temp_indices.size() - 1));        // Current vertex
+				}
+				else
+				{
+					// Add normal vertex
+					temp_vertices.push_back(vertex);
+					temp_indices.push_back(uint32_t(temp_indices.size()));
+				}
+			}
 
-	//     // 优化子网格
-	//     sub_mesh.optimize();
+			index_offset += fv;
+		}
 
-	//     // 添加到网格
-	//     mesh.add_sub_mesh(sub_mesh);
-	// }
+		// Assign vertices and indices to submesh
+		sub_mesh.vertices = std::move(temp_vertices);
+		sub_mesh.indices  = std::move(temp_indices);
+
+		// Set primitive topology to triangle list
+		sub_mesh.primitive_topology = vk::PrimitiveTopology::eTriangleList;
+
+		// Optimize submesh
+		sub_mesh.optimize();
+
+		// Add to mesh
+		mesh.add_sub_mesh(sub_mesh);
+	}
 
 	return mesh;
 }
 
 //----------------------------------------
-// Gltf_loader 实现
+// Gltf_loader implementation
 //----------------------------------------
 
-bool LzGltfLoader::can_load(const std::string &file_name)
+bool GltfMeshLoader::can_load(const std::string &file_name)
 {
 	std::filesystem::path path(file_name);
 	std::string           ext = path.extension().string();
@@ -160,7 +197,7 @@ bool LzGltfLoader::can_load(const std::string &file_name)
 	return ext == ".gltf" || ext == ".glb";
 }
 
-LzMesh LzGltfLoader::load(const std::string &file_name)
+Mesh GltfMeshLoader::load()
 {
 	tinygltf::Model    model;
 	tinygltf::TinyGLTF loader;
@@ -168,16 +205,16 @@ LzMesh LzGltfLoader::load(const std::string &file_name)
 	std::string        warn;
 
 	bool        ret = false;
-	std::string ext = std::filesystem::path(file_name).extension().string();
+	std::string ext = std::filesystem::path(file_path).extension().string();
 	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
 	if (ext == ".glb")
 	{
-		ret = loader.LoadBinaryFromFile(&model, &err, &warn, file_name);
+		ret = loader.LoadBinaryFromFile(&model, &err, &warn, file_path);
 	}
 	else
 	{
-		ret = loader.LoadASCIIFromFile(&model, &err, &warn, file_name);
+		ret = loader.LoadASCIIFromFile(&model, &err, &warn, file_path);
 	}
 
 	if (!warn.empty())
@@ -192,10 +229,10 @@ LzMesh LzGltfLoader::load(const std::string &file_name)
 
 	if (!ret)
 	{
-		throw std::runtime_error("load gltf file error: " + file_name);
+		throw std::runtime_error("load gltf file error: " + file_path);
 	}
 
-	LzMesh mesh;
+	Mesh mesh;
 
 	const auto &scene = model.scenes[model.defaultScene];
 
@@ -292,8 +329,8 @@ LzMesh LzGltfLoader::load(const std::string &file_name)
 				    const auto &pos_view     = model.bufferViews[pos_accessor.bufferView];
 				    const auto &pos_buffer   = model.buffers[pos_view.buffer];
 
-				    size_t                vertices_count = pos_accessor.count;
-				    std::vector<LzVertex> vertices(vertices_count);
+				    size_t              vertices_count = pos_accessor.count;
+				    std::vector<Vertex> vertices(vertices_count);
 
 				    // process position data
 				    {

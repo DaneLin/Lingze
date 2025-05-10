@@ -32,7 +32,6 @@
 #include "render/BaseRenderer.h"
 #include "render/ImguiRenderer.h"
 #include "render/RenderContext.h"
-#include "scene/Scene.h"
 
 namespace lz
 {
@@ -101,8 +100,6 @@ class App
 	// GLFW callback static functions
 	static void framebuffer_resize_callback(GLFWwindow *window, int width, int height);
 
-	// Helper function to load scene from file
-	bool load_scene_from_file(const std::string &config_file_name, lz::JsonScene::GeometryTypes geo_type);
 
 	// Member variables
 	std::string app_name_;
@@ -114,7 +111,6 @@ class App
 
 	std::unique_ptr<Core>                  core_;
 	std::unique_ptr<render::BaseRenderer>  renderer_;
-	std::unique_ptr<JsonScene>             scene_;
 	std::unique_ptr<render::RenderContext> render_context_;
 	std::unique_ptr<render::ImGuiRenderer> imgui_renderer_;
 

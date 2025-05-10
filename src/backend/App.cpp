@@ -178,7 +178,6 @@ bool App::init()
 	}
 
 	// Create scene resources
-	renderer_->recreate_scene_resources(scene_.get());
 	renderer_->recreate_render_context_resources(render_context_.get());
 
 	// Initialize ImGui renderer
@@ -192,52 +191,6 @@ bool App::init()
 
 void App::prepare_render_context()
 {
-}
-bool App::load_scene_from_file(const std::string &config_file_name, lz::JsonScene::GeometryTypes geo_type)
-{
-	std::filesystem::path path(config_file_name);
-	std::string           ext = path.extension().string();
-	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-
-	// Check if file is a GLTF/GLB file
-	if (ext == ".gltf" || ext == ".glb")
-	{
-		try
-		{
-			// Load GLTF scene directly
-			scene_ = std::make_unique<lz::JsonScene>(config_file_name, core_.get(), geo_type);
-			return true;
-		}
-		catch (const std::exception &e)
-		{
-			LOGE("Error: Failed to load GLTF file {}: {}", config_file_name, e.what());
-			return false;
-		}
-	}
-	else
-	{
-		// Original JSON loading code
-		Json::Value  config_root;
-		Json::Reader reader;
-
-		std::ifstream file_stream(config_file_name);
-		if (!file_stream.is_open())
-		{
-			LOGE("Unable to open scene file!");
-			return false;
-		}
-
-		bool result = reader.parse(file_stream, config_root);
-		if (!result)
-		{
-			LOGE("Error: Failed to parse file {}: {}", config_file_name, reader.getFormattedErrorMessages());
-			return false;
-		}
-
-		scene_ = std::make_unique<lz::JsonScene>(config_root["scene"], core_.get(), geo_type);
-
-		return true;
-	}
 }
 
 // Update logic
@@ -364,7 +317,7 @@ void App::recreate_swapchain()
 				window_desc.h_instance = GetModuleHandle(NULL);
 				window_desc.h_wnd      = glfwGetWin32Window(window_);
 				in_flight_queue_       = std::make_unique<InFlightQueue>(core_.get(), window_desc, 2,
-				                                                         vk::PresentModeKHR::eMailbox);
+                                                                   vk::PresentModeKHR::eMailbox);
 				renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(),
 				                                        in_flight_queue_->get_in_flight_frames_count());
 				imgui_renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(),
@@ -378,7 +331,7 @@ void App::recreate_swapchain()
 			window_desc.h_instance = GetModuleHandle(NULL);
 			window_desc.h_wnd      = glfwGetWin32Window(window_);
 			in_flight_queue_       = std::make_unique<InFlightQueue>(core_.get(), window_desc, 2,
-			                                                         vk::PresentModeKHR::eMailbox);
+                                                               vk::PresentModeKHR::eMailbox);
 			renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(),
 			                                        in_flight_queue_->get_in_flight_frames_count());
 			imgui_renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(),
@@ -398,7 +351,6 @@ void App::render_frame()
 			{
 				auto pass_creation_task = in_flight_queue_->get_cpu_profiler().start_scoped_task(
 				    "Pass creation", lz::Colors::orange);
-				renderer_->render_frame(frame_info, camera_, light_, scene_.get(), window_);
 				renderer_->render_frame(frame_info, camera_, light_, render_context_.get(), window_);
 			}
 

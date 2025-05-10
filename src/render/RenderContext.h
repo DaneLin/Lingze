@@ -5,7 +5,7 @@
 #include "backend/LingzeVK.h"
 #include "backend/StagedResources.h"
 #include "scene/Entity.h"
-#include "scene/EntityScene.h"
+#include "scene/Scene.h"
 #include "scene/StaticMeshComponent.h"
 #include "scene/Transform.h"
 #include <memory>
@@ -17,7 +17,7 @@ namespace lz::render
 /**
  * @brief Meshlet is used to store the meshlet information for each mesh
  */
-struct LzMeshlet
+struct Meshlet
 {
 	uint32_t data_offset;
 	uint32_t vertex_offset;
@@ -28,7 +28,7 @@ struct LzMeshlet
 /**
  * @brief MeshInfo is used to store the mesh information for each mesh
  */
-struct alignas(16) LzMeshInfo
+struct alignas(16) MeshInfo
 {
 	glm::vec4 sphere_bound;         // bounding sphere, xyz = center, w = radius
 	uint32_t  vertex_offset;        // vertex offset in the buffer
@@ -41,7 +41,7 @@ struct alignas(16) LzMeshInfo
  * @brief MeshDraw is used to store the draw call information for each mesh
  */
 #pragma pack(push, 1)
-struct LzMeshDraw
+struct MeshDraw
 {
 	uint32_t  mesh_index;
 	glm::mat4 model_matrix;
@@ -51,7 +51,7 @@ struct LzMeshDraw
 /**
  * @brief Draw command struct
  */
-struct LzDrawCommand
+struct DrawCommand
 {
 	// VkDrawIndexedIndirectCommand
 	uint32_t index_count;
@@ -128,7 +128,6 @@ class RenderContext
 		return meshlet_count_;
 	}
 
-
   private:
 	void process_entity(const std::shared_ptr<lz::Entity> &entity);
 
@@ -136,9 +135,9 @@ class RenderContext
 
 	// Collected draw commands
 	uint32_t                          draw_count_ = 0;
-	std::vector<LzMeshInfo>           mesh_infos_;
-	std::vector<LzMeshDraw>           mesh_draws_;
-	std::vector<lz::LzVertex>         global_vertices_;
+	std::vector<MeshInfo>             mesh_infos_;
+	std::vector<MeshDraw>             mesh_draws_;
+	std::vector<lz::Vertex>           global_vertices_;
 	std::vector<uint32_t>             global_indices_;
 	std::unique_ptr<lz::StagedBuffer> global_vertex_buffer_;
 	std::unique_ptr<lz::StagedBuffer> global_index_buffer_;
@@ -147,7 +146,7 @@ class RenderContext
 
 	// Meshlet data
 	uint32_t                          meshlet_count_ = 0;
-	std::vector<LzMeshlet>            meshlets_;
+	std::vector<Meshlet>              meshlets_;
 	std::vector<uint32_t>             meshlet_data_datum_;
 	std::unique_ptr<lz::StagedBuffer> mesh_let_buffer_;
 	std::unique_ptr<lz::StagedBuffer> mesh_let_data_buffer_;

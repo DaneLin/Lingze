@@ -10,15 +10,12 @@ SimpleRenderer::SimpleRenderer(lz::Core *core) :
 	reload_shaders();
 }
 
-void SimpleRenderer::recreate_scene_resources(lz::JsonScene *scene)
-{
-	// we don't need to recreate scene resources for this renderer
-}
 void SimpleRenderer::recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count)
 {
 	viewport_extent_ = viewport_extent;
 }
-void SimpleRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera, const lz::Camera &light, lz::JsonScene *scene, GLFWwindow *window)
+
+void SimpleRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera, const lz::Camera &light, lz::render::RenderContext *render_context, GLFWwindow *window)
 {
 	auto render_graph = core_->get_render_graph();
 	render_graph->add_pass(lz::RenderGraph::RenderPassDesc()
@@ -38,6 +35,7 @@ void SimpleRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_info
 		                           context.get_command_buffer().draw(3, 1, 0, 0);
 	                           }));
 }
+
 void SimpleRenderer::reload_shaders()
 {
 	vertex_shader_.reset(new lz::Shader(core_->get_logical_device(), SHADER_GLSL_DIR "Simple/Simple.vert"));

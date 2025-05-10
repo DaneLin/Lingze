@@ -4,9 +4,9 @@
 namespace lz
 {
 
-Component::Component(Entity* entity)
-    : entity_(entity)
+Component::Component(Entity *entity) :
+    entity_(entity)
 {
 }
 
-} // namespace lz 
+}        // namespace lz

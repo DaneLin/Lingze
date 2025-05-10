@@ -478,11 +478,11 @@ void ImGuiRenderer::scroll_callback(GLFWwindow *window, double x_offset, double 
 ImGuiRenderer::FrameResources::FrameResources(lz::Core *core_, size_t max_vertices_count, size_t max_indices_count)
 {
 	imgui_index_buffer  = std::make_unique<lz::Buffer>(core_->get_physical_device(),
-	                                                   core_->get_logical_device(),
-	                                                   sizeof(glm::uint32_t) * max_indices_count,
-	                                                   vk::BufferUsageFlagBits::eIndexBuffer,
-	                                                   vk::MemoryPropertyFlagBits::eHostVisible |
-	                                                       vk::MemoryPropertyFlagBits::eHostCoherent);
+                                                      core_->get_logical_device(),
+                                                      sizeof(glm::uint32_t) * max_indices_count,
+                                                      vk::BufferUsageFlagBits::eIndexBuffer,
+                                                      vk::MemoryPropertyFlagBits::eHostVisible |
+                                                          vk::MemoryPropertyFlagBits::eHostCoherent);
 	imgui_vertex_buffer = std::make_unique<lz::Buffer>(
 	    core_->get_physical_device(), core_->get_logical_device(), sizeof(ImGuiVertex) * max_vertices_count,
 	    vk::BufferUsageFlagBits::eVertexBuffer,

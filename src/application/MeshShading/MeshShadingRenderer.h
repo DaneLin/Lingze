@@ -4,7 +4,7 @@
 #include "render/BaseRenderer.h"
 #include "render/MipBuilder.h"
 
-#define NEW_MESH_PATH 0
+#define NEW_MESH_PATH 1
 
 namespace lz::render
 {
@@ -15,15 +15,8 @@ class MeshShadingRenderer final : public BaseRenderer
   public:
 	explicit MeshShadingRenderer(lz::Core *core);
 
-	virtual void recreate_scene_resources(lz::JsonScene *scene) override;
-	virtual void recreate_swapchain_resources(
-	    vk::Extent2D viewport_extent, size_t in_flight_frames_count) override;
-	virtual void render_frame(const lz::InFlightQueue::FrameInfo &frame_info,
-	                          const lz::Camera &camera, const lz::Camera &light,
-	                          lz::JsonScene *scene, GLFWwindow *window) override;
-	virtual void render_frame(const lz::InFlightQueue::FrameInfo &frame_info,
-	                          const lz::Camera &camera, const lz::Camera &light,
-	                          lz::render::RenderContext *render_context, GLFWwindow *window) override;
+	virtual void recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count) override;
+	virtual void render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera, const lz::Camera &light, lz::render::RenderContext *render_context, GLFWwindow *window) override;
 	virtual void reload_shaders() override;
 	virtual void change_view() override;
 

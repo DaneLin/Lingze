@@ -2,7 +2,7 @@
 #include "backend/Core.h"
 #include "backend/Logging.h"
 #include "backend/PresentQueue.h"
-#include "scene/LzMesh.h"
+#include "scene/Mesh.h"
 
 #include "meshoptimizer.h"
 #include "scene/Config.h"
@@ -56,12 +56,12 @@ void RenderContext::build_meshlet_data()
 		tmp_meshlets.resize(meshopt_buildMeshlets(tmp_meshlets.data(),
 		                                          meshlet_vertices.data(), meshlet_triangles.data(),
 		                                          global_indices_.data() + mesh_info.index_offset, mesh_info.index_count,
-		                                          &(global_vertices_.data() + mesh_info.vertex_offset)->pos.x, mesh_info.vertex_count, sizeof(LzVertex),
+		                                          &(global_vertices_.data() + mesh_info.vertex_offset)->pos.x, mesh_info.vertex_count, sizeof(Vertex),
 		                                          k_max_vertices, k_max_triangles, k_cone_weight));
 
 		for (auto &meshlet : tmp_meshlets)
 		{
-			uint32_t data_offset = uint32_t(meshlets_.size());
+			uint32_t data_offset = uint32_t(meshlet_data_datum_.size());
 
 			for (size_t i = 0; i < meshlet.vertex_count; ++i)
 			{
@@ -79,7 +79,7 @@ void RenderContext::build_meshlet_data()
 
 			// TODO: add meshlet bounding data
 
-			LzMeshlet m      = {};
+			Meshlet m        = {};
 			m.data_offset    = data_offset;
 			m.vertex_offset  = mesh_info.vertex_offset;
 			m.triangle_count = meshlet.triangle_count;
@@ -111,13 +111,13 @@ void RenderContext::process_entity(const std::shared_ptr<lz::Entity> &entity)
 			draw_count_++;
 
 			// Collect mesh draw info
-			LzMeshDraw mesh_draw;
+			MeshDraw mesh_draw;
 			mesh_draw.mesh_index   = uint32_t(mesh_infos_.size());
 			mesh_draw.model_matrix = model_matrix;
 			mesh_draws_.push_back(mesh_draw);
 
 			// Collect mesh info
-			LzMeshInfo mesh_info;
+			MeshInfo mesh_info;
 			mesh_info.sphere_bound  = sub_mesh.sphere_bound;
 			mesh_info.vertex_count  = uint32_t(sub_mesh.vertices.size());
 			mesh_info.vertex_offset = global_vertices_count_;
@@ -156,12 +156,12 @@ void RenderContext::create_gpu_resources()
 	// Create a mesh vertex buffer
 	global_vertex_buffer_ = std::make_unique<lz::StagedBuffer>(
 	    physical_device, logical_device,
-	    global_vertices_.size() * sizeof(lz::LzVertex),
+	    global_vertices_.size() * sizeof(lz::Vertex),
 	    vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
 
 	if (!global_vertices_.empty())
 	{
-		memcpy(global_vertex_buffer_->map(), global_vertices_.data(), global_vertices_.size() * sizeof(lz::LzVertex));
+		memcpy(global_vertex_buffer_->map(), global_vertices_.data(), global_vertices_.size() * sizeof(lz::Vertex));
 		global_vertex_buffer_->unmap(transfer_command_buffer);
 	}
 
@@ -180,24 +180,24 @@ void RenderContext::create_gpu_resources()
 	// Create a meshdraw buffer
 	mesh_draw_buffer_ = std::make_unique<lz::StagedBuffer>(
 	    physical_device, logical_device,
-	    mesh_draws_.size() * sizeof(LzMeshDraw),
+	    mesh_draws_.size() * sizeof(MeshDraw),
 	    vk::BufferUsageFlagBits::eStorageBuffer);
 
 	if (!mesh_draws_.empty())
 	{
-		memcpy(mesh_draw_buffer_->map(), mesh_draws_.data(), mesh_draws_.size() * sizeof(LzMeshDraw));
+		memcpy(mesh_draw_buffer_->map(), mesh_draws_.data(), mesh_draws_.size() * sizeof(MeshDraw));
 		mesh_draw_buffer_->unmap(transfer_command_buffer);
 	}
 
 	// Create a meshinfo buffer
 	mesh_info_buffer_ = std::make_unique<lz::StagedBuffer>(
 	    physical_device, logical_device,
-	    mesh_infos_.size() * sizeof(LzMeshInfo),
+	    mesh_infos_.size() * sizeof(MeshInfo),
 	    vk::BufferUsageFlagBits::eStorageBuffer);
 
 	if (!mesh_infos_.empty())
 	{
-		memcpy(mesh_info_buffer_->map(), mesh_infos_.data(), mesh_infos_.size() * sizeof(LzMeshInfo));
+		memcpy(mesh_info_buffer_->map(), mesh_infos_.data(), mesh_infos_.size() * sizeof(MeshInfo));
 		mesh_info_buffer_->unmap(transfer_command_buffer);
 	}
 
@@ -218,12 +218,12 @@ void RenderContext::create_meshlet_buffer()
 	// Create a meshlet buffer
 	mesh_let_buffer_ = std::make_unique<lz::StagedBuffer>(
 	    physical_device, logical_device,
-	    meshlets_.size() * sizeof(LzMeshlet),
+	    meshlets_.size() * sizeof(Meshlet),
 	    vk::BufferUsageFlagBits::eStorageBuffer);
 
 	if (!meshlets_.empty())
 	{
-		memcpy(mesh_let_buffer_->map(), meshlets_.data(), meshlets_.size() * sizeof(LzMeshlet));
+		memcpy(mesh_let_buffer_->map(), meshlets_.data(), meshlets_.size() * sizeof(Meshlet));
 		mesh_let_buffer_->unmap(transfer_command_buffer);
 	}
 

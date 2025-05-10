@@ -13,13 +13,16 @@ class Entity;
 class Component
 {
   public:
-    Component(Entity* entity);
-    virtual ~Component() = default;
-    
-    Entity* get_entity() { return entity_; }
-    
+	Component(Entity *entity);
+	virtual ~Component() = default;
+
+	Entity *get_entity()
+	{
+		return entity_;
+	}
+
   protected:
-    Entity* entity_;  // the entity that owns this component
+	Entity *entity_;        // the entity that owns this component
 };
 
-} // namespace lz 
+}        // namespace lz

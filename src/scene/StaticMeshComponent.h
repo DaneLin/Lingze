@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Component.h"
-#include "scene/LzMesh.h"
+#include "scene/Mesh.h"
 #include <string>
 
 namespace lz
@@ -16,10 +16,10 @@ class StaticMeshComponent : public Component
 	StaticMeshComponent(Entity *entity);
 
 	// set the mesh
-	void set_mesh(LzMesh *mesh);
+	void set_mesh(Mesh *mesh);
 
 	// get the mesh
-	LzMesh *get_mesh()
+	Mesh *get_mesh()
 	{
 		return mesh_;
 	}
@@ -34,7 +34,7 @@ class StaticMeshComponent : public Component
 	}
 
   private:
-	LzMesh     *mesh_;                 // the mesh data
+	Mesh       *mesh_;                 // the mesh data
 	std::string material_name_;        // the material name
 };
 

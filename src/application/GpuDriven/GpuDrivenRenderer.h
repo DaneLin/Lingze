@@ -13,15 +13,11 @@ class GpuDrivenRenderer final : public BaseRenderer
   public:
 	explicit GpuDrivenRenderer(lz::Core *core);
 
-	virtual void recreate_scene_resources(lz::JsonScene *scene) override;
-	virtual void recreate_render_context_resources(lz::render::RenderContext *render_context) override;
-	virtual void recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count) override;
-	virtual void render_frame(const lz::InFlightQueue::FrameInfo &frame_info,
-	                          const lz::Camera &camera, const lz::Camera &light,
-	                          lz::JsonScene *scene, GLFWwindow *window) override;
+	void recreate_render_context_resources(lz::render::RenderContext *render_context) override;
+	void recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count) override;
 	void render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera, const lz::Camera &light, lz::render::RenderContext *render_context, GLFWwindow *window) override;
-	virtual void reload_shaders() override;
-	virtual void change_view() override;
+	void reload_shaders() override;
+	void change_view() override;
 
   private:
 	constexpr static uint32_t k_shader_data_set_index = 0;

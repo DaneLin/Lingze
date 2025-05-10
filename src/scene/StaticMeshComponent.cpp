@@ -9,7 +9,7 @@ StaticMeshComponent::StaticMeshComponent(Entity *entity) :
 {
 }
 
-void StaticMeshComponent::set_mesh(LzMesh *mesh)
+void StaticMeshComponent::set_mesh(Mesh *mesh)
 {
 	mesh_ = mesh;
 }
