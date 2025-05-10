@@ -2,8 +2,10 @@
 #include "backend/ImGuiProfilerRenderer.h"
 #include "backend/Logging.h"
 
+#include "App.h"
 #include "imgui.h"
 #include <chrono>
+#include <filesystem>
 #include <iostream>
 #include <sstream>
 
@@ -161,12 +163,11 @@ bool App::init()
 	    enable_debugging,
 	    device_extension_names);
 
-	// Load scene
-	if (!load_scene())
-	{
-		LOGE("Scene loading failed");
-		return false;
-	}
+	// Create render context
+	render_context_ = std::make_unique<render::RenderContext>(core_.get());
+
+	// Prepare scene
+	prepare_render_context();
 
 	// Create renderer
 	renderer_ = create_renderer();
@@ -177,7 +178,7 @@ bool App::init()
 	}
 
 	// Create scene resources
-	renderer_->recreate_scene_resources(scene_.get());
+	renderer_->recreate_render_context_resources(render_context_.get());
 
 	// Initialize ImGui renderer
 	imgui_renderer_ = std::make_unique<render::ImGuiRenderer>(core_.get(), window_);
@@ -188,29 +189,8 @@ bool App::init()
 	return true;
 }
 
-bool App::load_scene_from_file(const std::string &config_file_name, lz::Scene::GeometryTypes geo_type)
+void App::prepare_render_context()
 {
-	Json::Value  config_root;
-	Json::Reader reader;
-
-	std::ifstream file_stream(config_file_name);
-	if (!file_stream.is_open())
-	{
-		LOGE("Unable to open scene file!");
-		return false;
-	}
-
-	bool result = reader.parse(file_stream, config_root);
-	if (!result)
-	{
-		LOGE("Error: Failed to parse file {}: {}", config_file_name, reader.getFormattedErrorMessages());
-		return false;
-	}
-
-	LOGI("File {} parsed successfully", config_file_name);
-	scene_ = std::make_unique<lz::Scene>(config_root["scene"], core_.get(), geo_type);
-
-	return true;
 }
 
 // Update logic
@@ -270,11 +250,11 @@ void App::process_input()
 			}
 			if (glfwGetKey(window_, GLFW_KEY_Q) == GLFW_PRESS)
 			{
-				dir += glm::vec3(0.0f, 1.0f, 0.0f);
+				dir += glm::vec3(0.0f, -1.0f, 0.0f);
 			}
 			if (glfwGetKey(window_, GLFW_KEY_E) == GLFW_PRESS)
 			{
-				dir += glm::vec3(0.0f, -1.0f, 0.0f);
+				dir += glm::vec3(0.0f, 1.0f, 0.0f);
 			}
 
 			if (glm::length(dir) > 0.0f)
@@ -337,7 +317,7 @@ void App::recreate_swapchain()
 				window_desc.h_instance = GetModuleHandle(NULL);
 				window_desc.h_wnd      = glfwGetWin32Window(window_);
 				in_flight_queue_       = std::make_unique<InFlightQueue>(core_.get(), window_desc, 2,
-				                                                         vk::PresentModeKHR::eMailbox);
+                                                                   vk::PresentModeKHR::eMailbox);
 				renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(),
 				                                        in_flight_queue_->get_in_flight_frames_count());
 				imgui_renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(),
@@ -351,7 +331,7 @@ void App::recreate_swapchain()
 			window_desc.h_instance = GetModuleHandle(NULL);
 			window_desc.h_wnd      = glfwGetWin32Window(window_);
 			in_flight_queue_       = std::make_unique<InFlightQueue>(core_.get(), window_desc, 2,
-			                                                         vk::PresentModeKHR::eMailbox);
+                                                               vk::PresentModeKHR::eMailbox);
 			renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(),
 			                                        in_flight_queue_->get_in_flight_frames_count());
 			imgui_renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(),
@@ -371,7 +351,7 @@ void App::render_frame()
 			{
 				auto pass_creation_task = in_flight_queue_->get_cpu_profiler().start_scoped_task(
 				    "Pass creation", lz::Colors::orange);
-				renderer_->render_frame(frame_info, camera_, light_, scene_.get(), window_);
+				renderer_->render_frame(frame_info, camera_, light_, render_context_.get(), window_);
 			}
 
 			// Performance statistics
@@ -431,8 +411,4 @@ void App::cleanup()
 	glfwTerminate();
 }
 
-bool App::load_scene()
-{
-	return true;
-}
 }        // namespace lz

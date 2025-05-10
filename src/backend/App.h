@@ -25,13 +25,13 @@
 #include <string>
 #include <vector>
 
+#include "backend/Camera.h"
 #include "backend/Core.h"
-
 #include "backend/ImGuiProfilerRenderer.h"
 #include "imgui.h"
-#include "render/common/BaseRenderer.h"
-#include "render/common/ImguiRenderer.h"
-#include "scene/Scene.h"
+#include "render/BaseRenderer.h"
+#include "render/ImguiRenderer.h"
+#include "render/RenderContext.h"
 
 namespace lz
 {
@@ -75,8 +75,8 @@ class App
 	// Initialize the application
 	virtual bool init();
 
-	// Load scene
-	virtual bool load_scene();
+	// Prepare scene
+	virtual void prepare_render_context();
 
 	// Create renderer
 	virtual std::unique_ptr<render::BaseRenderer> create_renderer() = 0;
@@ -100,8 +100,6 @@ class App
 	// GLFW callback static functions
 	static void framebuffer_resize_callback(GLFWwindow *window, int width, int height);
 
-	// Helper function to load scene from file
-	bool load_scene_from_file(const std::string &config_file_name, lz::Scene::GeometryTypes geo_type);
 
 	// Member variables
 	std::string app_name_;
@@ -113,7 +111,7 @@ class App
 
 	std::unique_ptr<Core>                  core_;
 	std::unique_ptr<render::BaseRenderer>  renderer_;
-	std::unique_ptr<Scene>                 scene_;
+	std::unique_ptr<render::RenderContext> render_context_;
 	std::unique_ptr<render::ImGuiRenderer> imgui_renderer_;
 
 	std::unique_ptr<InFlightQueue> in_flight_queue_;

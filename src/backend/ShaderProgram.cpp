@@ -734,9 +734,9 @@ EShLanguage findLanguageFromExtension(const std::string &filename)
 	if (ext == "geom")
 		return EShLangGeometry;
 	if (ext == "mesh")
-		return EShLangMeshNV;
+		return EShLangMesh;
 	if (ext == "task")
-		return EShLangTaskNV;
+		return EShLangTask;
 	return EShLangVertex;
 }
 

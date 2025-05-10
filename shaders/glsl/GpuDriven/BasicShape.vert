@@ -38,6 +38,6 @@ void main() {
     vec4 pos = vec4(vertices[gl_VertexIndex].pos, 1.0);
     gl_Position = projection * view * mesh_draws[draw_index].model_matrix * pos;
 
-    out_frag_color = vertices[gl_VertexIndex].color;
+    out_frag_color = vertices[gl_VertexIndex].normal;
     out_uv = vertices[gl_VertexIndex].uv;
 }

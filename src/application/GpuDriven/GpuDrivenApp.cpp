@@ -3,15 +3,32 @@
 #include "GpuDrivenRenderer.h"
 #include "application/EntryPoint.h"
 
+#include "scene/Entity.h"
+#include "scene/Mesh.h"
+#include "scene/MeshLoader.h"
+#include "scene/Scene.h"
+#include "scene/StaticMeshComponent.h"
+#include "scene/Transform.h"
+
 namespace lz::application
 {
-bool GpuDrivenApp::load_scene()
+void GpuDrivenApp::prepare_render_context()
 {
-	// std::string config_file_name = SCENE_DIR "SingleHornbug.json";
-	// std::string config_file_name = SCENE_DIR "SingleKitten.json";
-	std::string config_file_name = SCENE_DIR "SponzaScene.json";
-	//std::string config_file_name = SCENE_DIR "CubeScene.json";
-	return load_scene_from_file(config_file_name, lz::Scene::GeometryTypes::eTriangles);
+	Scene scene;
+
+	Mesh mesh   = MeshLoader::get_loader(GLTF_DIR "Sponza/glTF/Sponza.gltf")->load();
+	auto entity = scene.create_entity("Sponza");
+	entity->add_component<StaticMeshComponent>()->set_mesh(&mesh);
+
+	Mesh buddha_mesh = MeshLoader::get_loader(DATA_DIR "Meshes/buddha.obj")->load();
+	auto buddha      = scene.create_entity("Buddha");
+	buddha->get_transform()->set_scale(glm::vec3(0.5f, 0.5f, 0.5f));
+	buddha->add_component<StaticMeshComponent>()->set_mesh(&buddha_mesh);
+
+	render_context_->collect_draw_commands(&scene);
+	render_context_->create_gpu_resources();
+	render_context_->build_meshlet_data();
+	render_context_->create_meshlet_buffer();
 }
 
 void GpuDrivenApp::render_ui()

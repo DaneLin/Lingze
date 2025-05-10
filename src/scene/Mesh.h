@@ -1,128 +1,87 @@
 #pragma once
 
-#include <random>
-
 #include "backend/LingzeVK.h"
-#include "backend/StagedResources.h"
 #include "backend/VertexDeclaration.h"
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace lz
 {
-/**
- * @brief Meshlet is used to store the meshlet information for each mesh
- */
-struct Meshlet
-{
-	uint32_t data_offset;
-	uint32_t vertex_offset;
-	uint8_t  triangle_count;
-	uint8_t  vertex_count;
-};
-
-/**
- * @brief MeshInfo is used to store the mesh information for each mesh
- */
-struct alignas(16) MeshInfo
-{
-	glm::vec4 sphere_bound;         // bounding sphere, xyz = center, w = radius
-	uint32_t  vertex_offset;        // vertex offset in the buffer
-	uint32_t  index_offset;         // index offset in the buffer
-	uint32_t  index_count;          // number of indices
-};
-
-/**
- * @brief MeshDraw is used to store the draw call information for each mesh
- */
-#pragma pack(push, 1)
-struct MeshDraw
-{
-	uint32_t mesh_index;
-	glm::mat4 model_matrix;
-};
-#pragma pack(pop)
-
-/**
- * @brief MeshDrawCommand is used to store the draw call command for each mesh
- */
-
-struct MeshDrawCommand
-{
-	// VkDrawIndexedIndirectCommand
-	uint32_t index_count;
-	uint32_t instance_count;
-	uint32_t first_index;
-	uint32_t vertex_offset;
-	uint32_t first_instance;
-
-	uint32_t draw_index;
-};
-
-/**
- * @brief MeshData is used to store the mesh data for each mesh
- */
-struct MeshData
-{
-	MeshData();
-
-	MeshData(const std::string file_name, glm::vec3 scale);
-
-	static float get_triangle_area(glm::vec3 points[3]);
-
-	static MeshData generate_point_mesh(MeshData src_mesh, float density);
-
-	static glm::vec2 hammersley_norm(glm::uint i, glm::uint n);
-
-	static MeshData generate_point_mesh_regular(MeshData src_mesh, float density);
-
-	static MeshData generate_point_mesh_sized(MeshData src_mesh, size_t points_per_triangle_count);
-
-	void append_meshlets(std::vector<Meshlet> &meshlets_datum, std::vector<uint32_t> &meshlet_data_datum, const uint32_t vertex_offset);
 /**
  * @brief Vertex is used to store the vertex information for each mesh
  */
 #pragma pack(push, 1)
 struct Vertex
 {
-		glm::vec3 pos;
-		glm::vec3 normal;
-		glm::vec2 uv;
-	};
+	glm::vec3 pos;
+	glm::vec3 normal;
+	glm::vec2 uv;
+};
 #pragma pack(pop)
 
-	static Vertex triangle_vertex_sample(Vertex triangle_vertices[3], glm::vec2 rand_val);
+/**
+ * @brief SubMesh is part of a Mesh
+ */
+class SubMesh
+{
+  public:
+	SubMesh() :
+	    primitive_topology(vk::PrimitiveTopology::eTriangleList)
+	{}
 
-	// bounding sphere
-	glm::vec4 sphere_bound;
+	size_t get_vertex_count() const
+	{
+		return vertices.size();
+	}
+	size_t get_index_count() const
+	{
+		return indices.size();
+	}
+	glm::vec4 calculate_bounding_sphere();
+	void      optimize();
 
-	// use uint32_t as index type
-	using IndexType = uint32_t;
-	std::vector<Vertex>    vertices;
-	std::vector<IndexType> indices;
-
-	std::vector<Meshlet> meshlets;
-
+  public:
+	std::vector<Vertex>   vertices;
+	std::vector<uint32_t> indices;
 	vk::PrimitiveTopology primitive_topology;
+	glm::vec4             sphere_bound;
+	std::string           material_name;
 };
 
 /**
- * @brief Mesh is used to store the mesh data for each mesh
+ * @brief Mesh is a 3D model composed of multiple SubMeshes
  */
-struct Mesh
+class Mesh
 {
-	Mesh(const MeshData &mesh_data, vk::PhysicalDevice physical_device, vk::Device logical_device,
-	     vk::CommandBuffer transfer_command_buffer);
+  public:
+	Mesh();
+
+	Mesh(const std::string &file_name);
+
+	void add_sub_mesh(const SubMesh &sub_mesh);
+
+	size_t get_sub_mesh_count() const
+	{
+		return sub_meshes.size();
+	}
+
+	SubMesh &get_sub_mesh(size_t index);
+
+	const SubMesh &get_sub_mesh(size_t index) const;
+
+	glm::vec4 calculate_bounding_sphere();
+
 	static lz::VertexDeclaration get_vertex_declaration();
 
-	std::unique_ptr<lz::StagedBuffer> vertex_buffer;
-	std::unique_ptr<lz::StagedBuffer> index_buffer;
+	void optimize();
 
-	MeshData mesh_data;
-	size_t   indices_count;
-	size_t   vertices_count;
+	size_t get_total_vertex_count() const;
+	size_t get_total_index_count() const;
 
-	vk::PrimitiveTopology primitive_topology;
-
-	// index of the mesh in the global mesh array
-	uint32_t global_mesh_index;
+  private:
+	std::vector<SubMesh> sub_meshes;
+	glm::vec4            mesh_bound;
 };
+
 }        // namespace lz

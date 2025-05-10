@@ -18,6 +18,7 @@ target_include_directories(deps_include INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/glslang
     ${CMAKE_CURRENT_SOURCE_DIR}/fmt/include
     ${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/tinygltf
 )
 
 # Configure fmt options
