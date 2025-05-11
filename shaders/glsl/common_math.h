@@ -14,3 +14,4 @@ vec3 random_color(uint seed)
 
     return vec3(r, g, b);
 }
+

@@ -51,7 +51,7 @@ GraphicsPipeline::GraphicsPipeline(vk::Device logical_device, const std::vector<
 	                                    .setDepthClampEnable(false)
 	                                    .setPolygonMode(vk::PolygonMode::eFill)
 	                                    .setLineWidth(1.0f)
-	                                    .setCullMode(vk::CullModeFlagBits::eNone)
+	                                    .setCullMode(vk::CullModeFlagBits::eBack)
 	                                    .setFrontFace(vk::FrontFace::eClockwise)
 	                                    .setDepthBiasEnable(false);
 

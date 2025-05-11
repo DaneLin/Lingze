@@ -43,7 +43,8 @@ void MeshShadingRenderer::render_frame(
 			                context.get_command_buffer(),
 			                context.get_render_pass()->get_handle(),
 			                lz::DepthSettings::enabled(),
-			                {lz::BlendSettings::opaque()}, lz::VertexDeclaration(),
+			                {lz::BlendSettings::opaque()}, 
+							lz::VertexDeclaration(),
 			                vk::PrimitiveTopology::eTriangleList, shader_program);
 
 			        // set = 0 uniform buffer binding

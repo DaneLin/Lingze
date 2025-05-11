@@ -4,12 +4,13 @@
 #extension GL_EXT_shader_16bit_storage: require
 #extension GL_EXT_shader_8bit_storage: require
 #extension GL_EXT_mesh_shader: require
-
+#extension GL_KHR_shader_subgroup_ballot: require
 #extension GL_GOOGLE_include_directive : require
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
 #include "mesh.h"
+#include "../common_math.h"
 
 layout(binding = 2) readonly buffer Meshlets
 {
@@ -20,7 +21,14 @@ struct TaskPayload {
     uint meshlet_indices[32];
 };
 
+bool cone_cull(vec3 center, float radius, vec3 cone_axis, float cone_cutoff, vec3 camera_position)
+{
+	return dot(center - camera_position, cone_axis) >= cone_cutoff * length(center - camera_position) + radius;
+}
+
 taskPayloadSharedEXT TaskPayload payload;
+
+shared int shared_count;
 
 void main()
 {
@@ -28,14 +36,29 @@ void main()
     uint mgi = gl_WorkGroupID.x;
     uint mi = mgi * 32 + ti;
 
-    // TODO: Culling
 
-    payload.meshlet_indices[ti] = mi;
+    vec3 center = meshlets[mi].sphere_bound.xyz;
+    float radius = meshlets[mi].sphere_bound.w;
+    vec3 cone_axis = vec3(int(meshlets[mi].cone_axis[0]) / 127.0, int(meshlets[mi].cone_axis[1]) / 127.0, int(meshlets[mi].cone_axis[2]) / 127.0);
+    float cone_cutoff = int(meshlets[mi].cone_cutoff) / 127.0;
 
-    barrier();
+    vec3 camera_position = view[3].xyz;
 
-    if(ti == 0)
+    bool accept = !cone_cull(center, radius, cone_axis, cone_cutoff, camera_position);
+
+    uvec4 ballot = subgroupBallot(accept);
+
+    uint index = subgroupBallotExclusiveBitCount(ballot);
+
+    if(accept)
     {
-        EmitMeshTasksEXT(32, 1,1); 
+        payload.meshlet_indices[index] = mi;
     }
+
+    uint count = subgroupBallotBitCount(ballot);
+    if (ti == 0)
+    {
+        EmitMeshTasksEXT(count, 1,1); 
+    }
+    
 }
