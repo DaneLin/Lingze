@@ -78,6 +78,7 @@ Mesh ObjMeshLoader::load()
 	{
 		throw std::runtime_error("load obj file error: " + file_path);
 	}
+	LOGI("load obj file success: {}", file_path);
 
 	// Process each shape in the OBJ file
 	for (size_t s = 0; s < shapes.size(); s++)
@@ -180,7 +181,6 @@ Mesh ObjMeshLoader::load()
 		// Add to mesh
 		mesh.add_sub_mesh(sub_mesh);
 	}
-	LOGI("load obj file success: {}", file_path);
 	return mesh;
 }
 
@@ -230,8 +230,12 @@ Mesh GltfMeshLoader::load()
 	{
 		throw std::runtime_error("load gltf file error: " + file_path);
 	}
+	LOGI("load gltf file success: {}", file_path);
 
 	Mesh mesh;
+
+	// load materials and textures
+	load_materials_and_textures(model, mesh);
 
 	const auto &scene = model.scenes[model.defaultScene];
 
@@ -315,6 +319,9 @@ Mesh GltfMeshLoader::load()
 				    {
 					    const auto &material   = model.materials[primitive.material];
 					    sub_mesh.material_name = material.name;
+
+					    // 关联已加载的材质对象
+					    sub_mesh.material = mesh.get_material(material.name);
 				    }
 
 				    // get vertex count
@@ -511,7 +518,114 @@ Mesh GltfMeshLoader::load()
 	{
 		process_node(node_index, glm::mat4(1.0f));
 	}
-	LOGI("load gltf file success: {}", file_path);
 	return mesh;
+}
+
+void GltfMeshLoader::load_materials_and_textures(const tinygltf::Model &model, Mesh &mesh)
+{
+	// load all textures
+	std::vector<std::shared_ptr<Texture>> textures;
+	textures.resize(model.textures.size());
+
+	for (size_t i = 0; i < model.textures.size(); i++)
+	{
+		const auto &gltf_texture = model.textures[i];
+		if (gltf_texture.source >= 0 && gltf_texture.source < model.images.size())
+		{
+			const auto &image   = model.images[gltf_texture.source];
+			auto        texture = std::make_shared<Texture>();
+
+			// set texture basic info
+			texture->name     = image.name.empty() ? "texture_" + std::to_string(i) : image.name;
+			texture->width    = image.width;
+			texture->height   = image.height;
+			texture->channels = image.component;
+			texture->uri      = image.uri;
+
+			// copy image data
+			texture->data = image.image;
+
+			// store texture
+			textures[i] = texture;
+
+			LOGI("Loaded texture: {} ({}x{}, {} channels)", texture->name, texture->width, texture->height, texture->channels);
+		}
+	}
+
+	// load materials
+	for (size_t i = 0; i < model.materials.size(); i++)
+	{
+		const auto &gltf_material = model.materials[i];
+		auto        material      = std::make_shared<Material>();
+
+		// set material name
+		material->name = gltf_material.name.empty() ? "material_" + std::to_string(i) : gltf_material.name;
+
+		// process PBR material parameters
+		if (gltf_material.pbrMetallicRoughness.baseColorFactor.size() == 4)
+		{
+			material->base_color_factor = glm::vec4(
+			    static_cast<float>(gltf_material.pbrMetallicRoughness.baseColorFactor[0]),
+			    static_cast<float>(gltf_material.pbrMetallicRoughness.baseColorFactor[1]),
+			    static_cast<float>(gltf_material.pbrMetallicRoughness.baseColorFactor[2]),
+			    static_cast<float>(gltf_material.pbrMetallicRoughness.baseColorFactor[3]));
+		}
+
+		material->metallic_factor  = static_cast<float>(gltf_material.pbrMetallicRoughness.metallicFactor);
+		material->roughness_factor = static_cast<float>(gltf_material.pbrMetallicRoughness.roughnessFactor);
+
+		if (gltf_material.emissiveFactor.size() == 3)
+		{
+			material->emissive_factor = glm::vec3(
+			    static_cast<float>(gltf_material.emissiveFactor[0]),
+			    static_cast<float>(gltf_material.emissiveFactor[1]),
+			    static_cast<float>(gltf_material.emissiveFactor[2]));
+		}
+
+		// associate textures
+		// diffuse/base color texture
+		if (gltf_material.pbrMetallicRoughness.baseColorTexture.index >= 0 &&
+		    gltf_material.pbrMetallicRoughness.baseColorTexture.index < textures.size())
+		{
+			material->diffuse_texture = textures[gltf_material.pbrMetallicRoughness.baseColorTexture.index];
+			LOGI("Material {} uses diffuse texture {}", material->name, material->diffuse_texture->name);
+		}
+
+		// metallic/roughness texture
+		if (gltf_material.pbrMetallicRoughness.metallicRoughnessTexture.index >= 0 &&
+		    gltf_material.pbrMetallicRoughness.metallicRoughnessTexture.index < textures.size())
+		{
+			material->metallic_roughness_texture = textures[gltf_material.pbrMetallicRoughness.metallicRoughnessTexture.index];
+			LOGI("Material {} uses metallic-roughness texture {}", material->name, material->metallic_roughness_texture->name);
+		}
+
+		// normal texture
+		if (gltf_material.normalTexture.index >= 0 &&
+		    gltf_material.normalTexture.index < textures.size())
+		{
+			material->normal_texture = textures[gltf_material.normalTexture.index];
+			LOGI("Material {} uses normal texture {}", material->name, material->normal_texture->name);
+		}
+
+		// emissive texture
+		if (gltf_material.emissiveTexture.index >= 0 &&
+		    gltf_material.emissiveTexture.index < textures.size())
+		{
+			material->emissive_texture = textures[gltf_material.emissiveTexture.index];
+			LOGI("Material {} uses emissive texture {}", material->name, material->emissive_texture->name);
+		}
+
+		// occlusion texture
+		if (gltf_material.occlusionTexture.index >= 0 &&
+		    gltf_material.occlusionTexture.index < textures.size())
+		{
+			material->occlusion_texture = textures[gltf_material.occlusionTexture.index];
+			LOGI("Material {} uses occlusion texture {}", material->name, material->occlusion_texture->name);
+		}
+
+		// add to model's material list
+		mesh.add_material(material);
+		LOGI("Added material: {}", material->name);
+	}
 }
 }        // namespace lz

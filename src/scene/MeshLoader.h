@@ -3,6 +3,7 @@
 #include "Mesh.h"
 #include <memory>
 #include <string>
+#include <tiny_gltf.h>
 
 namespace lz
 {
@@ -60,5 +61,8 @@ class GltfMeshLoader : public MeshLoader
   public:
 	Mesh load() override;
 	bool can_load(const std::string &file_name) override;
+
+private:
+	void load_materials_and_textures(const tinygltf::Model& model, Mesh& mesh);
 };
 }        // namespace lz

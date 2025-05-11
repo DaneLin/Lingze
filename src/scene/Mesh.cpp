@@ -170,4 +170,26 @@ size_t Mesh::get_total_index_count() const
 	return count;
 }
 
+void Mesh::add_material(const std::shared_ptr<Material> &material)
+{
+	materials.push_back(material);
+}
+
+const std::vector<std::shared_ptr<Material>> &Mesh::get_materials() const
+{
+	return materials;
+}
+
+std::shared_ptr<Material> Mesh::get_material(const std::string &name)
+{
+	for (const auto &material : materials)
+	{
+		if (material->name == name)
+		{
+			return material;
+		}
+	}
+	return nullptr;
+}
+
 }        // namespace lz
