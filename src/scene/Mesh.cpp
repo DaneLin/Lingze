@@ -172,6 +172,13 @@ size_t Mesh::get_total_index_count() const
 
 void Mesh::add_material(const std::shared_ptr<Material> &material)
 {
+	for (const auto& existing_material : materials)
+	{
+		if (existing_material->name == material->name)
+		{
+			return; // material with the same name already exists, not added
+		}
+	}
 	materials.push_back(material);
 }
 

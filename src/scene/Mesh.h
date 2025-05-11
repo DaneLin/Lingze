@@ -87,7 +87,7 @@ class SubMesh
 	vk::PrimitiveTopology     primitive_topology;
 	glm::vec4                 sphere_bound;
 	std::string               material_name;
-	std::shared_ptr<Material> material;        // 添加对材质的引用
+	std::shared_ptr<Material> material;        // add a reference to the material
 };
 
 /**
@@ -128,7 +128,7 @@ class Mesh
   private:
 	std::vector<SubMesh>                   sub_meshes;
 	glm::vec4                              mesh_bound;
-	std::vector<std::shared_ptr<Material>> materials;        // 存储所有材质
+	std::vector<std::shared_ptr<Material>> materials;        // store all materials
 };
 
 }        // namespace lz
