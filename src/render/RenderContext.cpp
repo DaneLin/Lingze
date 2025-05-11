@@ -88,6 +88,10 @@ void RenderContext::build_meshlet_data()
 			meshlets_.push_back(m);
 		}
 	}
+	while (meshlets_.size() % 32 != 0)
+	{
+		meshlets_.push_back(Meshlet{});
+	}
 	meshlet_count_ = uint32_t(meshlets_.size());
 }
 
