@@ -97,6 +97,7 @@ cmake --build .
 
 - **渲染优化技术**
   - [x] 视锥剔除 (Frustum Culling)
+  - [x] 锥形剔除 (Cone Culling)
   - [ ] 遮挡剔除 (Occlusion Culling)
   - [ ] 背面剔除 (Backface Culling)
   - [ ] 细节层次 (LOD)
@@ -246,6 +247,7 @@ cmake --build .
 
 - **Rendering Optimization**
   - [x] Frustum Culling
+  - [x] Cone Culling
   - [ ] Occlusion Culling
   - [ ] Backface Culling
   - [ ] Level of Detail (LOD)

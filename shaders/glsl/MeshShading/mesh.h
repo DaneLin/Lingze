@@ -7,7 +7,7 @@ layout(set = 0, binding = 0) uniform ubo_data
 struct Vertex
 {
 	vec3 pos;
-	vec3 color;
+	vec3 normal;
 	vec2 uv;
 };
 
