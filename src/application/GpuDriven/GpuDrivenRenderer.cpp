@@ -22,7 +22,7 @@ void GpuDrivenRenderer::recreate_swapchain_resources(vk::Extent2D viewport_exten
 	viewport_resource_datum_.clear();
 }
 
-void GpuDrivenRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera, const lz::Camera &light, lz::render::RenderContext *render_context, GLFWwindow *window)
+void GpuDrivenRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, GLFWwindow *window)
 {
 	auto  render_graph   = core_->get_render_graph();
 	auto &frame_resource = viewport_resource_datum_[render_graph];
@@ -52,33 +52,30 @@ void GpuDrivenRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_i
 		        // uniform data
 		        auto shader_data = frame_info.memory_pool->begin_set(shader_data_set_info);
 		        {
-			        // TODO: move these parameters to camera;
-			        float     aspect        = static_cast<float>(viewport_extent_.width) / static_cast<float>(viewport_extent_.height);
-			        float     znear         = 0.01f;
-			        float     zfar          = 1000.0f;
-			        glm::mat4 proj_matrix   = glm::perspectiveZO(1.0f, aspect, znear, zfar) * glm::scale(glm::vec3(1.0f, -1.0f, -1.0f));
+			        auto      main_camera   = scene.get_main_camera();
+			        glm::mat4 proj_matrix   = main_camera->get_projection_matrix();
 			        glm::mat4 proj_matrix_t = glm::transpose(proj_matrix);
 			        glm::vec4 frustum_x     = glm::normalize(proj_matrix_t[3] + proj_matrix_t[0]);
 			        glm::vec4 frustum_y     = glm::normalize(proj_matrix_t[3] + proj_matrix_t[1]);
 
 			        auto cull_data         = frame_info.memory_pool->get_uniform_buffer_data<CullData>("UboData");
-			        cull_data->view_matrix = glm::inverse(camera.get_transform_matrix());
+			        cull_data->view_matrix = glm::inverse(main_camera->get_transform_matrix());
 			        cull_data->P00         = proj_matrix[0][0];
 			        cull_data->P11         = proj_matrix[1][1];
-			        cull_data->znear       = znear;
-			        cull_data->zfar        = zfar;
+			        cull_data->znear       = main_camera->get_near_plane();
+			        cull_data->zfar        = main_camera->get_far_plane();
 			        cull_data->frustum[0]  = frustum_x.x;
 			        cull_data->frustum[1]  = frustum_x.z;
 			        cull_data->frustum[2]  = frustum_y.y;
 			        cull_data->frustum[3]  = frustum_y.z;
-			        cull_data->draw_count  = uint32_t(render_context->get_draw_count());
+			        cull_data->draw_count  = uint32_t(render_context.get_draw_count());
 		        }
 
 		        frame_info.memory_pool->end_set();
 
 		        std::vector<lz::StorageBufferBinding> storage_buffer_bindings;
-		        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("MeshData", &render_context->get_mesh_info_buffer()));
-		        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("MeshDrawData", &render_context->get_mesh_draw_buffer()));
+		        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("MeshData", &render_context.get_mesh_info_buffer()));
+		        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("MeshDrawData", &render_context.get_mesh_draw_buffer()));
 		        auto visible_mesh_draw_proxy = context.get_buffer(scene_resource_->visible_mesh_draw_proxy_.get().id());
 		        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("VisibleMeshDrawCommand", visible_mesh_draw_proxy));
 		        auto visible_mesh_count_proxy = context.get_buffer(scene_resource_->visible_mesh_count_proxy_.get().id());
@@ -108,7 +105,7 @@ void GpuDrivenRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_i
 		            pipeline_info.pipeline_layout, k_shader_data_set_index,
 		            {shader_data_set}, {shader_data.dynamic_offset});
 
-		        uint32_t dispatch_x = uint32_t((render_context->get_draw_count() + 31) / 32);
+		        uint32_t dispatch_x = uint32_t((render_context.get_draw_count() + 31) / 32);
 		        context.get_command_buffer().dispatch(dispatch_x, 1, 1);
 
 		        vk::BufferMemoryBarrier fill_barrier = vk::BufferMemoryBarrier()
@@ -152,23 +149,18 @@ void GpuDrivenRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_i
 		        auto shader_data =
 		            frame_info.memory_pool->begin_set(shader_data_set_info);
 		        {
-			        // TODO: move these parameters to camera;
-			        float aspect             = static_cast<float>(viewport_extent_.width) / static_cast<float>(viewport_extent_.height);
-			        float znear              = 0.01f;
-			        auto  shader_data_buffer = frame_info.memory_pool->get_uniform_buffer_data<BasicShapeShader::DataBuffer>("GlobalData");
-			        // same name from shader
-			        shader_data_buffer->view_matrix = glm::inverse(camera.get_transform_matrix());
-			        shader_data_buffer->proj_matrix = glm::perspectiveZO(1.0f, aspect, znear, 1000.0f) * glm::scale(glm::vec3(1.0f, -1.0f, -1.0f));
+			        auto main_camera                = scene.get_main_camera();
+			        auto shader_data_buffer         = frame_info.memory_pool->get_uniform_buffer_data<BasicShapeShader::DataBuffer>("GlobalData");
+			        shader_data_buffer->view_matrix = main_camera->get_view_matrix();
+			        shader_data_buffer->proj_matrix = main_camera->get_projection_matrix();
 		        }
 		        frame_info.memory_pool->end_set();
 
 		        // create storage binding
 		        std::vector<lz::StorageBufferBinding> storage_buffer_bindings;
-		        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("VertexBuffer", &render_context->get_global_vertex_buffer()));
+		        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("VertexBuffer", &render_context.get_global_vertex_buffer()));
 		        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("VisibleMeshDrawCommand", visible_mesh_draw_proxy));
-		        storage_buffer_bindings.push_back(
-		            shader_data_set_info->make_storage_buffer_binding(
-		                "MeshDrawData", &render_context->get_mesh_draw_buffer()));
+		        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("MeshDrawData", &render_context.get_mesh_draw_buffer()));
 		        auto shader_data_set =
 		            core_->get_descriptor_set_cache()->get_descriptor_set(
 		                *shader_data_set_info,
@@ -180,12 +172,11 @@ void GpuDrivenRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_i
 		            pipeline_info.pipeline_layout, k_shader_data_set_index,
 		            {shader_data_set}, {shader_data.dynamic_offset});
 
-		        context.get_command_buffer().bindIndexBuffer(render_context->get_global_index_buffer().get_handle(), 0, vk::IndexType::eUint32);
-		        // context.get_command_buffer().drawIndexedIndirect(visible_mesh_draw_proxy->get_handle(), 0, 1, sizeof(MeshDrawCommand), core_->get_dynamic_loader());
+		        context.get_command_buffer().bindIndexBuffer(render_context.get_global_index_buffer().get_handle(), 0, vk::IndexType::eUint32);
 		        context.get_command_buffer().drawIndexedIndirectCount(
 		            visible_mesh_draw_proxy->get_handle(), 0,
 		            visible_mesh_count_proxy->get_handle(), 0,
-		            static_cast<uint32_t>(render_context->get_draw_count()),
+		            static_cast<uint32_t>(render_context.get_draw_count()),
 		            sizeof(lz::render::DrawCommand));
 	        }));
 }

@@ -16,7 +16,7 @@ class MeshShadingRenderer final : public BaseRenderer
 	explicit MeshShadingRenderer(lz::Core *core);
 
 	virtual void recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count) override;
-	virtual void render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera, const lz::Camera &light, lz::render::RenderContext *render_context, GLFWwindow *window) override;
+	void         render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, GLFWwindow *window) override;
 	virtual void reload_shaders() override;
 	virtual void change_view() override;
 

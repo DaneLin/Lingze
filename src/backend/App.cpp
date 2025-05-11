@@ -1,6 +1,7 @@
 ﻿#include "backend/App.h"
 #include "backend/ImGuiProfilerRenderer.h"
 #include "backend/Logging.h"
+#include "scene/Entity.h"
 
 #include "App.h"
 #include "imgui.h"
@@ -166,8 +167,14 @@ bool App::init()
 	// Create render context
 	render_context_ = std::make_unique<render::RenderContext>(core_.get());
 
+	// Initialize scene
+	scene_ = std::make_unique<Scene>();
+
 	// Prepare scene
 	prepare_render_context();
+
+	// Setup scene and camera
+	setup_scene();
 
 	// Create renderer
 	renderer_ = create_renderer();
@@ -191,12 +198,42 @@ bool App::init()
 
 void App::prepare_render_context()
 {
+	// Base class implementation is empty, derived classes should implement this method
+}
+
+// Setup scene and camera
+void App::setup_scene()
+{
+	// Create main camera entity
+	main_camera_entity_ = scene_->create_entity("MainCamera");
+
+	// Add camera component
+	main_camera_component_ = main_camera_entity_->add_component<CameraComponent>();
+
+	// Set camera initial position and rotation (same as old implementation)
+	main_camera_component_->set_position(glm::vec3(0.0f, 0.5f, -2.0f));
+	main_camera_component_->set_rotation(0.0f, 0.0f);
+
+	// Set as main camera
+	main_camera_component_->set_as_main_camera(scene_.get());
+
+	// Set projection parameters
+	main_camera_component_->get_camera()->set_perspective(
+	    glm::radians(45.0f),                                 // FOV
+	    float(window_width_) / float(window_height_),        // Aspect ratio
+	    0.1f,                                                // Near plane
+	    1000.0f                                              // Far plane
+	);
 }
 
 // Update logic
 void App::update(float deltaTime)
 {
-	// Empty in base class, implemented by derived classes
+	// Update scene
+	if (scene_)
+	{
+		scene_->update(deltaTime);
+	}
 }
 
 // Process input
@@ -224,52 +261,68 @@ void App::process_input()
 				{
 					renderer_->change_view();
 				}
-				camera_.hor_angle += float((mouse_pos_ - prev_mouse_pos_).x * mouse_speed);
-				camera_.vert_angle += float((mouse_pos_ - prev_mouse_pos_).y * mouse_speed);
+
+				// 根据新的坐标系统调整旋转方向
+				camera_.hor_angle += float((mouse_pos_ - prev_mouse_pos_).x * mouse_speed);         // 水平方向为正
+				camera_.vert_angle += float((mouse_pos_ - prev_mouse_pos_).y * mouse_speed);        // 垂直方向为负
+
+				// 更新新相机组件的旋转
+				if (main_camera_component_)
+				{
+					main_camera_component_->set_rotation(camera_.vert_angle, camera_.hor_angle);
+				}
 			}
+
+			// Old camera direction calculation
 			glm::mat4 camera_transform = camera_.get_transform_matrix();
 			glm::vec3 camera_forward   = glm::vec3(camera_transform * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
 			glm::vec3 camera_right     = glm::vec3(camera_transform * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
 			glm::vec3 camera_up        = glm::vec3(camera_transform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f));
 
+			// 调整按键映射以匹配新的坐标系统
 			if (glfwGetKey(window_, GLFW_KEY_W) == GLFW_PRESS)
 			{
-				dir += glm::vec3(0.0f, 0.0f, 1.0f);
+				dir += glm::vec3(0.0f, 0.0f, 1.0f);        // 向前移动（Z轴正方向）
 			}
 			if (glfwGetKey(window_, GLFW_KEY_S) == GLFW_PRESS)
 			{
-				dir += glm::vec3(0.0f, 0.0f, -1.0f);
+				dir += glm::vec3(0.0f, 0.0f, -1.0f);        // 向后移动（Z轴负方向）
 			}
 			if (glfwGetKey(window_, GLFW_KEY_A) == GLFW_PRESS)
 			{
-				dir += glm::vec3(-1.0f, 0.0f, 0.0f);
+				dir += glm::vec3(-1.0f, 0.0f, 0.0f);        // 向左移动（X轴负方向）
 			}
 			if (glfwGetKey(window_, GLFW_KEY_D) == GLFW_PRESS)
 			{
-				dir += glm::vec3(1.0f, 0.0f, 0.0f);
+				dir += glm::vec3(1.0f, 0.0f, 0.0f);        // 向右移动（X轴正方向）
 			}
 			if (glfwGetKey(window_, GLFW_KEY_Q) == GLFW_PRESS)
 			{
-				dir += glm::vec3(0.0f, -1.0f, 0.0f);
+				dir += glm::vec3(0.0f, -1.0f, 0.0f);        // 向下移动（Y轴负方向）
 			}
 			if (glfwGetKey(window_, GLFW_KEY_E) == GLFW_PRESS)
 			{
-				dir += glm::vec3(0.0f, 1.0f, 0.0f);
+				dir += glm::vec3(0.0f, 1.0f, 0.0f);        // 向上移动（Y轴正方向）
 			}
 
+			// Normalize direction vector
 			if (glm::length(dir) > 0.0f)
 			{
-				renderer_->change_view();
+				dir = glm::normalize(dir);
 			}
 
+			// Calculate camera speed and position update
 			float camera_speed = 3.0f;
+
+			// Update old camera implementation position
 			camera_.pos += camera_forward * dir.z * camera_speed * delta_time_;
 			camera_.pos += camera_right * dir.x * camera_speed * delta_time_;
 			camera_.pos += camera_up * dir.y * camera_speed * delta_time_;
 
-			if (glfwGetKey(window_, GLFW_KEY_V) == GLFW_PRESS)
+			// Update new camera component position
+			if (main_camera_component_)
 			{
-				renderer_->reload_shaders();
+				main_camera_component_->set_position(camera_.pos);
 			}
 		}
 	}
@@ -304,10 +357,8 @@ void App::recreate_swapchain()
 			{
 				// If swapchain already exists, just recreate swapchain
 				in_flight_queue_->recreate_swapchain();
-				renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(),
-				                                        in_flight_queue_->get_in_flight_frames_count());
-				imgui_renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(),
-				                                              in_flight_queue_->get_in_flight_frames_count());
+				renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(), in_flight_queue_->get_in_flight_frames_count());
+				imgui_renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(), in_flight_queue_->get_in_flight_frames_count());
 			}
 			else
 			{
@@ -316,12 +367,9 @@ void App::recreate_swapchain()
 				WindowDesc window_desc = {};
 				window_desc.h_instance = GetModuleHandle(NULL);
 				window_desc.h_wnd      = glfwGetWin32Window(window_);
-				in_flight_queue_       = std::make_unique<InFlightQueue>(core_.get(), window_desc, 2,
-                                                                   vk::PresentModeKHR::eMailbox);
-				renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(),
-				                                        in_flight_queue_->get_in_flight_frames_count());
-				imgui_renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(),
-				                                              in_flight_queue_->get_in_flight_frames_count());
+				in_flight_queue_       = std::make_unique<InFlightQueue>(core_.get(), window_desc, 2, vk::PresentModeKHR::eMailbox);
+				renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(), in_flight_queue_->get_in_flight_frames_count());
+				imgui_renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(), in_flight_queue_->get_in_flight_frames_count());
 			}
 		}
 		else
@@ -330,12 +378,9 @@ void App::recreate_swapchain()
 			WindowDesc window_desc = {};
 			window_desc.h_instance = GetModuleHandle(NULL);
 			window_desc.h_wnd      = glfwGetWin32Window(window_);
-			in_flight_queue_       = std::make_unique<InFlightQueue>(core_.get(), window_desc, 2,
-                                                               vk::PresentModeKHR::eMailbox);
-			renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(),
-			                                        in_flight_queue_->get_in_flight_frames_count());
-			imgui_renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(),
-			                                              in_flight_queue_->get_in_flight_frames_count());
+			in_flight_queue_       = std::make_unique<InFlightQueue>(core_.get(), window_desc, 2, vk::PresentModeKHR::eMailbox);
+			renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(), in_flight_queue_->get_in_flight_frames_count());
+			imgui_renderer_->recreate_swapchain_resources(in_flight_queue_->get_image_size(), in_flight_queue_->get_in_flight_frames_count());
 		}
 	}
 }
@@ -351,7 +396,18 @@ void App::render_frame()
 			{
 				auto pass_creation_task = in_flight_queue_->get_cpu_profiler().start_scoped_task(
 				    "Pass creation", lz::Colors::orange);
-				renderer_->render_frame(frame_info, camera_, light_, render_context_.get(), window_);
+
+				// Check if using new camera component
+				if (main_camera_component_ && scene_ && scene_->get_main_camera())
+				{
+					// Use new camera component for rendering
+					renderer_->render_frame(frame_info, *scene_, *render_context_, window_);
+				}
+				else
+				{
+					// Fallback to old camera implementation
+					renderer_->render_frame(frame_info, *scene_, *render_context_, window_);
+				}
 			}
 
 			// Performance statistics
@@ -397,6 +453,11 @@ void App::render_frame()
 // Clean up resources
 void App::cleanup()
 {
+	// Clean up scene
+	scene_.reset();
+	main_camera_entity_    = nullptr;
+	main_camera_component_ = nullptr;
+
 	if (core_)
 	{
 		core_->wait_idle();
