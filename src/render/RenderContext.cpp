@@ -77,9 +77,20 @@ void RenderContext::build_meshlet_data()
 				meshlet_data_datum_.push_back(index_groups[i]);
 			}
 
-			// TODO: add meshlet bounding data
+			meshopt_Bounds bounds =
+			    meshopt_computeMeshletBounds(&meshlet_vertices[meshlet.vertex_offset],
+			                                 &meshlet_triangles[meshlet.triangle_offset],
+			                                 meshlet.triangle_count,
+			                                 &global_vertices_[mesh_info.vertex_offset].pos.x,
+			                                 mesh_info.vertex_count,
+			                                 sizeof(Vertex));
 
 			Meshlet m        = {};
+			m.sphere_bound   = glm::vec4(bounds.center[0], bounds.center[1], bounds.center[2], bounds.radius);
+			m.cone_axis[0]   = bounds.cone_axis_s8[0];
+			m.cone_axis[1]   = bounds.cone_axis_s8[1];
+			m.cone_axis[2]   = bounds.cone_axis_s8[2];
+			m.cone_cutoff    = bounds.cone_cutoff_s8;
 			m.data_offset    = data_offset;
 			m.vertex_offset  = mesh_info.vertex_offset;
 			m.triangle_count = meshlet.triangle_count;
@@ -87,6 +98,10 @@ void RenderContext::build_meshlet_data()
 
 			meshlets_.push_back(m);
 		}
+	}
+	while (meshlets_.size() % 32 != 0)
+	{
+		meshlets_.push_back(Meshlet{});
 	}
 	meshlet_count_ = uint32_t(meshlets_.size());
 }

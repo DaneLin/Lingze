@@ -15,7 +15,7 @@ void SimpleRenderer::recreate_swapchain_resources(vk::Extent2D viewport_extent, 
 	viewport_extent_ = viewport_extent;
 }
 
-void SimpleRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera, const lz::Camera &light, lz::render::RenderContext *render_context, GLFWwindow *window)
+void SimpleRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, GLFWwindow *window)
 {
 	auto render_graph = core_->get_render_graph();
 	render_graph->add_pass(lz::RenderGraph::RenderPassDesc()

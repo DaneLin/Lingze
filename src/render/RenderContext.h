@@ -17,8 +17,12 @@ namespace lz::render
 /**
  * @brief Meshlet is used to store the meshlet information for each mesh
  */
-struct Meshlet
+struct alignas(16) Meshlet
 {
+	glm::vec4 sphere_bound;        // bounding sphere, xyz = center, w = radius
+	int8_t    cone_axis[3];
+	int8_t    cone_cutoff;
+
 	uint32_t data_offset;
 	uint32_t vertex_offset;
 	uint8_t  triangle_count;

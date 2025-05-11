@@ -34,11 +34,9 @@ GraphicsPipeline::GraphicsPipeline(vk::Device logical_device, const std::vector<
 
 	// Configure vertex input state
 	auto vertex_input_info = vk::PipelineVertexInputStateCreateInfo()
-	                             .setVertexBindingDescriptionCount(
-	                                 uint32_t(vertex_decl.get_binding_descriptors().size()))
+	                             .setVertexBindingDescriptionCount(uint32_t(vertex_decl.get_binding_descriptors().size()))
 	                             .setPVertexBindingDescriptions(vertex_decl.get_binding_descriptors().data())
-	                             .setVertexAttributeDescriptionCount(
-	                                 uint32_t(vertex_decl.get_vertex_attributes().size()))
+	                             .setVertexAttributeDescriptionCount(uint32_t(vertex_decl.get_vertex_attributes().size()))
 	                             .setPVertexAttributeDescriptions(vertex_decl.get_vertex_attributes().data());
 
 	// Configure input assembly state
@@ -52,7 +50,7 @@ GraphicsPipeline::GraphicsPipeline(vk::Device logical_device, const std::vector<
 	                                    .setPolygonMode(vk::PolygonMode::eFill)
 	                                    .setLineWidth(1.0f)
 	                                    .setCullMode(vk::CullModeFlagBits::eNone)
-	                                    .setFrontFace(vk::FrontFace::eClockwise)
+	                                    .setFrontFace(vk::FrontFace::eCounterClockwise)
 	                                    .setDepthBiasEnable(false);
 
 	// Configure multisample state

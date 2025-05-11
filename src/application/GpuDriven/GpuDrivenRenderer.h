@@ -15,7 +15,7 @@ class GpuDrivenRenderer final : public BaseRenderer
 
 	void recreate_render_context_resources(lz::render::RenderContext *render_context) override;
 	void recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count) override;
-	void render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera, const lz::Camera &light, lz::render::RenderContext *render_context, GLFWwindow *window) override;
+	void render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, GLFWwindow *window) override;
 	void reload_shaders() override;
 	void change_view() override;
 

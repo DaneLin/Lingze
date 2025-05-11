@@ -16,14 +16,9 @@ class MeshShadingRenderer final : public BaseRenderer
 	explicit MeshShadingRenderer(lz::Core *core);
 
 	virtual void recreate_swapchain_resources(vk::Extent2D viewport_extent, size_t in_flight_frames_count) override;
-	virtual void render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Camera &camera, const lz::Camera &light, lz::render::RenderContext *render_context, GLFWwindow *window) override;
+	void         render_frame(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, GLFWwindow *window) override;
 	virtual void reload_shaders() override;
 	virtual void change_view() override;
-
-	void set_mesh_shading_enable_flag(const bool enable)
-	{
-		mesh_shading_enable_ = enable;
-	}
 
   private:
 	constexpr static uint32_t k_shader_data_set_index = 0;
@@ -35,13 +30,6 @@ class MeshShadingRenderer final : public BaseRenderer
 		glm::mat4 proj_matrix;
 	};
 #pragma pack(pop)
-
-	struct BasicShapeShader
-	{
-		std::unique_ptr<lz::Shader>        vertex_shader;
-		std::unique_ptr<lz::Shader>        fragment_shader;
-		std::unique_ptr<lz::ShaderProgram> shader_program;
-	} base_shape_shader_;
 
 	struct MeshletShader
 	{
@@ -64,8 +52,6 @@ class MeshShadingRenderer final : public BaseRenderer
 	};
 
 	std::map<lz::RenderGraph *, std::unique_ptr<FrameResource>> frame_resource_datum_;
-
-	bool mesh_shading_enable_;
 
 	lz::Core *core_;
 };
