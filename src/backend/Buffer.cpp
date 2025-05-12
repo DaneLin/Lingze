@@ -14,12 +14,19 @@ vk::DeviceMemory Buffer::get_memory()
 
 void *Buffer::map()
 {
-	return logical_device_.mapMemory(get_memory(), 0, size_);
+	mapped_data_ = logical_device_.mapMemory(get_memory(), 0, size_);
+	return mapped_data_;
 }
 
 void Buffer::unmap()
 {
 	logical_device_.unmapMemory(get_memory());
+	mapped_data_ = nullptr;
+}
+
+void *Buffer::get_mapped_data()
+{
+	return mapped_data_;
 }
 
 Buffer::Buffer(const vk::PhysicalDevice physical_device, const vk::Device logical_device, const vk::DeviceSize size,

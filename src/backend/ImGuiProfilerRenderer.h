@@ -9,7 +9,8 @@
 #include "ProfilerTask.h"
 #include "imgui.h"
 
-#include "LingzeVK.h"
+#include "Config.h"
+#include "glm/glm.hpp"
 
 namespace ImGuiUtils
 {

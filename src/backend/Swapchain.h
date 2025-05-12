@@ -3,7 +3,7 @@
 
 #include "Image.h"
 #include "ImageView.h"
-#include "LingzeVK.h"
+#include "Config.h"
 #include "QueueIndices.h"
 #include "Surface.h"
 

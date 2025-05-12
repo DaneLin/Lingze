@@ -2,8 +2,8 @@
 
 #include <functional>
 
+#include "Config.h"
 #include "Image.h"
-#include "LingzeVK.h"
 
 #include "CpuProfiler.h"
 #include "Handles.h"
@@ -86,7 +86,7 @@ class ImageViewCache
   public:
 	struct ImageViewKey
 	{
-		lz::ImageData *       image;
+		lz::ImageData        *image;
 		ImageSubresourceRange subresource_range;
 		std::string           debug_name;
 
@@ -138,13 +138,11 @@ class RenderGraph
 {
   private:
 	struct ImageProxy;
-	using ImageProxyPool = Utils::Pool<ImageProxy>;
-
 	struct ImageViewProxy;
-	using ImageViewProxyPool = Utils::Pool<ImageViewProxy>;
-
 	struct BufferProxy;
-	using BufferProxyPool = Utils::Pool<BufferProxy>;
+	using ImageViewProxyPool = Utils::Pool<ImageViewProxy>;
+	using ImageProxyPool     = Utils::Pool<ImageProxy>;
+	using BufferProxyPool    = Utils::Pool<BufferProxy>;
 
   public:
 	using ImageProxyId     = ImageProxyPool::Id;
@@ -182,7 +180,7 @@ class RenderGraph
 		void set_debug_name(std::string name) const;
 
 	  private:
-		RenderGraph *    render_graph_;
+		RenderGraph     *render_graph_;
 		ImageViewProxyId image_view_proxy_id_;
 		friend class RenderGraph;
 	};
@@ -198,7 +196,7 @@ class RenderGraph
 		BufferProxyId id() const;
 
 	  private:
-		RenderGraph * render_graph_;
+		RenderGraph  *render_graph_;
 		BufferProxyId buffer_proxy_id_;
 		friend class RenderGraph;
 	};
@@ -210,32 +208,21 @@ class RenderGraph
 	using ImageViewProxyUnique = UniqueHandle<ImageViewHandleInfo, RenderGraph>;
 	using BufferProxyUnique    = UniqueHandle<BufferHandleInfo, RenderGraph>;
 
-	ImageProxyUnique add_image(vk::Format format, uint32_t mips_count, uint32_t array_layers_count, glm::uvec2 size, vk::ImageUsageFlags usage_flags);
-
-	ImageProxyUnique add_image(vk::Format format, uint32_t mips_count, uint32_t array_layers_count, glm::uvec3 size, vk::ImageUsageFlags usage_flags);
-
-	ImageProxyUnique add_external_image(lz::ImageData *image);
-
-	ImageViewProxyUnique add_image_view(ImageProxyId image_proxy_id, uint32_t base_mip_level,
-	                                    uint32_t mip_levels_count,
-	                                    uint32_t base_array_layer, uint32_t array_layers_count);
-
+	ImageProxyUnique     add_image(vk::Format format, uint32_t mips_count, uint32_t array_layers_count, glm::uvec2 size, vk::ImageUsageFlags usage_flags);
+	ImageProxyUnique     add_image(vk::Format format, uint32_t mips_count, uint32_t array_layers_count, glm::uvec3 size, vk::ImageUsageFlags usage_flags);
+	ImageProxyUnique     add_external_image(lz::ImageData *image);
+	ImageViewProxyUnique add_image_view(ImageProxyId image_proxy_id, uint32_t base_mip_level, uint32_t mip_levels_count, uint32_t base_array_layer, uint32_t array_layers_count);
 	ImageViewProxyUnique add_external_image_view(lz::ImageView *image_view, lz::ImageUsageTypes usage_type = lz::ImageUsageTypes::eUnknown);
 
   private:
 	void delete_image(ImageProxyId image_id);
-
 	void set_image_proxy_debug_name(ImageProxyId image_id, std::string debug_name);
-
 	void set_image_view_proxy_debug_name(ImageViewProxyId image_view_id, std::string debug_name);
-
 	void delete_image_view(ImageViewProxyId image_view_id);
-
 	void delete_buffer(BufferProxyId buffer_id);
 
   public:
 	glm::uvec2 get_mip_size(ImageProxyId image_proxy_id, uint32_t mip_level);
-
 	glm::uvec2 get_mip_size(ImageViewProxyId image_view_proxy_id, uint32_t mip_offset);
 
 	template <typename BufferType>
@@ -299,19 +286,12 @@ class RenderGraph
 		    vk::ClearValue       clear_value = vk::ClearDepthStencilValue(1.0f, 0));
 
 		RenderPassDesc &set_depth_attachment(Attachment depth_attachment);
-
 		RenderPassDesc &set_vertex_buffers(std::vector<BufferProxyId> &&vertex_buffer_proxies);
-
 		RenderPassDesc &set_input_images(std::vector<ImageViewProxyId> &&input_image_view_proxies);
-
 		RenderPassDesc &set_storage_buffers(std::vector<BufferProxyId> &&inout_storage_buffer_proxies);
-
 		RenderPassDesc &set_storage_images(std::vector<ImageViewProxyId> &&inout_storage_image_proxies);
-
 		RenderPassDesc &set_render_area_extent(vk::Extent2D render_area_extent);
-
 		RenderPassDesc &set_record_func(std::function<void(RenderPassContext)> record_func);
-
 		RenderPassDesc &set_profiler_info(uint32_t task_color, std::string task_name);
 
 		std::vector<Attachment> color_attachments;
@@ -449,7 +429,7 @@ class RenderGraph
 
 	void flush_buffer_transition_barriers(lz::Buffer *buffer, BufferUsageTypes src_usage_type,
 	                                      BufferUsageTypes dst_usage_type, vk::PipelineStageFlags &src_stage,
-	                                      vk::PipelineStageFlags &              dst_stage,
+	                                      vk::PipelineStageFlags               &dst_stage,
 	                                      std::vector<vk::BufferMemoryBarrier> &buffer_barriers);
 
 	void add_buffer_barriers(lz::Buffer *buffer, BufferUsageTypes dstUsageType, size_t dst_task_index,
@@ -466,7 +446,7 @@ class RenderGraph
 		};
 
 		ImageCache::ImageKey image_key;
-		lz::ImageData *      external_image;
+		lz::ImageData       *external_image;
 
 		lz::ImageData *resolved_image;
 
@@ -486,7 +466,7 @@ class RenderGraph
 		ImageProxyId          image_proxy_id;
 		ImageSubresourceRange subresource_range;
 
-		lz::ImageView *     external_view;
+		lz::ImageView      *external_view;
 		lz::ImageUsageTypes external_usage_type;
 
 		lz::ImageView *resolved_image_view;
@@ -504,8 +484,8 @@ class RenderGraph
 		};
 
 		BufferCache::BufferKey buffer_key;
-		lz::Buffer *           external_buffer;
-		lz::Buffer *           resolved_buffer;
+		lz::Buffer            *external_buffer;
+		lz::Buffer            *resolved_buffer;
 
 		Types type;
 	};
@@ -536,12 +516,12 @@ class RenderGraph
 	ImageViewCache     image_view_cache_;
 	ImageViewProxyPool image_view_proxies_;
 	void               resolve_image_views();
-	lz::ImageView *    get_resolved_image_view(size_t task_index, ImageViewProxyId image_view_proxy_id);
+	lz::ImageView     *get_resolved_image_view(size_t task_index, ImageViewProxyId image_view_proxy_id);
 
 	BufferCache     buffer_cache_;
 	BufferProxyPool buffer_proxies_;
 	void            resolve_buffers();
-	lz::Buffer *    get_resolved_buffer(size_t task_index, BufferProxyId buffer_proxy_id);
+	lz::Buffer     *get_resolved_buffer(size_t task_index, BufferProxyId buffer_proxy_id);
 
 	std::vector<Task> tasks_;
 	void              add_task(Task task);

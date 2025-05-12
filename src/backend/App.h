@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "backend/LingzeVK.h"
+#include "backend/Config.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_DEPTH_ZERO_TO_ONE

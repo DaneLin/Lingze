@@ -1,52 +1,17 @@
 #pragma once
 
-#include "backend/LingzeVK.h"
+#include "backend/Config.h"
 #include "backend/VertexDeclaration.h"
+
+#include "render/MaterialSystem.h"
+#include "glm/glm.hpp"
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace lz
 {
-/**
- * @brief Texture is a class that contains image data
- */
-class Texture
-{
-  public:
-	Texture()  = default;
-	~Texture() = default;
 
-	int                        width{-1};
-	int                        height{-1};
-	int                        channels{-1};
-	std::vector<unsigned char> data;
-	std::string                name;
-	std::string                uri;
-};
-
-/**
- * @brief Material is a material class that contains different types of texture maps
- */
-class Material
-{
-  public:
-	Material()  = default;
-	~Material() = default;
-
-	std::string              name;
-	std::shared_ptr<Texture> diffuse_texture;
-	std::shared_ptr<Texture> normal_texture;
-	std::shared_ptr<Texture> metallic_roughness_texture;
-	std::shared_ptr<Texture> emissive_texture;
-	std::shared_ptr<Texture> occlusion_texture;
-
-	// PBR parameters
-	glm::vec4 base_color_factor{1.0f};
-	float     metallic_factor{1.0f};
-	float     roughness_factor{1.0f};
-	glm::vec3 emissive_factor{0.0f};
-};
 
 /**
  * @brief Vertex is used to store the vertex information for each mesh

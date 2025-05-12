@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LingzeVK.h"
+#include "Config.h"
 
 namespace lz
 {
@@ -27,6 +27,8 @@ namespace lz
 		Sampler(vk::Device logical_device, vk::SamplerAddressMode address_mode, vk::Filter min_mag_filter_type,
 		        vk::SamplerMipmapMode mip_filter_type, bool use_comparison = false,
 		        vk::BorderColor border_color = vk::BorderColor());
+
+		Sampler(vk::Device logical_device, vk::SamplerCreateInfo create_info);
 
 	private:
 		vk::UniqueSampler sampler_handle_; // Native Vulkan sampler handle

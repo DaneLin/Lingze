@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Image.h"
-#include "LingzeVK.h"
+#include "Config.h"
 
 namespace lz
 {

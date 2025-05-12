@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LingzeVK.h"
+#include "Config.h"
 
 namespace lz
 {
@@ -10,8 +10,7 @@ struct TimestampQuery
 
 	void reset_query_pool(vk::CommandBuffer command_buffer);
 
-	void add_timestamp(vk::CommandBuffer command_buffer, size_t timestamp_name,
-	                   vk::PipelineStageFlagBits pipeline_stage);
+	void add_timestamp(vk::CommandBuffer command_buffer, size_t timestamp_name, vk::PipelineStageFlagBits pipeline_stage);
 
 	struct QueryResult
 	{

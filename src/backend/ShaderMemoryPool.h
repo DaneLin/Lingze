@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LingzeVK.h"
+#include "Config.h"
 #include "ShaderProgram.h"
 
 namespace lz

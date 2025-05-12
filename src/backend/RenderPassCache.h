@@ -5,7 +5,7 @@
 #include "ImageView.h"
 #include "RenderPass.h"
 
-#include "LingzeVK.h"
+#include "Config.h"
 
 namespace lz
 {

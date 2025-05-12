@@ -1,8 +1,8 @@
 #pragma once
 #include <gli/gli.hpp>
 
+#include "Config.h"
 #include "Core.h"
-#include "LingzeVK.h"
 #include "PresentQueue.h"
 
 namespace lz
@@ -343,12 +343,9 @@ static void load_texel_data(lz::Core *core, const ImageTexelData *texel_data, co
 	lz::ExecuteOnceQueue transfer_queue(core);
 	{
 		const auto transfer_command_buffer = transfer_queue.begin_command_buffer();
-		add_transition_barrier(dstImageData, lz::ImageUsageTypes::eNone, lz::ImageUsageTypes::eTransferDst,
-		                       transfer_command_buffer);
-		transfer_command_buffer.copyBufferToImage(staging_buffer->get_handle(), dstImageData->get_handle(),
-		                                          vk::ImageLayout::eTransferDstOptimal, copy_regions);
-		add_transition_barrier(dstImageData, lz::ImageUsageTypes::eTransferDst, dstUsageType,
-		                       transfer_command_buffer);
+		add_transition_barrier(dstImageData, lz::ImageUsageTypes::eNone, lz::ImageUsageTypes::eTransferDst, transfer_command_buffer);
+		transfer_command_buffer.copyBufferToImage(staging_buffer->get_handle(), dstImageData->get_handle(), vk::ImageLayout::eTransferDstOptimal, copy_regions);
+		add_transition_barrier(dstImageData, lz::ImageUsageTypes::eTransferDst, dstUsageType, transfer_command_buffer);
 	}
 	transfer_queue.end_command_buffer();
 }

@@ -1,5 +1,5 @@
 #pragma once
-#include "LingzeVK.h"
+#include "Config.h"
 
 namespace lz
 {

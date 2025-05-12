@@ -38,31 +38,33 @@ DescriptorSetCache::DescriptorSetCache(const vk::Device logical_device) :
     logical_device_(logical_device)
 {
 	std::vector<vk::DescriptorPoolSize> pool_sizes;
-	constexpr auto                      uniform_pool_size = vk::DescriptorPoolSize()
-	                                       .setDescriptorCount(1000)
+
+	constexpr auto uniform_pool_size = vk::DescriptorPoolSize()
+	                                       .setDescriptorCount(k_max_common_resources)
 	                                       .setType(vk::DescriptorType::eUniformBufferDynamic);
 	pool_sizes.push_back(uniform_pool_size);
 
 	constexpr auto image_sampler_pool_size = vk::DescriptorPoolSize()
-	                                             .setDescriptorCount(1000)
+	                                             .setDescriptorCount(k_max_common_resources)
 	                                             .setType(vk::DescriptorType::eCombinedImageSampler);
 	pool_sizes.push_back(image_sampler_pool_size);
 
 	constexpr auto storage_pool_size = vk::DescriptorPoolSize()
-	                                       .setDescriptorCount(1000)
+	                                       .setDescriptorCount(k_max_common_resources)
 	                                       .setType(vk::DescriptorType::eStorageBuffer);
 	pool_sizes.push_back(storage_pool_size);
 
 	constexpr auto storage_image_pool_size = vk::DescriptorPoolSize()
-	                                             .setDescriptorCount(1000)
+	                                             .setDescriptorCount(k_max_common_resources)
 	                                             .setType(vk::DescriptorType::eStorageImage);
 	pool_sizes.push_back(storage_image_pool_size);
 
 	const auto pool_create_info = vk::DescriptorPoolCreateInfo()
-	                                  .setMaxSets(1000)
+	                                  .setMaxSets(k_max_common_resources)
 	                                  .setPoolSizeCount(uint32_t(pool_sizes.size()))
 	                                  .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
 	                                  .setPPoolSizes(pool_sizes.data());
+
 	descriptor_pool_ = logical_device.createDescriptorPoolUnique(pool_create_info);
 }
 
@@ -145,13 +147,10 @@ vk::DescriptorSetLayout DescriptorSetCache::get_descriptor_set_layout(
 	return descriptor_set_layout.get();
 }
 
-vk::DescriptorSet DescriptorSetCache::get_descriptor_set(const lz::DescriptorSetLayoutKey &set_layout_key,
-                                                         const std::vector<UniformBufferBinding> &
-                                                             uniform_buffer_bindings,
-                                                         const std::vector<StorageBufferBinding> &
-                                                             storage_buffer_bindings,
-                                                         const std::vector<ImageSamplerBinding> &
-                                                             image_sampler_bindings)
+vk::DescriptorSet DescriptorSetCache::get_descriptor_set(const lz::DescriptorSetLayoutKey        &set_layout_key,
+                                                         const std::vector<UniformBufferBinding> &uniform_buffer_bindings,
+                                                         const std::vector<StorageBufferBinding> &storage_buffer_bindings,
+                                                         const std::vector<ImageSamplerBinding>  &image_sampler_bindings)
 {
 	const auto set_bindings = lz::DescriptorSetBindings()
 	                              .set_uniform_buffer_bindings(uniform_buffer_bindings)
@@ -313,9 +312,6 @@ void DescriptorSetCache::clear()
 
 bool DescriptorSetCache::DescriptorSetKey::operator<(const DescriptorSetKey &other) const
 {
-	return std::tie(layout, bindings.uniform_buffer_bindings, bindings.storage_buffer_bindings,
-	                bindings.storage_image_bindings, bindings.image_sampler_bindings) <
-	       std::tie(other.layout, other.bindings.uniform_buffer_bindings, other.bindings.storage_buffer_bindings,
-	                other.bindings.storage_image_bindings, other.bindings.image_sampler_bindings);
+	return std::tie(layout, bindings.uniform_buffer_bindings, bindings.storage_buffer_bindings, bindings.storage_image_bindings, bindings.image_sampler_bindings) < std::tie(other.layout, other.bindings.uniform_buffer_bindings, other.bindings.storage_buffer_bindings, other.bindings.storage_image_bindings, other.bindings.image_sampler_bindings);
 }
 }        // namespace lz

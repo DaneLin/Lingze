@@ -1,6 +1,7 @@
 #pragma once
 
-#include "LingzeVK.h"
+#include "Config.h"
+#include "glm/glm.hpp"
 
 namespace lz
 {
@@ -113,6 +114,9 @@ class ImageData
 class Image
 {
   public:
+	Image(vk::PhysicalDevice physical_device, vk::Device logical_device, const vk::ImageCreateInfo &image_info,
+	      vk::MemoryPropertyFlags mem_flags = vk::MemoryPropertyFlagBits::eDeviceLocal);
+
 	lz::ImageData *get_image_data() const;
 
 	vk::DeviceMemory get_memory();
@@ -120,37 +124,15 @@ class Image
 	static vk::ImageCreateInfo create_info_2d(glm::uvec2 size, uint32_t mips_count, uint32_t array_layers_count,
 	                                          vk::Format format, vk::ImageUsageFlags usage);
 
-	// CreateInfoVolume: Creates an image create info structure for 3D volume images
-	// Parameters:
-	// - size: Width, height, and depth of the volume
-	// - mipsCount: Number of mipmap levels
-	// - arrayLayersCount: Number of array layers
-	// - format: Format of the image
-	// - usage: Usage flags for the image
-	// Returns: Configured image create info structure for a 3D volume image
+	// Creates an image create info structure for 3D volume images
 	static vk::ImageCreateInfo create_info_volume(glm::uvec3 size, uint32_t mips_count, uint32_t array_layers_count, vk::Format format, vk::ImageUsageFlags usage);
 
-	// CreateInfoCube: Creates an image create info structure for cubemap images
-	// Parameters:
-	// - size: Width and height of each face of the cubemap
-	// - mipsCount: Number of mipmap levels
-	// - format: Format of the image
-	// - usage: Usage flags for the image
-	// Returns: Configured image create info structure for a cubemap
+	// Creates an image create info structure for cubemap images
 	static vk::ImageCreateInfo create_info_cube(glm::uvec2 size, uint32_t mips_count, vk::Format format, vk::ImageUsageFlags usage);
-
-	// Constructor: Creates a new image with specified properties
-	// Parameters:
-	// - physicalDevice: Physical device for memory allocation
-	// - logicalDevice: Logical device for image operations
-	// - imageInfo: Image creation parameters
-	// - memFlags: Memory property flags for the image allocation
-	Image(vk::PhysicalDevice physical_device, vk::Device logical_device, const vk::ImageCreateInfo &image_info,
-	      vk::MemoryPropertyFlags mem_flags = vk::MemoryPropertyFlagBits::eDeviceLocal);
 
   private:
 	vk::UniqueImage                image_handle_;        // Native Vulkan image handle
-	std::unique_ptr<lz::ImageData> image_data_;          // Image metadata and layout tracking
 	vk::UniqueDeviceMemory         image_memory_;        // Device memory allocation for this image
+	std::unique_ptr<lz::ImageData> image_data_;          // Image metadata and layout tracking
 };
 }        // namespace lz

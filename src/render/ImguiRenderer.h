@@ -3,7 +3,7 @@
 #include "imgui.h"
 
 #include "backend/Core.h"
-#include "backend/LingzeVK.h"
+#include "backend/Config.h"
 #include "backend/PresentQueue.h"
 
 namespace lz::render
