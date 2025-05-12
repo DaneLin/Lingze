@@ -4,19 +4,13 @@
 
 namespace lz
 {
-// IsDepthFormat: Checks if a format is a depth format
-// Parameters:
-// - format: Vulkan format to check
-// Returns: True if the format is a depth format, false otherwise
+// Checks if a format is a depth format
 static bool is_depth_format(const vk::Format format)
 {
 	return (format >= vk::Format::eD16Unorm && format < vk::Format::eD32SfloatS8Uint);
 }
 
-// GetGeneralUsageFlags: Determines appropriate usage flags for an image based on its format
-// Parameters:
-// - format: Vulkan format of the image
-// Returns: Appropriate image usage flags for the given format
+// Determines appropriate usage flags for an image based on its format
 static vk::ImageUsageFlags get_general_usage_flags(const vk::Format format)
 {
 	vk::ImageUsageFlags usage_flags = vk::ImageUsageFlagBits::eSampled;
@@ -33,22 +27,17 @@ static vk::ImageUsageFlags get_general_usage_flags(const vk::Format format)
 }
 
 // Common image usage flag combinations
-static constexpr vk::ImageUsageFlags color_image_usage = vk::ImageUsageFlagBits::eColorAttachment |
-                                                         vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
-static constexpr vk::ImageUsageFlags depth_image_usage = vk::ImageUsageFlagBits::eDepthStencilAttachment |
-                                                         vk::ImageUsageFlagBits::eSampled;
+static constexpr vk::ImageUsageFlags color_image_usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+static constexpr vk::ImageUsageFlags depth_image_usage = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
 
 class Swapchain;
 class RenderTarget;
 class Image;
 
-// ImageSubresourceRange: Represents a range of mipmap levels and array layers within an image
+// Represents a range of mipmap levels and array layers within an image
 struct ImageSubresourceRange
 {
-	// Contains: Checks if this range contains another range
-	// Parameters:
-	// - other: The range to check against
-	// Returns: True if this range fully contains the other range
+	// Checks if this range contains another range
 	bool contains(const ImageSubresourceRange &other) const;
 
 	// Comparison operator for container sorting
@@ -139,8 +128,7 @@ class Image
 	// - format: Format of the image
 	// - usage: Usage flags for the image
 	// Returns: Configured image create info structure for a 3D volume image
-	static vk::ImageCreateInfo create_info_volume(glm::uvec3 size, uint32_t mips_count, uint32_t array_layers_count,
-	                                              vk::Format format, vk::ImageUsageFlags usage);
+	static vk::ImageCreateInfo create_info_volume(glm::uvec3 size, uint32_t mips_count, uint32_t array_layers_count, vk::Format format, vk::ImageUsageFlags usage);
 
 	// CreateInfoCube: Creates an image create info structure for cubemap images
 	// Parameters:
@@ -149,8 +137,7 @@ class Image
 	// - format: Format of the image
 	// - usage: Usage flags for the image
 	// Returns: Configured image create info structure for a cubemap
-	static vk::ImageCreateInfo create_info_cube(glm::uvec2 size, uint32_t mips_count, vk::Format format,
-	                                            vk::ImageUsageFlags usage);
+	static vk::ImageCreateInfo create_info_cube(glm::uvec2 size, uint32_t mips_count, vk::Format format, vk::ImageUsageFlags usage);
 
 	// Constructor: Creates a new image with specified properties
 	// Parameters:

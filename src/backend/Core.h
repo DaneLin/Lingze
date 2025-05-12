@@ -33,14 +33,8 @@ class Core
 	// ClearCaches: Resets all resource caches
 	void clear_caches() const;
 
-	// CreateSwapchain: Creates a new swapchain for rendering to a window
-	// Parameters:
-	// - windowDesc: Window descriptor for creating the swapchain
-	// - imagesCount: Number of images in the swapchain
-	// - preferredMode: Preferred presentation mode
-	// Returns: Unique pointer to the created swapchain
-	std::unique_ptr<Swapchain> create_swapchain(WindowDesc window_desc, uint32_t images_count,
-	                                            vk::PresentModeKHR preferred_mode);
+	// Creates a new swapchain for rendering to a window
+	std::unique_ptr<Swapchain> create_swapchain(WindowDesc window_desc, uint32_t images_count, vk::PresentModeKHR preferred_mode);
 
 	// SetObjectDebugName: Sets a debug name for a Vulkan object
 	// Parameters:
@@ -164,6 +158,7 @@ class Core
 
 	// check if the device supports mesh shader extension
 	bool mesh_shader_supported_ = false;
+	bool bindless_supported_    = false;
 
 	// Core Vulkan objects
 	vk::UniqueInstance                                                      instance_;

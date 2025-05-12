@@ -7,11 +7,11 @@
 
 #include "DescriptorSetCache.h"
 #include "Image.h"
+#include "Logging.h"
 #include "PipelineCache.h"
 #include "RenderGraph.h"
 #include "Surface.h"
 #include "Swapchain.h"
-#include "Logging.h"
 
 namespace lz
 {
@@ -398,10 +398,10 @@ vk::PhysicalDevice Core::find_physical_device(const vk::Instance instance)
 				break;
 		}
 
-		LOGI("    Type: {}, Memory: {} MB, Score: {}", 
-			device_type_str, 
-			(device_memory / (1024 * 1024)), 
-			score);
+		LOGI("    Type: {}, Memory: {} MB, Score: {}",
+		     device_type_str,
+		     (device_memory / (1024 * 1024)),
+		     score);
 
 		candidates.push_back({device, score});
 	}
@@ -456,14 +456,14 @@ vk::PhysicalDevice Core::find_physical_device(const vk::Instance instance)
 		}
 	}
 
-	LOGI("Selected physical device: {} (Score: {})", 
-		best_properties.deviceName.data(),
-		candidates[0].score);
+	LOGI("Selected physical device: {} (Score: {})",
+	     best_properties.deviceName.data(),
+	     candidates[0].score);
 	LOGI("  Device type: {}", device_type_str);
-	LOGI("  API version: {}.{}.{}", 
-		VK_VERSION_MAJOR(best_properties.apiVersion),
-		VK_VERSION_MINOR(best_properties.apiVersion),
-		VK_VERSION_PATCH(best_properties.apiVersion));
+	LOGI("  API version: {}.{}.{}",
+	     VK_VERSION_MAJOR(best_properties.apiVersion),
+	     VK_VERSION_MINOR(best_properties.apiVersion),
+	     VK_VERSION_PATCH(best_properties.apiVersion));
 	LOGI("  Driver version: {}", best_properties.driverVersion);
 	LOGI("  Vendor ID: {}", best_properties.vendorID);
 	LOGI("  Device ID: {}", best_properties.deviceID);
@@ -536,6 +536,11 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 				{
 					mesh_shader_supported_ = true;
 				}
+
+				if (strcmp(ext_name, "VK_EXT_descriptor_indexing") == 0)
+				{
+					bindless_supported_ = true;
+				}
 				break;
 			}
 		}
@@ -546,21 +551,25 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 		}
 	}
 
-	
-
 	// Request physical device features
 	vk::PhysicalDeviceFeatures device_features;
 	device_features.setMultiDrawIndirect(true);
-	
+
 	vk::PhysicalDeviceVulkan12Features device_vulkan12_features;
 	device_vulkan12_features.setScalarBlockLayout(true);
 	device_vulkan12_features.setDrawIndirectCount(true);
 	device_vulkan12_features.setStorageBuffer8BitAccess(true);
 
+	if (bindless_supported_)
+	{
+		device_vulkan12_features.setDescriptorIndexing(true);
+		device_vulkan12_features.setDescriptorBindingPartiallyBound(true);
+		device_vulkan12_features.setDescriptorBindingSampledImageUpdateAfterBind(true);
+		device_vulkan12_features.setRuntimeDescriptorArray(true);
+	}
+
 	// Setup mesh shader feature structure if needed
-	vk::PhysicalDeviceMeshShaderFeaturesEXT mesh_shader_features;
-	mesh_shader_features.setMeshShader(true);
-	mesh_shader_features.setTaskShader(true);
+
 
 	// Setup device create info
 	vk::DeviceCreateInfo device_create_info;
@@ -576,6 +585,9 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 	void *pNext = &device_vulkan12_features;
 	if (mesh_shader_supported_)
 	{
+		vk::PhysicalDeviceMeshShaderFeaturesEXT mesh_shader_features;
+		mesh_shader_features.setMeshShader(true);
+		mesh_shader_features.setTaskShader(true);
 		mesh_shader_features.pNext = pNext;
 		pNext                      = &mesh_shader_features;
 	}

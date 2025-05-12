@@ -32,7 +32,6 @@
 #include "render/BaseRenderer.h"
 #include "render/ImguiRenderer.h"
 #include "render/RenderContext.h"
-#include "scene/CameraComponent.h"
 #include "scene/Scene.h"
 
 namespace lz
@@ -114,6 +113,7 @@ class App
 	static bool framebuffer_resized_;
 
 	std::unique_ptr<Core>                  core_;
+	std::unique_ptr<Scene>                 scene_;
 	std::unique_ptr<render::BaseRenderer>  renderer_;
 	std::unique_ptr<render::RenderContext> render_context_;
 	std::unique_ptr<render::ImGuiRenderer> imgui_renderer_;
@@ -126,15 +126,6 @@ class App
 	float        delta_time_;
 	glm::f64vec2 mouse_pos_;
 	glm::f64vec2 prev_mouse_pos_;
-
-	// 旧的相机实现（保留用于兼容，后续会逐步淘汰）
-	Camera camera_;
-	Camera light_;
-
-	// 新的场景和相机实现
-	std::unique_ptr<Scene>  scene_;
-	std::shared_ptr<Entity> main_camera_entity_;
-	CameraComponent        *main_camera_component_ = nullptr;
 
 	// Instance and device extension lists
 	std::vector<Extension> instance_extensions_;

@@ -17,12 +17,12 @@ class Texture
 	Texture()  = default;
 	~Texture() = default;
 
-	int                        width{-1};           // texture width
-	int                        height{-1};          // texture height
-	int                        channels{-1};        // number of color channels
-	std::vector<unsigned char> data;                // image data
-	std::string                name;                // texture name
-	std::string                uri;                 // texture URI or file path
+	int                        width{-1};
+	int                        height{-1};
+	int                        channels{-1};
+	std::vector<unsigned char> data;
+	std::string                name;
+	std::string                uri;
 };
 
 /**
@@ -34,12 +34,12 @@ class Material
 	Material()  = default;
 	~Material() = default;
 
-	std::string              name;                              // material name
-	std::shared_ptr<Texture> diffuse_texture;                   // diffuse texture
-	std::shared_ptr<Texture> normal_texture;                    // normal texture
-	std::shared_ptr<Texture> metallic_roughness_texture;        // metallic roughness texture
-	std::shared_ptr<Texture> emissive_texture;                  // emissive texture
-	std::shared_ptr<Texture> occlusion_texture;                 // occlusion texture
+	std::string              name;
+	std::shared_ptr<Texture> diffuse_texture;
+	std::shared_ptr<Texture> normal_texture;
+	std::shared_ptr<Texture> metallic_roughness_texture;
+	std::shared_ptr<Texture> emissive_texture;
+	std::shared_ptr<Texture> occlusion_texture;
 
 	// PBR parameters
 	glm::vec4 base_color_factor{1.0f};
@@ -87,7 +87,7 @@ class SubMesh
 	vk::PrimitiveTopology     primitive_topology;
 	glm::vec4                 sphere_bound;
 	std::string               material_name;
-	std::shared_ptr<Material> material;        // add a reference to the material
+	std::shared_ptr<Material> material;
 };
 
 /**

@@ -317,11 +317,11 @@ Mesh GltfMeshLoader::load()
 				    // set material name
 				    if (primitive.material >= 0)
 				    {
-					    const auto &material   = model.materials[primitive.material];
-					    sub_mesh.material_name = material.name;
-
-					    // 关联已加载的材质对象
-					    sub_mesh.material = mesh.get_material(material.name);
+					    const auto &material = model.materials[primitive.material];
+					    // Use the same naming convention as in load_materials_and_textures
+					    std::string mat_name = material.name.empty() ? "material_" + std::to_string(primitive.material) : material.name;
+					    sub_mesh.material_name = mat_name;
+					    sub_mesh.material = mesh.get_material(mat_name);
 				    }
 
 				    // get vertex count

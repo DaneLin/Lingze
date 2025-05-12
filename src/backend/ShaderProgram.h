@@ -6,6 +6,7 @@
 
 #include "Buffer.h"
 #include "ShaderModule.h"
+#include "glm/glm.hpp"
 
 namespace lz
 {

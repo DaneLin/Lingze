@@ -4,7 +4,6 @@
 #define NOMINMAX
 #include <vulkan/vulkan.hpp>
 
-// Include GLM for mathematics operations
-#include <glm/glm.hpp>
-
-// Remove TINYOBJLOADER_IMPLEMENTATION to avoid multiple definitions
+constexpr uint32_t k_bindless_texture_set_id  = 1;
+constexpr uint32_t k_bindless_texture_binding = 0;
+constexpr uint32_t k_max_bindless_resources   = 1024;

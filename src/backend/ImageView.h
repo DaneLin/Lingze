@@ -37,8 +37,8 @@ class ImageView
 	// - mipLevelsCount: Number of mipmap levels to include in the view
 	// - baseArrayLayer: First array layer to include in the view
 	// - arrayLayersCount: Number of array layers to include in the view
-	ImageView(vk::Device logical_device, lz::ImageData *image_data, uint32_t base_mip_level,
-	          uint32_t mip_levels_count,
+	ImageView(vk::Device logical_device, lz::ImageData *image_data,
+	          uint32_t base_mip_level, uint32_t mip_levels_count,
 	          uint32_t base_array_layer, uint32_t array_layers_count);
 
 	// Constructor: Creates an image view for cubemap images
@@ -47,8 +47,7 @@ class ImageView
 	// - cubemapImageData: Underlying cubemap image data (must have 6 array layers)
 	// - baseMipLevel: First mipmap level to include in the view
 	// - mipLevelsCount: Number of mipmap levels to include in the view
-	ImageView(vk::Device logical_device, lz::ImageData *cubemap_image_data, uint32_t base_mip_level,
-	          uint32_t mip_levels_count);
+	ImageView(vk::Device logical_device, lz::ImageData *cubemap_image_data, uint32_t base_mip_level, uint32_t mip_levels_count);
 
   private:
 	vk::UniqueImageView image_view_;        // Native Vulkan image view handle
