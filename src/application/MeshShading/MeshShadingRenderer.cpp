@@ -77,6 +77,12 @@ void MeshShadingRenderer::render_frame(
 			            pipeline_info.pipeline_layout, k_shader_data_set_index,
 			            {shader_data_set}, {shader_data.dynamic_offset});
 
+			        // bind bindless descriptor set
+			        context.get_command_buffer().bindDescriptorSets(
+			            vk::PipelineBindPoint::eGraphics,
+			            pipeline_info.pipeline_layout, k_bindless_descriptor_set_index,
+			            {core_->get_bindless_descriptor_set()->get()}, {});
+
 			        uint32_t task_need_count = uint32_t(render_context.get_meshlet_count() / 32);
 			        context.get_command_buffer().drawMeshTasksEXT(
 			            task_need_count, 1, 1, core_->get_dynamic_loader());

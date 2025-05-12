@@ -115,6 +115,12 @@ void RenderContext::process_entity(const std::shared_ptr<lz::Entity> &entity)
 		auto *mesh      = mesh_component->get_mesh();
 		auto *transform = entity->get_transform();
 
+		// register material
+		auto &materials = mesh->get_materials();
+		for (auto& material: materials)
+		{
+			core_->register_material(material);
+		}
 		// Get the world transformation matrix
 		glm::mat4 model_matrix = transform->get_world_matrix();
 

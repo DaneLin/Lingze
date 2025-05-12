@@ -9,3 +9,4 @@ constexpr uint32_t k_bindless_texture_binding      = 11;
 constexpr uint32_t k_max_bindless_resources        = 1024;
 
 constexpr uint32_t k_max_common_resources = 1024;
+

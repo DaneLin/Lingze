@@ -69,7 +69,7 @@ class Mesh
 
 	size_t get_sub_mesh_count() const
 	{
-		return sub_meshes.size();
+		return sub_meshes_.size();
 	}
 
 	SubMesh &get_sub_mesh(size_t index);
@@ -91,9 +91,9 @@ class Mesh
 	const std::vector<std::shared_ptr<Material>> &get_materials() const;
 
   private:
-	std::vector<SubMesh>                   sub_meshes;
-	glm::vec4                              mesh_bound;
-	std::vector<std::shared_ptr<Material>> materials;        // store all materials
+	std::vector<SubMesh>                   sub_meshes_;
+	glm::vec4                              mesh_bound_;
+	std::vector<std::shared_ptr<Material>> materials_;        // store all materials
 };
 
 }        // namespace lz

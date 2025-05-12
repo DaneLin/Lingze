@@ -6,6 +6,8 @@
 #include "QueueIndices.h"
 #include "RenderGraph.h"
 #include "Surface.h"
+#include "render/BaseRenderer.h"
+#include "render/MaterialSystem.h"
 #include <set>
 #include <vector>
 
@@ -43,8 +45,7 @@ class Core
 	// - objHandle: Handle to the Vulkan object
 	// - name: Debug name to set
 	template <typename Handle, typename Loader>
-	static void set_object_debug_name(vk::Device logical_device, Loader &loader, Handle obj_handle,
-	                                  const std::string name)
+	static void set_object_debug_name(vk::Device logical_device, Loader &loader, Handle obj_handle, const std::string name)
 	{
 		auto nameInfo = vk::DebugUtilsObjectNameInfoEXT()
 		                    .setObjectHandle(uint64_t(Handle::CType(obj_handle)))
@@ -119,6 +120,14 @@ class Core
 
 	vk::DispatchLoaderDynamic get_dynamic_loader() const;
 
+	bool bindless_supported() const;
+
+	void register_material(const std::shared_ptr<lz::Material> &material);
+
+	void process_pending_material_updates();
+
+	const vk::UniqueDescriptorSet *get_bindless_descriptor_set() const;
+
   private:
 	// CreateInstance: Creates a Vulkan instance with specified extensions and layers
 	vk::UniqueInstance create_instance(const std::vector<const char *> &instance_extensions,
@@ -161,14 +170,18 @@ class Core
 	bool bindless_supported_    = false;
 
 	// Core Vulkan objects
-	vk::UniqueInstance                                                      instance_;
-	vk::DispatchLoaderDynamic                                               loader_;
+	vk::UniqueInstance        instance_;
+	vk::DispatchLoaderDynamic loader_;
+	vk::PhysicalDevice        physical_device_;
+	vk::UniqueDevice          logical_device_;
+	vk::UniqueCommandPool     command_pool_;
+	vk::Queue                 graphics_queue_;
+	vk::Queue                 present_queue_;
+
+	std::unique_ptr<lz::MaterialSystem> material_system_;
+
+	// debug
 	vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic> debug_utils_messenger_;
-	vk::PhysicalDevice                                                      physical_device_;
-	vk::UniqueDevice                                                        logical_device_;
-	vk::UniqueCommandPool                                                   command_pool_;
-	vk::Queue                                                               graphics_queue_;
-	vk::Queue                                                               present_queue_;
 
 	// Resource caches and managers
 	std::unique_ptr<lz::DescriptorSetCache> descriptor_set_cache_;

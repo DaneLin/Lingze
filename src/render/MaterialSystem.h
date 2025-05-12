@@ -1,17 +1,21 @@
 #pragma once
 
 #include "backend/Config.h"
+#include "backend/Image.h"
+#include "backend/ImageView.h"
 #include "backend/Sampler.h"
 #include "glm/glm.hpp"
-#include <backend/Core.h>
 #include <backend/StagedResources.h>
 #include <memory>
 #include <queue>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace lz
 {
+
+class Core;
 /**
  * @brief Texture is a class that contains image data
  */
@@ -85,27 +89,29 @@ class MaterialSystem
 	MaterialSystem(Core *core);
 	~MaterialSystem();
 
-	void              initialize();
-	uint32_t          register_material(const std::shared_ptr<Material> &material);
-	uint32_t          get_material_index(const std::string &material_name) const;
-	uint32_t          upload_texture(const std::shared_ptr<Texture> &texture);
-	void              request_update(const UpdateRequest &request);
-	void              process_pending_updates(vk::CommandBuffer cmd_buffer);
-	vk::DescriptorSet get_bindless_descriptor_set() const;
-	lz::Buffer       *get_material_parameters_buffer() const;
-	lz::Sampler      *get_default_sampler() const;
+	uint32_t                register_material(const std::shared_ptr<Material> &material);
+	uint32_t                get_material_index(const std::string &material_name) const;
+	uint32_t                upload_texture(const std::shared_ptr<Texture> &texture);
+	void                    request_update(const UpdateRequest &request);
+	void                    process_pending_updates();
+	const vk::UniqueDescriptorSet *get_bindless_descriptor_set() const;
+	lz::Buffer             *get_material_parameters_buffer() const;
+	lz::Sampler            *get_default_sampler() const;
 
   private:
+	void     initialize();
 	uint32_t allocate_texture_slot();
 	uint32_t allocate_material_slot();
 	void     update_material_parameters(const std::shared_ptr<Material> &material);
+
+	uint32_t get_texture_index(const std::shared_ptr<Texture> &texture) const;
 
   private:
 	lz::Core *core_;
 
 	vk::UniqueDescriptorSetLayout bindless_descriptor_set_layout_;
 	vk::UniqueDescriptorPool      bindless_descriptor_pool_;
-	vk::DescriptorSet             bindless_descriptor_set_;
+	vk::UniqueDescriptorSet       bindless_descriptor_set_;
 
 	std::vector<std::unique_ptr<Image>>       texture_images_;
 	std::vector<std::unique_ptr<ImageView>>   texture_views_;

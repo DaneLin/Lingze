@@ -1,7 +1,6 @@
 #pragma once
 
 #include "backend/Camera.h"
-#include "backend/Core.h"
 #include "backend/Config.h"
 #include "backend/StagedResources.h"
 #include "scene/Entity.h"
@@ -17,6 +16,7 @@
 namespace lz::render
 {
 
+class lz::Core;
 /**
  * @brief Meshlet is used to store the meshlet information for each mesh
  */
@@ -138,7 +138,7 @@ class RenderContext
   private:
 	void process_entity(const std::shared_ptr<lz::Entity> &entity);
 
-	lz::Core *core_ = nullptr;
+	lz::Core *core_;
 
 	// Collected draw commands
 	uint32_t                          draw_count_ = 0;

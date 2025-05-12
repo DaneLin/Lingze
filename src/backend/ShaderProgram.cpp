@@ -664,6 +664,11 @@ DescriptorSetLayoutKey DescriptorSetLayoutKey::merge(DescriptorSetLayoutKey *set
 	return res;
 }
 
+uint32_t DescriptorSetLayoutKey::get_set_id() const
+{
+	return set_shader_id_;
+}
+
 void DescriptorSetLayoutKey::rebuild_index()
 {
 	uniform_name_to_ids_.clear();

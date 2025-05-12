@@ -16,11 +16,11 @@ void GpuDrivenApp::prepare_render_context()
 {
 	Scene scene;
 
-	Mesh mesh   = MeshLoader::get_loader(GLTF_DIR "Sponza/glTF/Sponza.gltf")->load();
+	Mesh mesh   = MeshLoaderManager::get_instance().load(GLTF_DIR "Sponza/glTF/Sponza.gltf");
 	auto entity = scene.create_entity("Sponza");
 	entity->add_component<StaticMeshComponent>()->set_mesh(&mesh);
 
-	Mesh buddha_mesh = MeshLoader::get_loader(DATA_DIR "Meshes/buddha.obj")->load();
+	Mesh buddha_mesh = MeshLoaderManager::get_instance().load(DATA_DIR "Meshes/buddha.obj");
 	auto buddha      = scene.create_entity("Buddha");
 	buddha->get_transform()->set_scale(glm::vec3(0.5f, 0.5f, 0.5f));
 	buddha->add_component<StaticMeshComponent>()->set_mesh(&buddha_mesh);

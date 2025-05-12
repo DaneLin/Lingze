@@ -23,7 +23,7 @@ struct DescriptorSetBindings
 class DescriptorSetCache
 {
   public:
-	explicit DescriptorSetCache(vk::Device logical_device);
+	explicit DescriptorSetCache(vk::Device logical_device, bool bindless_supported = false);
 
 	vk::DescriptorSetLayout get_descriptor_set_layout(const lz::DescriptorSetLayoutKey &descriptor_set_layout_key);
 
@@ -36,6 +36,8 @@ class DescriptorSetCache
 	vk::DescriptorSet get_descriptor_set(const lz::DescriptorSetLayoutKey &set_layout_key, const lz::DescriptorSetBindings &set_bindings);
 
 	void clear();
+
+
 
   private:
 	struct DescriptorSetKey

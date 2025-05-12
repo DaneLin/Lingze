@@ -78,7 +78,6 @@ int App::run()
 		}
 
 		auto prev_frame_time = std::chrono::system_clock::now();
-		;
 
 		// Main loop
 		while (!glfwWindowShouldClose(window_))
@@ -89,6 +88,9 @@ int App::run()
 
 			glfwPollEvents();
 			recreate_swapchain();
+
+			update(delta_time_);
+
 			process_input();
 			render_frame();
 		}
@@ -233,6 +235,8 @@ void App::update(float deltaTime)
 	{
 		scene_->update(deltaTime);
 	}
+	// update material system
+	core_->process_pending_material_updates();
 }
 
 // Process input

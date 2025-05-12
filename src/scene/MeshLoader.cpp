@@ -12,27 +12,6 @@
 
 namespace lz
 {
-//----------------------------------------
-// MeshLoader implementation
-//----------------------------------------
-
-std::shared_ptr<MeshLoader> MeshLoader::get_loader(const std::string &file_name)
-{
-	static std::vector<std::shared_ptr<MeshLoader>> loaders = {
-	    std::make_shared<ObjMeshLoader>(),
-	    std::make_shared<GltfMeshLoader>()};
-
-	for (auto &loader : loaders)
-	{
-		if (loader->can_load(file_name))
-		{
-			loader->set_file_path(file_name);
-			return loader;
-		}
-	}
-
-	return nullptr;
-}
 
 //----------------------------------------
 // Obj_loader implementation
@@ -548,7 +527,8 @@ void GltfMeshLoader::load_materials_and_textures(const tinygltf::Model &model, M
 			// store texture
 			textures[i] = texture;
 
-			LOGI("Loaded texture: {} ({}x{}, {} channels)", texture->name, texture->width, texture->height, texture->channels);
+			DLOGI("Loaded texture: {} ({}x{}, {} channels)", texture->name, texture->width, texture->height, texture->channels);
+
 		}
 	}
 
@@ -559,7 +539,7 @@ void GltfMeshLoader::load_materials_and_textures(const tinygltf::Model &model, M
 		auto        material      = std::make_shared<Material>();
 
 		// set material name
-		material->name = gltf_material.name.empty() ? "material_" + std::to_string(i) : gltf_material.name;
+		material->name = gltf_material.name.empty() ? "material_" + std::to_string(material_count_++) : gltf_material.name;
 
 		// process PBR material parameters
 		if (gltf_material.pbrMetallicRoughness.baseColorFactor.size() == 4)
@@ -588,7 +568,7 @@ void GltfMeshLoader::load_materials_and_textures(const tinygltf::Model &model, M
 		    gltf_material.pbrMetallicRoughness.baseColorTexture.index < textures.size())
 		{
 			material->diffuse_texture = textures[gltf_material.pbrMetallicRoughness.baseColorTexture.index];
-			LOGI("Material {} uses diffuse texture {}", material->name, material->diffuse_texture->name);
+			DLOGI("Material {} uses diffuse texture {}", material->name, material->diffuse_texture->name);
 		}
 
 		// metallic/roughness texture
@@ -596,7 +576,7 @@ void GltfMeshLoader::load_materials_and_textures(const tinygltf::Model &model, M
 		    gltf_material.pbrMetallicRoughness.metallicRoughnessTexture.index < textures.size())
 		{
 			material->metallic_roughness_texture = textures[gltf_material.pbrMetallicRoughness.metallicRoughnessTexture.index];
-			LOGI("Material {} uses metallic-roughness texture {}", material->name, material->metallic_roughness_texture->name);
+			DLOGI("Material {} uses metallic-roughness texture {}", material->name, material->metallic_roughness_texture->name);
 		}
 
 		// normal texture
@@ -604,7 +584,7 @@ void GltfMeshLoader::load_materials_and_textures(const tinygltf::Model &model, M
 		    gltf_material.normalTexture.index < textures.size())
 		{
 			material->normal_texture = textures[gltf_material.normalTexture.index];
-			LOGI("Material {} uses normal texture {}", material->name, material->normal_texture->name);
+			DLOGI("Material {} uses normal texture {}", material->name, material->normal_texture->name);
 		}
 
 		// emissive texture
@@ -612,7 +592,7 @@ void GltfMeshLoader::load_materials_and_textures(const tinygltf::Model &model, M
 		    gltf_material.emissiveTexture.index < textures.size())
 		{
 			material->emissive_texture = textures[gltf_material.emissiveTexture.index];
-			LOGI("Material {} uses emissive texture {}", material->name, material->emissive_texture->name);
+			DLOGI("Material {} uses emissive texture {}", material->name, material->emissive_texture->name);
 		}
 
 		// occlusion texture
@@ -620,12 +600,59 @@ void GltfMeshLoader::load_materials_and_textures(const tinygltf::Model &model, M
 		    gltf_material.occlusionTexture.index < textures.size())
 		{
 			material->occlusion_texture = textures[gltf_material.occlusionTexture.index];
-			LOGI("Material {} uses occlusion texture {}", material->name, material->occlusion_texture->name);
+			DLOGI("Material {} uses occlusion texture {}", material->name, material->occlusion_texture->name);
 		}
 
 		// add to model's material list
 		mesh.add_material(material);
-		LOGI("Added material: {}", material->name);
+		DLOGI("Added material: {}", material->name);
 	}
 }
+
+//----------------------------------------
+// MeshLoaderManager implementation
+//----------------------------------------
+
+MeshLoaderManager::MeshLoaderManager()
+{
+	loaders_.push_back(std::make_shared<ObjMeshLoader>());
+	loaders_.push_back(std::make_shared<GltfMeshLoader>());
+}
+
+MeshLoaderManager::~MeshLoaderManager()
+{
+	
+}
+
+MeshLoaderManager& MeshLoaderManager::get_instance()
+{
+	static MeshLoaderManager instance_;
+	return instance_;
+}
+
+Mesh MeshLoaderManager::load(const std::string &file_name)
+{
+	auto loader = get_loader(file_name);
+	return loader->load();
+}
+
+std::shared_ptr<MeshLoader> MeshLoaderManager::get_loader(const std::string &file_name)
+{
+
+	std::filesystem::path path(file_name);
+	std::string           ext = path.extension().string();
+
+	for (auto &loader : loaders_)
+	{
+		if (loader->can_load(file_name))
+		{
+			loader->set_file_path(file_name);
+			return loader;
+		}
+	}
+
+	throw std::runtime_error("Unsupported file extension: " + ext);
+	return nullptr;
+}
+
 }        // namespace lz

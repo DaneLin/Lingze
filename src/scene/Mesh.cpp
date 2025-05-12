@@ -71,7 +71,7 @@ void SubMesh::optimize()
 
 Mesh::Mesh()
 {
-	mesh_bound = glm::vec4(0.0f);
+	mesh_bound_ = glm::vec4(0.0f);
 }
 
 Mesh::Mesh(const std::string &file_name)
@@ -80,41 +80,41 @@ Mesh::Mesh(const std::string &file_name)
 
 void Mesh::add_sub_mesh(const SubMesh &sub_mesh)
 {
-	sub_meshes.push_back(sub_mesh);
+	sub_meshes_.push_back(sub_mesh);
 
 	calculate_bounding_sphere();
 }
 
 SubMesh &Mesh::get_sub_mesh(size_t index)
 {
-	if (index >= sub_meshes.size())
+	if (index >= sub_meshes_.size())
 	{
 		throw std::out_of_range("SubMesh index out of range");
 	}
-	return sub_meshes[index];
+	return sub_meshes_[index];
 }
 
 const SubMesh &Mesh::get_sub_mesh(size_t index) const
 {
-	if (index >= sub_meshes.size())
+	if (index >= sub_meshes_.size())
 	{
 		throw std::out_of_range("SubMesh index out of range");
 	}
-	return sub_meshes[index];
+	return sub_meshes_[index];
 }
 
 glm::vec4 Mesh::calculate_bounding_sphere()
 {
-	if (sub_meshes.empty())
+	if (sub_meshes_.empty())
 	{
-		mesh_bound = glm::vec4(0.0f);
-		return mesh_bound;
+		mesh_bound_ = glm::vec4(0.0f);
+		return mesh_bound_;
 	}
 
 	glm::vec3 min_bound(std::numeric_limits<float>::max());
 	glm::vec3 max_bound(std::numeric_limits<float>::lowest());
 
-	for (const auto &sub_mesh : sub_meshes)
+	for (const auto &sub_mesh : sub_meshes_)
 	{
 		for (const auto &vertex : sub_mesh.vertices)
 		{
@@ -126,8 +126,8 @@ glm::vec4 Mesh::calculate_bounding_sphere()
 	glm::vec3 center = 0.5f * (min_bound + max_bound);
 	float     radius = glm::length(max_bound - min_bound) * 0.5f;
 
-	mesh_bound = glm::vec4(center, radius);
-	return mesh_bound;
+	mesh_bound_ = glm::vec4(center, radius);
+	return mesh_bound_;
 }
 
 lz::VertexDeclaration Mesh::get_vertex_declaration()
@@ -142,7 +142,7 @@ lz::VertexDeclaration Mesh::get_vertex_declaration()
 
 void Mesh::optimize()
 {
-	for (auto &sub_mesh : sub_meshes)
+	for (auto &sub_mesh : sub_meshes_)
 	{
 		sub_mesh.optimize();
 	}
@@ -153,7 +153,7 @@ void Mesh::optimize()
 size_t Mesh::get_total_vertex_count() const
 {
 	size_t count = 0;
-	for (const auto &sub_mesh : sub_meshes)
+	for (const auto &sub_mesh : sub_meshes_)
 	{
 		count += sub_mesh.vertices.size();
 	}
@@ -163,7 +163,7 @@ size_t Mesh::get_total_vertex_count() const
 size_t Mesh::get_total_index_count() const
 {
 	size_t count = 0;
-	for (const auto &sub_mesh : sub_meshes)
+	for (const auto &sub_mesh : sub_meshes_)
 	{
 		count += sub_mesh.indices.size();
 	}
@@ -172,24 +172,24 @@ size_t Mesh::get_total_index_count() const
 
 void Mesh::add_material(const std::shared_ptr<Material> &material)
 {
-	for (const auto& existing_material : materials)
+	for (const auto& existing_material : materials_)
 	{
 		if (existing_material->name == material->name)
 		{
 			return; // material with the same name already exists, not added
 		}
 	}
-	materials.push_back(material);
+	materials_.push_back(material);
 }
 
 const std::vector<std::shared_ptr<Material>> &Mesh::get_materials() const
 {
-	return materials;
+	return materials_;
 }
 
 std::shared_ptr<Material> Mesh::get_material(const std::string &name)
 {
-	for (const auto &material : materials)
+	for (const auto &material : materials_)
 	{
 		if (material->name == name)
 		{
