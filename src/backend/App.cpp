@@ -34,6 +34,9 @@ App::App(const std::string &app_name, int width, int height) :
 	add_device_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
 	spdlog::set_pattern(LOGGER_FORMAT);
+#ifdef _DEBUG
+	spdlog::set_level(spdlog::level::debug);
+#endif
 }
 
 // Destructor

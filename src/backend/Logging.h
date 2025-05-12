@@ -17,15 +17,3 @@
 #define LOGW(...) spdlog::warn(fmt::format(__VA_ARGS__))
 #define LOGE(...) spdlog::error("[{}:{}] {}", __FILENAME__, __LINE__, fmt::format(__VA_ARGS__))
 #define LOGD(...) spdlog::debug(fmt::format(__VA_ARGS__))
-
-#ifdef _DEBUG
-#	define DLOGI(...) spdlog::info(fmt::format(__VA_ARGS__))
-#	define DLOGW(...) spdlog::warn(fmt::format(__VA_ARGS__))
-#	define DLOGE(...) spdlog::error("[{}:{}] {}", __FILENAME__, __LINE__, fmt::format(__VA_ARGS__))
-#	define DLOGD(...) spdlog::debug(fmt::format(__VA_ARGS__))
-#else
-#	define DLOGI(...)
-#	define DLOGW(...)
-#	define DLOGE(...)
-#	define DLOGD(...)
-#endif

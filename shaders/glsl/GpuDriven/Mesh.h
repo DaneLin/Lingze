@@ -25,6 +25,7 @@ struct Mesh
 struct MeshDraw
 {
 	uint mesh_index;        // index of the mesh in the mesh array
+	uint material_index;
 	mat4 model_matrix;
 };
 

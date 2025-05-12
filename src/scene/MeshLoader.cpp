@@ -297,10 +297,8 @@ Mesh GltfMeshLoader::load()
 				    if (primitive.material >= 0)
 				    {
 					    const auto &material = model.materials[primitive.material];
-					    // Use the same naming convention as in load_materials_and_textures
 					    std::string mat_name = material.name.empty() ? "material_" + std::to_string(primitive.material) : material.name;
 					    sub_mesh.material_name = mat_name;
-					    sub_mesh.material = mesh.get_material(mat_name);
 				    }
 
 				    // get vertex count
@@ -527,7 +525,7 @@ void GltfMeshLoader::load_materials_and_textures(const tinygltf::Model &model, M
 			// store texture
 			textures[i] = texture;
 
-			DLOGI("Loaded texture: {} ({}x{}, {} channels)", texture->name, texture->width, texture->height, texture->channels);
+			LOGD("Loaded texture: {} ({}x{}, {} channels)", texture->name, texture->width, texture->height, texture->channels);
 
 		}
 	}
@@ -568,7 +566,7 @@ void GltfMeshLoader::load_materials_and_textures(const tinygltf::Model &model, M
 		    gltf_material.pbrMetallicRoughness.baseColorTexture.index < textures.size())
 		{
 			material->diffuse_texture = textures[gltf_material.pbrMetallicRoughness.baseColorTexture.index];
-			DLOGI("Material {} uses diffuse texture {}", material->name, material->diffuse_texture->name);
+			LOGD("Material {} uses diffuse texture {}", material->name, material->diffuse_texture->name);
 		}
 
 		// metallic/roughness texture
@@ -576,7 +574,7 @@ void GltfMeshLoader::load_materials_and_textures(const tinygltf::Model &model, M
 		    gltf_material.pbrMetallicRoughness.metallicRoughnessTexture.index < textures.size())
 		{
 			material->metallic_roughness_texture = textures[gltf_material.pbrMetallicRoughness.metallicRoughnessTexture.index];
-			DLOGI("Material {} uses metallic-roughness texture {}", material->name, material->metallic_roughness_texture->name);
+			LOGD("Material {} uses metallic-roughness texture {}", material->name, material->metallic_roughness_texture->name);
 		}
 
 		// normal texture
@@ -584,7 +582,7 @@ void GltfMeshLoader::load_materials_and_textures(const tinygltf::Model &model, M
 		    gltf_material.normalTexture.index < textures.size())
 		{
 			material->normal_texture = textures[gltf_material.normalTexture.index];
-			DLOGI("Material {} uses normal texture {}", material->name, material->normal_texture->name);
+			LOGD("Material {} uses normal texture {}", material->name, material->normal_texture->name);
 		}
 
 		// emissive texture
@@ -592,7 +590,7 @@ void GltfMeshLoader::load_materials_and_textures(const tinygltf::Model &model, M
 		    gltf_material.emissiveTexture.index < textures.size())
 		{
 			material->emissive_texture = textures[gltf_material.emissiveTexture.index];
-			DLOGI("Material {} uses emissive texture {}", material->name, material->emissive_texture->name);
+			LOGD("Material {} uses emissive texture {}", material->name, material->emissive_texture->name);
 		}
 
 		// occlusion texture
@@ -600,12 +598,12 @@ void GltfMeshLoader::load_materials_and_textures(const tinygltf::Model &model, M
 		    gltf_material.occlusionTexture.index < textures.size())
 		{
 			material->occlusion_texture = textures[gltf_material.occlusionTexture.index];
-			DLOGI("Material {} uses occlusion texture {}", material->name, material->occlusion_texture->name);
+			LOGD("Material {} uses occlusion texture {}", material->name, material->occlusion_texture->name);
 		}
 
 		// add to model's material list
 		mesh.add_material(material);
-		DLOGI("Added material: {}", material->name);
+		LOGD("Added material: {}", material->name);
 	}
 }
 

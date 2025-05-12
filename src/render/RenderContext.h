@@ -51,6 +51,7 @@ struct alignas(16) MeshInfo
 struct MeshDraw
 {
 	uint32_t  mesh_index;
+	uint32_t  material_index;
 	glm::mat4 model_matrix;
 };
 #pragma pack(pop)

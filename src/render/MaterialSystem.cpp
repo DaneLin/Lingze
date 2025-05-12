@@ -116,22 +116,13 @@ void MaterialSystem::initialize()
 	        .setMaxSets(k_max_bindless_resources)
 	        .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind);
 
-	try
-	{
-		bindless_descriptor_pool_ = core_->get_logical_device().createDescriptorPoolUnique(pool_create_info);
-		DLOGI("Created bindless descriptor pool successfully");
-	}
-	catch (const std::exception &e)
-	{
-		LOGE("Failed to create bindless descriptor pool: %s", e.what());
-		return;
-	}
+	bindless_descriptor_pool_ = core_->get_logical_device().createDescriptorPoolUnique(pool_create_info);
+	LOGD("Created bindless descriptor pool successfully");
 
 	// creating descriptor set layout
 
 	std::vector<vk::DescriptorSetLayoutBinding> bindings(1);
-	bindings[0].setBinding(k_bindless_texture_binding).setDescriptorType(vk::DescriptorType::eCombinedImageSampler).setDescriptorCount(k_max_bindless_resources) 
-	    .setStageFlags(vk::ShaderStageFlagBits::eFragment);
+	bindings[0].setBinding(k_bindless_texture_binding).setDescriptorType(vk::DescriptorType::eCombinedImageSampler).setDescriptorCount(k_max_bindless_resources).setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
 	vk::DescriptorSetLayoutBindingFlagsCreateInfo binding_flags_info;
 	std::vector<vk::DescriptorBindingFlags>       flags(bindings.size(),
@@ -147,16 +138,8 @@ void MaterialSystem::initialize()
 	    .setFlags(vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool)
 	    .setPNext(&binding_flags_info);
 
-	try
-	{
-		bindless_descriptor_set_layout_ = core_->get_logical_device().createDescriptorSetLayoutUnique(layout_info);
-		DLOGI("Created bindless descriptor set layout successfully");
-	}
-	catch (const std::exception &e)
-	{
-		LOGE("Failed to create bindless descriptor set layout: {}", e.what());
-		return;
-	}
+	bindless_descriptor_set_layout_ = core_->get_logical_device().createDescriptorSetLayoutUnique(layout_info);
+	LOGD("Created bindless descriptor set layout successfully");
 
 	// creating descriptor set
 	vk::DescriptorSetAllocateInfo alloc_info;
@@ -171,11 +154,11 @@ void MaterialSystem::initialize()
 	alloc_info.pNext = &count_allocate_info;
 
 	bindless_descriptor_set_ = std::move(core_->get_logical_device().allocateDescriptorSetsUnique(alloc_info)[0]);
-	DLOGI("Successfully allocated bindless descriptor set");
+	LOGD("Successfully allocated bindless descriptor set");
 }
 uint32_t MaterialSystem::register_material(const std::shared_ptr<Material> &material)
 {
-	DLOGI("Registering material : {}", material->name.c_str());
+	LOGD("Registering material : {}", material->name.c_str());
 
 	// check if material already exists
 	auto it = material_name_to_index_.find(material->name);
@@ -218,7 +201,7 @@ uint32_t MaterialSystem::upload_texture(const std::shared_ptr<Texture> &texture)
 	// Check for missing data
 	if (texture->data.empty() || texture->width <= 0 || texture->height <= 0 || texture->channels <= 0)
 	{
-		DLOGW("Texture has invalid dimensions or empty data: {}", texture->name);
+		LOGD("Texture has invalid dimensions or empty data: {}", texture->name);
 		return UINT32_MAX;
 	}
 
@@ -233,7 +216,7 @@ uint32_t MaterialSystem::upload_texture(const std::shared_ptr<Texture> &texture)
 	}
 	else
 	{
-		DLOGW("Texture has empty name, skipping upload");
+		LOGD("Texture has empty name, skipping upload");
 		return UINT32_MAX;
 	}
 
@@ -241,7 +224,7 @@ uint32_t MaterialSystem::upload_texture(const std::shared_ptr<Texture> &texture)
 
 	if (texture_index >= k_max_bindless_resources)
 	{
-		DLOGW("Exceeded maximum bindless resources limit");
+		LOGD("Exceeded maximum bindless resources limit");
 		return UINT32_MAX;
 	}
 
@@ -271,42 +254,31 @@ uint32_t MaterialSystem::upload_texture(const std::shared_ptr<Texture> &texture)
 			break;
 	}
 
-	try
-	{
-		auto image_create_info = Image::create_info_2d(
-		    glm::uvec2(texture->width, texture->height),
-		    1,
-		    1,
-		    format,
-		    vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+	auto image_create_info = Image::create_info_2d(
+	    glm::uvec2(texture->width, texture->height),
+	    1,
+	    1,
+	    format,
+	    vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
 
-		texture_images_[texture_index] = std::make_unique<Image>(
-		    core_->get_physical_device(),
-		    core_->get_logical_device(),
-		    image_create_info,
-		    vk::MemoryPropertyFlagBits::eDeviceLocal);
+	texture_images_[texture_index] = std::make_unique<Image>(
+	    core_->get_physical_device(),
+	    core_->get_logical_device(),
+	    image_create_info,
+	    vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-		texture_views_[texture_index] = std::make_unique<ImageView>(
-		    core_->get_logical_device(),
-		    texture_images_[texture_index]->get_image_data(),
-		    0, 1, 0, 1);
+	texture_views_[texture_index] = std::make_unique<ImageView>(
+	    core_->get_logical_device(),
+	    texture_images_[texture_index]->get_image_data(),
+	    0, 1, 0, 1);
 
-		// submit texture data when processing update queue
-		UpdateRequest request;
-		request.type    = UpdateRequest::UpdateType::eTextureUpload;
-		request.texture = texture;
+	// submit texture data when processing update queue
+	UpdateRequest request;
+	request.type    = UpdateRequest::UpdateType::eTextureUpload;
+	request.texture = texture;
 
-		// add to update queue
-		request_update(request);
-	}
-	catch (const std::exception &e)
-	{
-		// Remove from the index map
-		texture_name_to_index_.erase(texture->name);
-		// Add the index back to the free list
-		free_texture_slots_.push_back(texture_index);
-		return UINT32_MAX;
-	}
+	// add to update queue
+	request_update(request);
 
 	return texture_index;
 }
@@ -341,7 +313,7 @@ void MaterialSystem::process_pending_updates()
 	{
 		if (request.type == UpdateRequest::UpdateType::eTextureUpload)
 		{
-			DLOGI("Uploading texture: {}", request.texture->name);
+			LOGD("Uploading texture: {}", request.texture->name);
 			uint32_t texture_index;
 			if (!request.texture->name.empty())
 			{
@@ -430,7 +402,7 @@ void MaterialSystem::process_pending_updates()
 		try
 		{
 			core_->get_logical_device().updateDescriptorSets(descriptor_writes, {});
-			DLOGI("Successfully updated {} descriptors", descriptor_writes.size());
+			LOGD("Successfully updated {} descriptors", descriptor_writes.size());
 		}
 		catch (const std::exception &e)
 		{

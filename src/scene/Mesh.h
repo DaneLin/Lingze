@@ -52,7 +52,6 @@ class SubMesh
 	vk::PrimitiveTopology     primitive_topology;
 	glm::vec4                 sphere_bound;
 	std::string               material_name;
-	std::shared_ptr<Material> material;
 };
 
 /**

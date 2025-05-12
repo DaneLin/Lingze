@@ -89,14 +89,14 @@ class MaterialSystem
 	MaterialSystem(Core *core);
 	~MaterialSystem();
 
-	uint32_t                register_material(const std::shared_ptr<Material> &material);
-	uint32_t                get_material_index(const std::string &material_name) const;
-	uint32_t                upload_texture(const std::shared_ptr<Texture> &texture);
-	void                    request_update(const UpdateRequest &request);
-	void                    process_pending_updates();
+	uint32_t                       register_material(const std::shared_ptr<Material> &material);
+	uint32_t                       get_material_index(const std::string &material_name) const;
+	uint32_t                       upload_texture(const std::shared_ptr<Texture> &texture);
+	void                           request_update(const UpdateRequest &request);
+	void                           process_pending_updates();
 	const vk::UniqueDescriptorSet *get_bindless_descriptor_set() const;
-	lz::Buffer             *get_material_parameters_buffer() const;
-	lz::Sampler            *get_default_sampler() const;
+	lz::Buffer                    *get_material_parameters_buffer() const;
+	lz::Sampler                   *get_default_sampler() const;
 
   private:
 	void     initialize();

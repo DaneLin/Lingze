@@ -603,12 +603,14 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 	    .setPpEnabledLayerNames(validation_layers.data());
 
 	// Add mesh shader feature to pNext chain if enabled
+	vk::PhysicalDeviceMeshShaderFeaturesEXT mesh_shader_features;
+	mesh_shader_features.setMeshShader(true);
+	mesh_shader_features.setTaskShader(true);
+
 	void *pNext = &device_vulkan12_features;
 	if (mesh_shader_supported_)
 	{
-		vk::PhysicalDeviceMeshShaderFeaturesEXT mesh_shader_features;
-		mesh_shader_features.setMeshShader(true);
-		mesh_shader_features.setTaskShader(true);
+		
 		mesh_shader_features.pNext = pNext;
 		pNext                      = &mesh_shader_features;
 	}
