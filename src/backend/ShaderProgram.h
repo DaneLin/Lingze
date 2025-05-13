@@ -6,6 +6,7 @@
 
 #include "Buffer.h"
 #include "ShaderModule.h"
+#include "glm/glm.hpp"
 
 namespace lz
 {
@@ -152,15 +153,16 @@ class DescriptorSetLayoutKey
   public:
 	// Type definitions for various shader resource IDs
 	struct UniformBase;
-	using UniformId = ShaderResourceId<UniformBase>;
 	struct UniformBufferBase;
-	using UniformBufferId = ShaderResourceId<UniformBufferBase>;
 	struct ImageSamplerBase;
-	using ImageSamplerId = ShaderResourceId<ImageSamplerBase>;
 	struct StorageBufferBase;
-	using StorageBufferId = ShaderResourceId<StorageBufferBase>;
 	struct StorageImageBase;
-	using StorageImageId = ShaderResourceId<StorageImageBase>;
+
+	using UniformBufferId = ShaderResourceId<UniformBufferBase>;
+	using ImageSamplerId  = ShaderResourceId<ImageSamplerBase>;
+	using StorageBufferId = ShaderResourceId<StorageBufferBase>;
+	using UniformId       = ShaderResourceId<UniformBase>;
+	using StorageImageId  = ShaderResourceId<StorageImageBase>;
 
 	// UniformData: Structure for individual uniform variable information
 	struct UniformData
@@ -228,8 +230,7 @@ class DescriptorSetLayoutKey
 
 	size_t get_uniform_buffers_count() const;
 
-	void get_uniform_buffer_ids(UniformBufferId *dst_uniform_buffer_ids, size_t count = -1,
-	                            size_t offset = 0) const;
+	void get_uniform_buffer_ids(UniformBufferId *dst_uniform_buffer_ids, size_t count = -1, size_t offset = 0) const;
 
 	UniformBufferId get_uniform_buffer_id(std::string buffer_name) const;
 
@@ -243,8 +244,7 @@ class DescriptorSetLayoutKey
 
 	size_t get_storage_buffers_count() const;
 
-	void get_storage_buffer_ids(StorageBufferId *dst_storage_buffer_ids, size_t count = -1,
-	                            size_t offset = 0) const;
+	void get_storage_buffer_ids(StorageBufferId *dst_storage_buffer_ids, size_t count = -1, size_t offset = 0) const;
 
 	StorageBufferId get_storage_buffer_id(std::string storage_buffer_name) const;
 
@@ -283,7 +283,6 @@ class DescriptorSetLayoutKey
 	ImageSamplerData get_image_sampler_info(ImageSamplerId image_sampler_id) const;
 
 	ImageSamplerId get_image_sampler_id(std::string image_sampler_name) const;
-
 	ImageSamplerId get_image_sampler_id(uint32_t shader_binding_index) const;
 
 	ImageSamplerBinding make_image_sampler_binding(std::string image_sampler_name, lz::ImageView *image_view,
@@ -308,6 +307,8 @@ class DescriptorSetLayoutKey
 	bool operator<(const DescriptorSetLayoutKey &other) const;
 
 	static DescriptorSetLayoutKey merge(DescriptorSetLayoutKey *set_layouts, size_t sets_count);
+
+	uint32_t get_set_id() const;
 
   private:
 	void rebuild_index();

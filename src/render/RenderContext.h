@@ -1,19 +1,22 @@
 #pragma once
 
 #include "backend/Camera.h"
-#include "backend/Core.h"
-#include "backend/LingzeVK.h"
+#include "backend/Config.h"
 #include "backend/StagedResources.h"
 #include "scene/Entity.h"
 #include "scene/Scene.h"
 #include "scene/StaticMeshComponent.h"
 #include "scene/Transform.h"
+
+#include "glm/glm.hpp"
+
 #include <memory>
 #include <vector>
 
 namespace lz::render
 {
 
+class lz::Core;
 /**
  * @brief Meshlet is used to store the meshlet information for each mesh
  */
@@ -25,6 +28,7 @@ struct alignas(16) Meshlet
 
 	uint32_t data_offset;
 	uint32_t vertex_offset;
+	uint32_t material_index;
 	uint8_t  triangle_count;
 	uint8_t  vertex_count;
 };
@@ -48,6 +52,7 @@ struct alignas(16) MeshInfo
 struct MeshDraw
 {
 	uint32_t  mesh_index;
+	uint32_t  material_index;
 	glm::mat4 model_matrix;
 };
 #pragma pack(pop)
@@ -135,7 +140,7 @@ class RenderContext
   private:
 	void process_entity(const std::shared_ptr<lz::Entity> &entity);
 
-	lz::Core *core_ = nullptr;
+	lz::Core *core_;
 
 	// Collected draw commands
 	uint32_t                          draw_count_ = 0;

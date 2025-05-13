@@ -12,8 +12,7 @@ StagedBuffer::StagedBuffer(vk::PhysicalDevice physical_device, vk::Device logica
 	this->size_          = size;
 	staging_buffer_      = std::make_unique<lz::Buffer>(physical_device, logical_device, size,
 	                                                    vk::BufferUsageFlagBits::eTransferSrc,
-	                                                    vk::MemoryPropertyFlagBits::eHostVisible |
-	                                                        vk::MemoryPropertyFlagBits::eHostCoherent);
+	                                                    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 	device_local_buffer_ = std::make_unique<lz::Buffer>(physical_device, logical_device, size,
 	                                                    buffer_usage | vk::BufferUsageFlagBits::eTransferDst,
 	                                                    vk::MemoryPropertyFlagBits::eDeviceLocal);
@@ -21,7 +20,8 @@ StagedBuffer::StagedBuffer(vk::PhysicalDevice physical_device, vk::Device logica
 
 void *StagedBuffer::map()
 {
-	return staging_buffer_->map();
+	mapped_data_ = staging_buffer_->map();
+	return mapped_data_;
 }
 
 void StagedBuffer::unmap(vk::CommandBuffer command_buffer)
@@ -33,6 +33,11 @@ void StagedBuffer::unmap(vk::CommandBuffer command_buffer)
 	                      .setDstOffset(0)
 	                      .setSize(size_);
 	command_buffer.copyBuffer(staging_buffer_->get_handle(), device_local_buffer_->get_handle(), {copyRegion});
+}
+
+void *StagedBuffer::get_mapped_data()
+{
+	return mapped_data_;
 }
 
 lz::Buffer &StagedBuffer::get_buffer()

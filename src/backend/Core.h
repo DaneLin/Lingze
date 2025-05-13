@@ -6,6 +6,8 @@
 #include "QueueIndices.h"
 #include "RenderGraph.h"
 #include "Surface.h"
+#include "render/BaseRenderer.h"
+#include "render/MaterialSystem.h"
 #include <set>
 #include <vector>
 
@@ -33,14 +35,8 @@ class Core
 	// ClearCaches: Resets all resource caches
 	void clear_caches() const;
 
-	// CreateSwapchain: Creates a new swapchain for rendering to a window
-	// Parameters:
-	// - windowDesc: Window descriptor for creating the swapchain
-	// - imagesCount: Number of images in the swapchain
-	// - preferredMode: Preferred presentation mode
-	// Returns: Unique pointer to the created swapchain
-	std::unique_ptr<Swapchain> create_swapchain(WindowDesc window_desc, uint32_t images_count,
-	                                            vk::PresentModeKHR preferred_mode);
+	// Creates a new swapchain for rendering to a window
+	std::unique_ptr<Swapchain> create_swapchain(WindowDesc window_desc, uint32_t images_count, vk::PresentModeKHR preferred_mode);
 
 	// SetObjectDebugName: Sets a debug name for a Vulkan object
 	// Parameters:
@@ -49,8 +45,7 @@ class Core
 	// - objHandle: Handle to the Vulkan object
 	// - name: Debug name to set
 	template <typename Handle, typename Loader>
-	static void set_object_debug_name(vk::Device logical_device, Loader &loader, Handle obj_handle,
-	                                  const std::string name)
+	static void set_object_debug_name(vk::Device logical_device, Loader &loader, Handle obj_handle, const std::string name)
 	{
 		auto nameInfo = vk::DebugUtilsObjectNameInfoEXT()
 		                    .setObjectHandle(uint64_t(Handle::CType(obj_handle)))
@@ -125,6 +120,18 @@ class Core
 
 	vk::DispatchLoaderDynamic get_dynamic_loader() const;
 
+	bool bindless_supported() const;
+
+	void register_material(const std::shared_ptr<lz::Material> &material);
+
+	void process_pending_material_updates();
+
+	const vk::UniqueDescriptorSet *get_bindless_descriptor_set() const;
+
+	uint32_t get_material_index(const std::string &material_name) const;
+
+	lz::Buffer* get_material_parameters_buffer() const;
+
   private:
 	// CreateInstance: Creates a Vulkan instance with specified extensions and layers
 	vk::UniqueInstance create_instance(const std::vector<const char *> &instance_extensions,
@@ -164,16 +171,21 @@ class Core
 
 	// check if the device supports mesh shader extension
 	bool mesh_shader_supported_ = false;
+	bool bindless_supported_    = false;
 
 	// Core Vulkan objects
-	vk::UniqueInstance                                                      instance_;
-	vk::DispatchLoaderDynamic                                               loader_;
+	vk::UniqueInstance        instance_;
+	vk::DispatchLoaderDynamic loader_;
+	vk::PhysicalDevice        physical_device_;
+	vk::UniqueDevice          logical_device_;
+	vk::UniqueCommandPool     command_pool_;
+	vk::Queue                 graphics_queue_;
+	vk::Queue                 present_queue_;
+
+	std::unique_ptr<lz::MaterialSystem> material_system_;
+
+	// debug
 	vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic> debug_utils_messenger_;
-	vk::PhysicalDevice                                                      physical_device_;
-	vk::UniqueDevice                                                        logical_device_;
-	vk::UniqueCommandPool                                                   command_pool_;
-	vk::Queue                                                               graphics_queue_;
-	vk::Queue                                                               present_queue_;
 
 	// Resource caches and managers
 	std::unique_ptr<lz::DescriptorSetCache> descriptor_set_cache_;

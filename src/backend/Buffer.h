@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LingzeVK.h"
+#include "Config.h"
 
 namespace lz
 {
@@ -46,6 +46,9 @@ class Buffer
 	// Unmap: Unmaps the buffer memory from CPU access
 	void unmap();
 
+	// GetMappedData: Returns the mapped data pointer
+	void *get_mapped_data();
+
 	// Constructor: Creates a new buffer with specified properties
 	// Parameters:
 	// - physicalDevice: Physical device for memory allocation
@@ -61,6 +64,7 @@ class Buffer
 	vk::UniqueDeviceMemory buffer_memory_;         // Device memory allocation for this buffer
 	vk::Device             logical_device_;        // Logical device for buffer operations
 	vk::DeviceSize         size_;                  // Size of the buffer in bytes
+	void                  *mapped_data_;
 	friend class Core;
 };
 }        // namespace lz

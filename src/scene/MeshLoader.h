@@ -3,6 +3,7 @@
 #include "Mesh.h"
 #include <memory>
 #include <string>
+#include <tiny_gltf.h>
 
 namespace lz
 {
@@ -37,9 +38,6 @@ class MeshLoader
 	const std::string& get_file_path() const {
 		return file_path;
 	}
-
-	// get the loader for the specified file
-	static std::shared_ptr<MeshLoader> get_loader(const std::string &file_name);
 };
 
 /**
@@ -60,5 +58,30 @@ class GltfMeshLoader : public MeshLoader
   public:
 	Mesh load() override;
 	bool can_load(const std::string &file_name) override;
+
+private:
+	void load_materials_and_textures(const tinygltf::Model& model, Mesh& mesh);
+
+	uint32_t material_count_{0};
 };
+
+// manager for mesh loaders
+// singleton
+class MeshLoaderManager
+{
+  public:
+	static MeshLoaderManager& get_instance();
+
+	Mesh load(const std::string &file_name);
+
+  private:
+	MeshLoaderManager();
+	~MeshLoaderManager();
+
+	std::shared_ptr<MeshLoader> get_loader(const std::string &file_name);
+
+	std::vector<std::shared_ptr<MeshLoader>> loaders_;
+
+};
+
 }        // namespace lz

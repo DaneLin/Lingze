@@ -16,6 +16,7 @@ class MeshShadingApp : public lz::App
 	{
 		add_device_extension(VK_EXT_MESH_SHADER_EXTENSION_NAME, true);
 		add_device_extension(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME, true);
+		add_device_extension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, true);
 	}
 
 	virtual ~MeshShadingApp() override = default;

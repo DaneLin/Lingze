@@ -34,4 +34,8 @@ Sampler::Sampler(vk::Device logical_device, vk::SamplerAddressMode address_mode,
 	// Create the sampler
 	sampler_handle_ = logical_device.createSamplerUnique(sampler_create_info);
 }
+Sampler::Sampler(vk::Device logical_device, vk::SamplerCreateInfo create_info)
+{
+	sampler_handle_ = logical_device.createSamplerUnique(create_info);
+}
 }        // namespace lz

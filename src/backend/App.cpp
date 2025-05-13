@@ -1,5 +1,4 @@
 ﻿#include "backend/App.h"
-#include "backend/ImGuiProfilerRenderer.h"
 #include "backend/Logging.h"
 #include "scene/Entity.h"
 
@@ -8,6 +7,7 @@
 #include <chrono>
 #include <filesystem>
 #include <iostream>
+#include <scene/CameraComponent.h>
 #include <sstream>
 
 namespace lz
@@ -25,10 +25,6 @@ void App::framebuffer_resize_callback(GLFWwindow *window, int width, int height)
 App::App(const std::string &app_name, int width, int height) :
     app_name_(app_name), window_width_(width), window_height_(height)
 {
-	// Initialize default camera and light positions
-	camera_.pos = glm::vec3(0.0f, 0.5f, -2.0f);
-	light_.pos  = glm::vec3(0.0f, 0.5f, -2.0f);
-
 	// Add default instance extensions required by GLFW
 	add_instance_extension("VK_KHR_surface");
 	add_instance_extension("VK_KHR_win32_surface");
@@ -37,6 +33,9 @@ App::App(const std::string &app_name, int width, int height) :
 	add_device_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
 	spdlog::set_pattern(LOGGER_FORMAT);
+#ifdef _DEBUG
+	spdlog::set_level(spdlog::level::debug);
+#endif
 }
 
 // Destructor
@@ -81,7 +80,6 @@ int App::run()
 		}
 
 		auto prev_frame_time = std::chrono::system_clock::now();
-		;
 
 		// Main loop
 		while (!glfwWindowShouldClose(window_))
@@ -92,6 +90,9 @@ int App::run()
 
 			glfwPollEvents();
 			recreate_swapchain();
+
+			update(delta_time_);
+
 			process_input();
 			render_frame();
 		}
@@ -136,9 +137,10 @@ bool App::init()
 
 	// Prepare instance extensions
 	std::vector<const char *> instance_extension_names;
+	instance_extension_names.reserve(instance_extensions_.size());
 	for (const auto &ext : instance_extensions_)
 	{
-		instance_extension_names.push_back(ext.name.c_str());
+		instance_extension_names.emplace_back(ext.name.c_str());
 	}
 
 	// Window setup for surface creation
@@ -151,9 +153,10 @@ bool App::init()
 
 	// Prepare device extensions
 	std::vector<const char *> device_extension_names;
+	device_extension_names.reserve(device_extensions_.size());
 	for (const auto &ext : device_extensions_)
 	{
-		device_extension_names.push_back(ext.name.c_str());
+		device_extension_names.emplace_back(ext.name.c_str());
 	}
 
 	// Create the Core with our extension lists
@@ -205,10 +208,10 @@ void App::prepare_render_context()
 void App::setup_scene()
 {
 	// Create main camera entity
-	main_camera_entity_ = scene_->create_entity("MainCamera");
+	auto main_camera_entity_ = scene_->create_entity("MainCamera");
 
 	// Add camera component
-	main_camera_component_ = main_camera_entity_->add_component<CameraComponent>();
+	auto main_camera_component_ = main_camera_entity_->add_component<CameraComponent>();
 
 	// Set camera initial position and rotation (same as old implementation)
 	main_camera_component_->set_position(glm::vec3(0.0f, 0.5f, -2.0f));
@@ -234,6 +237,8 @@ void App::update(float deltaTime)
 	{
 		scene_->update(deltaTime);
 	}
+	// update material system
+	core_->process_pending_material_updates();
 }
 
 // Process input
@@ -263,18 +268,12 @@ void App::process_input()
 				}
 
 				// 根据新的坐标系统调整旋转方向
-				camera_.hor_angle += float((mouse_pos_ - prev_mouse_pos_).x * mouse_speed);         // 水平方向为正
-				camera_.vert_angle += float((mouse_pos_ - prev_mouse_pos_).y * mouse_speed);        // 垂直方向为负
-
-				// 更新新相机组件的旋转
-				if (main_camera_component_)
-				{
-					main_camera_component_->set_rotation(camera_.vert_angle, camera_.hor_angle);
-				}
+				scene_->get_main_camera()->hor_angle += float((mouse_pos_ - prev_mouse_pos_).x * mouse_speed);
+				scene_->get_main_camera()->vert_angle += float((mouse_pos_ - prev_mouse_pos_).y * mouse_speed);
 			}
 
 			// Old camera direction calculation
-			glm::mat4 camera_transform = camera_.get_transform_matrix();
+			glm::mat4 camera_transform = scene_->get_main_camera()->get_transform_matrix();
 			glm::vec3 camera_forward   = glm::vec3(camera_transform * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
 			glm::vec3 camera_right     = glm::vec3(camera_transform * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
 			glm::vec3 camera_up        = glm::vec3(camera_transform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f));
@@ -315,15 +314,9 @@ void App::process_input()
 			float camera_speed = 3.0f;
 
 			// Update old camera implementation position
-			camera_.pos += camera_forward * dir.z * camera_speed * delta_time_;
-			camera_.pos += camera_right * dir.x * camera_speed * delta_time_;
-			camera_.pos += camera_up * dir.y * camera_speed * delta_time_;
-
-			// Update new camera component position
-			if (main_camera_component_)
-			{
-				main_camera_component_->set_position(camera_.pos);
-			}
+			scene_->get_main_camera()->pos += camera_forward * dir.z * camera_speed * delta_time_;
+			scene_->get_main_camera()->pos += camera_right * dir.x * camera_speed * delta_time_;
+			scene_->get_main_camera()->pos += camera_up * dir.y * camera_speed * delta_time_;
 		}
 	}
 }
@@ -397,17 +390,7 @@ void App::render_frame()
 				auto pass_creation_task = in_flight_queue_->get_cpu_profiler().start_scoped_task(
 				    "Pass creation", lz::Colors::orange);
 
-				// Check if using new camera component
-				if (main_camera_component_ && scene_ && scene_->get_main_camera())
-				{
-					// Use new camera component for rendering
-					renderer_->render_frame(frame_info, *scene_, *render_context_, window_);
-				}
-				else
-				{
-					// Fallback to old camera implementation
-					renderer_->render_frame(frame_info, *scene_, *render_context_, window_);
-				}
+				renderer_->render_frame(frame_info, *scene_, *render_context_, window_);
 			}
 
 			// Performance statistics
@@ -455,8 +438,6 @@ void App::cleanup()
 {
 	// Clean up scene
 	scene_.reset();
-	main_camera_entity_    = nullptr;
-	main_camera_component_ = nullptr;
 
 	if (core_)
 	{

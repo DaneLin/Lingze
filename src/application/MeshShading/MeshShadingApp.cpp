@@ -14,7 +14,7 @@ namespace lz::application
 {
 void MeshShadingApp::prepare_render_context()
 {
-	Mesh mesh = MeshLoader::get_loader(GLTF_DIR "Sponza/glTF/Sponza.gltf")->load();
+	Mesh mesh = MeshLoaderManager::get_instance().load(GLTF_DIR "Sponza/glTF/Sponza.gltf");
 
 	Scene scene;
 	auto  entity = scene.create_entity("Sponza");

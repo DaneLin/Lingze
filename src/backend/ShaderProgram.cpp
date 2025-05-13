@@ -664,6 +664,11 @@ DescriptorSetLayoutKey DescriptorSetLayoutKey::merge(DescriptorSetLayoutKey *set
 	return res;
 }
 
+uint32_t DescriptorSetLayoutKey::get_set_id() const
+{
+	return set_shader_id_;
+}
+
 void DescriptorSetLayoutKey::rebuild_index()
 {
 	uniform_name_to_ids_.clear();
@@ -961,9 +966,6 @@ const std::vector<uint32_t> Shader::get_bytecode(std::string filename)
 		EShMessages             messages  = (EShMessages) (EShMsgSpvRules | EShMsgVulkanRules);
 
 		DirStackFileIncluder includer;
-		includer.pushExternalLocalDirectory("shaders");
-		includer.pushExternalLocalDirectory("shaders/glsl");
-		includer.pushExternalLocalDirectory("shaders/glsl/MeshShading");
 
 		// Add the directory of the current shader file
 		std::string shaderDir = filename.substr(0, filename.find_last_of("/\\"));
@@ -975,8 +977,7 @@ const std::vector<uint32_t> Shader::get_bytecode(std::string filename)
 		// Parse shader
 		if (!shader.parse(resources, 100, false, messages, includer))
 		{
-			throw std::runtime_error("Failed to parse GLSL shader: " + filename +
-			                         "\n" + shader.getInfoLog() + "\n" + shader.getInfoDebugLog());
+			throw std::runtime_error("Failed to parse GLSL shader: " + filename + "\n" + shader.getInfoLog() + "\n" + shader.getInfoDebugLog());
 		}
 
 		// Link program
@@ -985,8 +986,7 @@ const std::vector<uint32_t> Shader::get_bytecode(std::string filename)
 
 		if (!program.link(messages))
 		{
-			throw std::runtime_error("Failed to link GLSL program: " + filename +
-			                         "\n" + program.getInfoLog() + "\n" + program.getInfoDebugLog());
+			throw std::runtime_error("Failed to link GLSL program: " + filename + "\n" + program.getInfoLog() + "\n" + program.getInfoDebugLog());
 		}
 
 		// Generate SPIR-V
@@ -1143,10 +1143,8 @@ void Shader::init(vk::Device logical_device, const std::vector<uint32_t> &byteco
 
 			if (buffer_type.basetype == spirv_cross::SPIRType::BaseType::Struct)
 			{
-				auto uniform_buffer_id = DescriptorSetLayoutKey::UniformBufferId(
-				    descriptor_set_layout_key.uniform_buffer_datum_.size());
-				descriptor_set_layout_key.uniform_buffer_datum_.emplace_back(
-				    DescriptorSetLayoutKey::UniformBufferData());
+				auto uniform_buffer_id = DescriptorSetLayoutKey::UniformBufferId(descriptor_set_layout_key.uniform_buffer_datum_.size());
+				descriptor_set_layout_key.uniform_buffer_datum_.emplace_back(DescriptorSetLayoutKey::UniformBufferData());
 				auto &buffer_data = descriptor_set_layout_key.uniform_buffer_datum_.back();
 
 				buffer_data.shader_binding_index = shader_binding_index;
@@ -1164,8 +1162,7 @@ void Shader::init(vk::Device logical_device, const std::vector<uint32_t> &byteco
 					auto member_name = compiler.get_member_name(buffer.base_type_id, member_index);
 
 					// memberData.size = compiler.get_declared_struct_size(memeberType);
-					DescriptorSetLayoutKey::UniformId uniform_id = DescriptorSetLayoutKey::UniformId(
-					    descriptor_set_layout_key.uniform_datum_.size());
+					DescriptorSetLayoutKey::UniformId uniform_id = DescriptorSetLayoutKey::UniformId(descriptor_set_layout_key.uniform_datum_.size());
 					descriptor_set_layout_key.uniform_datum_.push_back(DescriptorSetLayoutKey::UniformData());
 					DescriptorSetLayoutKey::UniformData &uniformData = descriptor_set_layout_key.uniform_datum_.back();
 
@@ -1190,8 +1187,7 @@ void Shader::init(vk::Device logical_device, const std::vector<uint32_t> &byteco
 
 		for (auto image_sampler : set_resources[set_index].image_samplers)
 		{
-			auto image_sampler_id = DescriptorSetLayoutKey::ImageSamplerId(
-			    descriptor_set_layout_key.image_sampler_datum_.size());
+			auto image_sampler_id = DescriptorSetLayoutKey::ImageSamplerId(descriptor_set_layout_key.image_sampler_datum_.size());
 
 			uint32_t shader_binding_index = compiler.get_decoration(image_sampler.id, spv::DecorationBinding);
 			descriptor_set_layout_key.image_sampler_datum_.push_back(DescriptorSetLayoutKey::ImageSamplerData());
@@ -1209,10 +1205,8 @@ void Shader::init(vk::Device logical_device, const std::vector<uint32_t> &byteco
 
 			if (buffer_type.basetype == spirv_cross::SPIRType::BaseType::Struct)
 			{
-				auto storage_buffer_id = DescriptorSetLayoutKey::StorageBufferId(
-				    descriptor_set_layout_key.storage_buffer_datum_.size());
-				descriptor_set_layout_key.storage_buffer_datum_.emplace_back(
-				    DescriptorSetLayoutKey::StorageBufferData());
+				auto storage_buffer_id = DescriptorSetLayoutKey::StorageBufferId(descriptor_set_layout_key.storage_buffer_datum_.size());
+				descriptor_set_layout_key.storage_buffer_datum_.emplace_back(DescriptorSetLayoutKey::StorageBufferData());
 				auto &buffer_data = descriptor_set_layout_key.storage_buffer_datum_.back();
 
 				buffer_data.shader_binding_index = shader_binding_index;
@@ -1230,8 +1224,7 @@ void Shader::init(vk::Device logical_device, const std::vector<uint32_t> &byteco
 				auto &last_type = compiler.get_type(buffer_type.member_types.back());
 				if (!last_type.array.empty() && last_type.array_size_literal[0] && last_type.array[0] == 0)
 					// Runtime array
-					buffer_data.array_member_size = compiler.type_struct_member_array_stride(
-					    buffer_type, uint32_t(buffer_type.member_types.size() - 1));
+					buffer_data.array_member_size = compiler.type_struct_member_array_stride(buffer_type, uint32_t(buffer_type.member_types.size() - 1));
 				else
 					buffer_data.array_member_size = 0;
 			}
@@ -1239,11 +1232,11 @@ void Shader::init(vk::Device logical_device, const std::vector<uint32_t> &byteco
 
 		for (auto image : set_resources[set_index].storage_images)
 		{
-			auto image_sampler_id = DescriptorSetLayoutKey::ImageSamplerId(
-			    descriptor_set_layout_key.image_sampler_datum_.size());
+			auto image_sampler_id = DescriptorSetLayoutKey::ImageSamplerId(descriptor_set_layout_key.image_sampler_datum_.size());
 
 			uint32_t shader_binding_index = compiler.get_decoration(image.id, spv::DecorationBinding);
 			descriptor_set_layout_key.storage_image_datum_.push_back(DescriptorSetLayoutKey::StorageImageData());
+
 			auto &storage_image_data                = descriptor_set_layout_key.storage_image_datum_.back();
 			storage_image_data.shader_binding_index = shader_binding_index;
 			storage_image_data.stage_flags          = stage_flag_bits_;

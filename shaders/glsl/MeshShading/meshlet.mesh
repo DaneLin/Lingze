@@ -11,8 +11,6 @@
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 layout(triangles, max_vertices = 64, max_primitives = 126) out;
 
-#define DEBUG 0
-
 layout(binding = 1, scalar) readonly buffer Vertices
 {
     Vertex vertices[];
@@ -35,6 +33,8 @@ struct TaskPayload {
 taskPayloadSharedEXT TaskPayload payload;
 
 layout(location = 0) out vec4 color[];
+layout(location = 1) out flat uint material_index[];
+layout(location = 2) out vec2 texcoord[];
 
 void main()
 {
@@ -55,14 +55,15 @@ void main()
 
         vec3 position = vec3(vertices[vi].pos);
         vec3 normal = vec3(vertices[vi].normal);
-        vec2 texcoord = vec2(vertices[vi].uv);
 
         gl_MeshVerticesEXT[i].gl_Position = projection * view * vec4(position, 1.0);
 #if DEBUG
-        color[i] = vec4(normal, 1.0);
-#else
         color[i] = vec4(meshlet_color, 1.0);
+#else
+        color[i] = vec4(1.0);
 #endif
+        material_index[i] = uint(meshlets[mi].material_index);
+        texcoord[i] = vec2(vertices[vi].uv);
     }
 
     uint base = meshlets[mi].data_offset + vertex_count;

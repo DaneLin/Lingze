@@ -2,7 +2,7 @@
 #include <fstream>
 #include <string>
 
-#include "LingzeVK.h"
+#include "Config.h"
 
 namespace lz
 {

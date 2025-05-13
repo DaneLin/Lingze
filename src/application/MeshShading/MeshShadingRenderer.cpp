@@ -43,12 +43,13 @@ void MeshShadingRenderer::render_frame(
 			                context.get_command_buffer(),
 			                context.get_render_pass()->get_handle(),
 			                lz::DepthSettings::enabled(),
-			                {lz::BlendSettings::opaque()}, 
-							lz::VertexDeclaration(),
+			                {lz::BlendSettings::opaque()},
+			                lz::VertexDeclaration(),
 			                vk::PrimitiveTopology::eTriangleList, shader_program);
 
 			        // set = 0 uniform buffer binding
 			        const lz::DescriptorSetLayoutKey *shader_data_set_info = shader_program->get_set_info(k_shader_data_set_index);
+			        
 			        // for uniform data
 			        auto shader_data = frame_info.memory_pool->begin_set(shader_data_set_info);
 			        {
@@ -59,28 +60,31 @@ void MeshShadingRenderer::render_frame(
 				        shader_data_buffer->proj_matrix = main_camera->get_projection_matrix();
 			        }
 			        frame_info.memory_pool->end_set();
-
 			        // create storage binding
 			        std::vector<lz::StorageBufferBinding> storage_buffer_bindings;
 			        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("Vertices", &render_context.get_global_vertex_buffer()));
 			        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("Meshlets", &render_context.get_mesh_let_buffer()));
 			        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("MeshletDataBuffer", &render_context.get_mesh_let_data_buffer()));
-
-			        // TODO: add draw call buffer for model matrix
-			        auto shader_data_set =
-			            core_->get_descriptor_set_cache()->get_descriptor_set(
-			                *shader_data_set_info,
-			                shader_data.uniform_buffer_bindings,
-			                storage_buffer_bindings, {});
+			        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("MaterialParametersBuffer", core_->get_material_parameters_buffer()));
+					
+					auto shader_data_set = core_->get_descriptor_set_cache()->get_descriptor_set(
+			            *shader_data_set_info,
+			            shader_data.uniform_buffer_bindings,
+			            storage_buffer_bindings, {});
 
 			        context.get_command_buffer().bindDescriptorSets(
 			            vk::PipelineBindPoint::eGraphics,
 			            pipeline_info.pipeline_layout, k_shader_data_set_index,
 			            {shader_data_set}, {shader_data.dynamic_offset});
 
-			        uint32_t task_need_count = uint32_t(render_context.get_meshlet_count() / 32);
-			        context.get_command_buffer().drawMeshTasksEXT(
-			            task_need_count, 1, 1, core_->get_dynamic_loader());
+			        // bind bindless descriptor set
+			        context.get_command_buffer().bindDescriptorSets(
+			            vk::PipelineBindPoint::eGraphics,
+			            pipeline_info.pipeline_layout, k_bindless_descriptor_set_index,
+			            {core_->get_bindless_descriptor_set()->get()}, {});
+
+			        uint32_t task_need_count = uint32_t(render_context.get_meshlet_count() / k_mesh_task_thread_count_x);
+			        context.get_command_buffer().drawMeshTasksEXT(task_need_count, 1, 1, core_->get_dynamic_loader());
 		        }
 	        }));
 }

@@ -1,8 +1,8 @@
 #pragma once
 #include <map>
 
+#include "Config.h"
 #include "DescriptorSetCache.h"
-#include "LingzeVK.h"
 #include "Pipeline.h"
 #include "VertexDeclaration.h"
 
@@ -54,8 +54,7 @@ class PipelineCache
 		bool operator<(const PipelineLayoutKey &other) const;
 	};
 
-	vk::UniquePipelineLayout create_pipeline_layout(
-	    const std::vector<vk::DescriptorSetLayout> &set_layouts /*, push constant ranges*/);
+	vk::UniquePipelineLayout create_pipeline_layout(const std::vector<vk::DescriptorSetLayout> &set_layouts /*, push constant ranges*/);
 
 	vk::PipelineLayout get_pipeline_layout(const PipelineLayoutKey &key);
 

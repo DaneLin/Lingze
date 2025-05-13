@@ -1,13 +1,18 @@
 #pragma once
 
-#include "backend/LingzeVK.h"
+#include "backend/Config.h"
 #include "backend/VertexDeclaration.h"
+
+#include "render/MaterialSystem.h"
+#include "glm/glm.hpp"
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace lz
 {
+
+
 /**
  * @brief Vertex is used to store the vertex information for each mesh
  */
@@ -42,11 +47,11 @@ class SubMesh
 	void      optimize();
 
   public:
-	std::vector<Vertex>   vertices;
-	std::vector<uint32_t> indices;
-	vk::PrimitiveTopology primitive_topology;
-	glm::vec4             sphere_bound;
-	std::string           material_name;
+	std::vector<Vertex>       vertices;
+	std::vector<uint32_t>     indices;
+	vk::PrimitiveTopology     primitive_topology;
+	glm::vec4                 sphere_bound;
+	std::string               material_name;
 };
 
 /**
@@ -63,7 +68,7 @@ class Mesh
 
 	size_t get_sub_mesh_count() const
 	{
-		return sub_meshes.size();
+		return sub_meshes_.size();
 	}
 
 	SubMesh &get_sub_mesh(size_t index);
@@ -79,9 +84,15 @@ class Mesh
 	size_t get_total_vertex_count() const;
 	size_t get_total_index_count() const;
 
+	// add material management function
+	void                                          add_material(const std::shared_ptr<Material> &material);
+	std::shared_ptr<Material>                     get_material(const std::string &name);
+	const std::vector<std::shared_ptr<Material>> &get_materials() const;
+
   private:
-	std::vector<SubMesh> sub_meshes;
-	glm::vec4            mesh_bound;
+	std::vector<SubMesh>                   sub_meshes_;
+	glm::vec4                              mesh_bound_;
+	std::vector<std::shared_ptr<Material>> materials_;        // store all materials
 };
 
 }        // namespace lz

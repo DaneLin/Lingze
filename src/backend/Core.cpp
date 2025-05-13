@@ -7,11 +7,11 @@
 
 #include "DescriptorSetCache.h"
 #include "Image.h"
+#include "Logging.h"
 #include "PipelineCache.h"
 #include "RenderGraph.h"
 #include "Surface.h"
 #include "Swapchain.h"
-#include "Logging.h"
 
 namespace lz
 {
@@ -20,8 +20,7 @@ Core::Core(const char **instance_extensions, const uint32_t instance_extensions_
            const bool                       enable_debugging,
            const std::vector<const char *> &device_extensions_input)
 {
-	std::vector<const char *>
-	                          res_instance_extensions(instance_extensions, instance_extensions + instance_extensions_count);
+	std::vector<const char *> res_instance_extensions(instance_extensions, instance_extensions + instance_extensions_count);
 	std::vector<const char *> validation_layers;
 	if (enable_debugging)
 	{
@@ -29,8 +28,8 @@ Core::Core(const char **instance_extensions, const uint32_t instance_extensions_
 		res_instance_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
 
-	this->instance_ = create_instance(res_instance_extensions, validation_layers);
-	loader_         = vk::DispatchLoaderDynamic(instance_.get(), vkGetInstanceProcAddr);
+	instance_ = create_instance(res_instance_extensions, validation_layers);
+	loader_   = vk::DispatchLoaderDynamic(instance_.get(), vkGetInstanceProcAddr);
 
 	auto prop = vk::enumerateInstanceLayerProperties();
 
@@ -70,16 +69,19 @@ Core::Core(const char **instance_extensions, const uint32_t instance_extensions_
 		device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 	}
 
-	this->logical_device_ = create_logical_device(physical_device_, queue_family_indices_, device_extensions,
-	                                              validation_layers);
+	this->logical_device_ = create_logical_device(physical_device_, queue_family_indices_, device_extensions, validation_layers);
 	this->graphics_queue_ = get_device_queue(logical_device_.get(), queue_family_indices_.graphics_family_index);
 	this->present_queue_  = get_device_queue(logical_device_.get(), queue_family_indices_.present_family_index);
 	this->command_pool_   = create_command_pool(logical_device_.get(), queue_family_indices_.graphics_family_index);
 
-	this->descriptor_set_cache_.reset(new lz::DescriptorSetCache(logical_device_.get()));
+	this->descriptor_set_cache_.reset(new lz::DescriptorSetCache(logical_device_.get(), bindless_supported_));
 	this->pipeline_cache_.reset(new lz::PipelineCache(logical_device_.get(), this->descriptor_set_cache_.get()));
-
 	this->render_graph_.reset(new lz::RenderGraph(physical_device_, logical_device_.get(), loader_));
+
+	if (bindless_supported_)
+	{
+		this->material_system_.reset(new lz::MaterialSystem(this));
+	}
 }
 
 Core::~Core()
@@ -207,8 +209,28 @@ vk::DispatchLoaderDynamic Core::get_dynamic_loader() const
 	return loader_;
 }
 
-vk::UniqueInstance Core::create_instance(const std::vector<const char *> &instance_extensions,
-                                         const std::vector<const char *> &validation_layers)
+bool Core::bindless_supported() const
+{
+	return bindless_supported_;
+}
+
+void Core::register_material(const std::shared_ptr<lz::Material> &material)	
+{
+	if (material_system_)
+	{
+		material_system_->register_material(material);
+	}
+}
+
+void Core::process_pending_material_updates()
+{
+	if (material_system_)
+	{
+		material_system_->process_pending_updates();
+	}
+}
+
+vk::UniqueInstance Core::create_instance(const std::vector<const char *> &instance_extensions, const std::vector<const char *> &validation_layers)
 {
 	constexpr auto app_info = vk::ApplicationInfo()
 	                              .setPApplicationName("Lingze app")
@@ -278,8 +300,7 @@ vk::PhysicalDevice Core::find_physical_device(const vk::Instance instance)
 	std::vector<DeviceCandidate> candidates;
 
 	// Required device extensions
-	std::vector<const char *> required_extensions = {
-	    VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+	std::vector<const char *> required_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 	for (const auto &device : physical_devices)
 	{
@@ -398,10 +419,10 @@ vk::PhysicalDevice Core::find_physical_device(const vk::Instance instance)
 				break;
 		}
 
-		LOGI("    Type: {}, Memory: {} MB, Score: {}", 
-			device_type_str, 
-			(device_memory / (1024 * 1024)), 
-			score);
+		LOGI("    Type: {}, Memory: {} MB, Score: {}",
+		     device_type_str,
+		     (device_memory / (1024 * 1024)),
+		     score);
 
 		candidates.push_back({device, score});
 	}
@@ -456,14 +477,12 @@ vk::PhysicalDevice Core::find_physical_device(const vk::Instance instance)
 		}
 	}
 
-	LOGI("Selected physical device: {} (Score: {})", 
-		best_properties.deviceName.data(),
-		candidates[0].score);
+	LOGI("Selected physical device: {} (Score: {})", best_properties.deviceName.data(), candidates[0].score);
 	LOGI("  Device type: {}", device_type_str);
-	LOGI("  API version: {}.{}.{}", 
-		VK_VERSION_MAJOR(best_properties.apiVersion),
-		VK_VERSION_MINOR(best_properties.apiVersion),
-		VK_VERSION_PATCH(best_properties.apiVersion));
+	LOGI("  API version: {}.{}.{}",
+	     VK_VERSION_MAJOR(best_properties.apiVersion),
+	     VK_VERSION_MINOR(best_properties.apiVersion),
+	     VK_VERSION_PATCH(best_properties.apiVersion));
 	LOGI("  Driver version: {}", best_properties.driverVersion);
 	LOGI("  Vendor ID: {}", best_properties.vendorID);
 	LOGI("  Device ID: {}", best_properties.deviceID);
@@ -472,8 +491,7 @@ vk::PhysicalDevice Core::find_physical_device(const vk::Instance instance)
 	return best_device;
 }
 
-QueueFamilyIndices Core::find_queue_family_indices(const vk::PhysicalDevice physical_device,
-                                                   const vk::SurfaceKHR     surface)
+QueueFamilyIndices Core::find_queue_family_indices(const vk::PhysicalDevice physical_device, const vk::SurfaceKHR surface)
 {
 	const std::vector<vk::QueueFamilyProperties> queue_families = physical_device.getQueueFamilyProperties();
 
@@ -536,6 +554,11 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 				{
 					mesh_shader_supported_ = true;
 				}
+
+				if (strcmp(ext_name, "VK_EXT_descriptor_indexing") == 0)
+				{
+					bindless_supported_ = true;
+				}
 				break;
 			}
 		}
@@ -546,21 +569,28 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 		}
 	}
 
-	
-
 	// Request physical device features
 	vk::PhysicalDeviceFeatures device_features;
 	device_features.setMultiDrawIndirect(true);
-	
+
 	vk::PhysicalDeviceVulkan12Features device_vulkan12_features;
 	device_vulkan12_features.setScalarBlockLayout(true);
 	device_vulkan12_features.setDrawIndirectCount(true);
 	device_vulkan12_features.setStorageBuffer8BitAccess(true);
 
+	if (bindless_supported_)
+	{
+		device_vulkan12_features.setDescriptorIndexing(true);
+		device_vulkan12_features.setDescriptorBindingVariableDescriptorCount(true);
+		device_vulkan12_features.setDescriptorBindingPartiallyBound(true);
+		device_vulkan12_features.setDescriptorBindingSampledImageUpdateAfterBind(true);
+		device_vulkan12_features.setDescriptorBindingStorageImageUpdateAfterBind(true);
+		device_vulkan12_features.setDescriptorBindingUniformBufferUpdateAfterBind(true);
+		device_vulkan12_features.setDescriptorBindingStorageBufferUpdateAfterBind(true);
+		device_vulkan12_features.setRuntimeDescriptorArray(true);
+	}
+
 	// Setup mesh shader feature structure if needed
-	vk::PhysicalDeviceMeshShaderFeaturesEXT mesh_shader_features;
-	mesh_shader_features.setMeshShader(true);
-	mesh_shader_features.setTaskShader(true);
 
 	// Setup device create info
 	vk::DeviceCreateInfo device_create_info;
@@ -573,9 +603,14 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 	    .setPpEnabledLayerNames(validation_layers.data());
 
 	// Add mesh shader feature to pNext chain if enabled
+	vk::PhysicalDeviceMeshShaderFeaturesEXT mesh_shader_features;
+	mesh_shader_features.setMeshShader(true);
+	mesh_shader_features.setTaskShader(true);
+
 	void *pNext = &device_vulkan12_features;
 	if (mesh_shader_supported_)
 	{
+		
 		mesh_shader_features.pNext = pNext;
 		pNext                      = &mesh_shader_features;
 	}
@@ -597,4 +632,20 @@ vk::UniqueCommandPool Core::create_command_pool(const vk::Device logical_device,
 	                                   .setQueueFamilyIndex(family_index);
 	return logical_device.createCommandPoolUnique(command_pool_info);
 }
+
+const vk::UniqueDescriptorSet *Core::get_bindless_descriptor_set() const
+{
+	return material_system_->get_bindless_descriptor_set();
+}
+
+uint32_t Core::get_material_index(const std::string &material_name) const
+{
+	return material_system_->get_material_index(material_name);
+}
+
+lz::Buffer* Core::get_material_parameters_buffer() const
+{
+	return material_system_->get_material_parameters_buffer();
+}
+
 }        // namespace lz

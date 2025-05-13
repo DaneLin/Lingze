@@ -4,7 +4,7 @@
 
 #include "GpuProfiler.h"
 #include "ImageView.h"
-#include "LingzeVK.h"
+#include "Config.h"
 #include "RenderGraph.h"
 #include "ShaderMemoryPool.h"
 #include "Surface.h"
