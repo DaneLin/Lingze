@@ -9,7 +9,7 @@
 #include "../common_math.h"
 
 layout(local_size_x = MESH_WGSIZE, local_size_y = 1, local_size_z = 1) in;
-layout(triangles, max_vertices = 64, max_primitives = 126) out;
+layout(triangles, max_vertices = MESHLET_MAX_VERTICES, max_primitives = MESHLET_MAX_TRIANGLES) out;
 
 layout(set = 0, binding = 0) uniform UboData
 {
@@ -54,7 +54,7 @@ void main()
 
     vec3 meshlet_color = random_color(mi);
 
-    for (uint i = ti; i < uint(meshlets[mi].vertex_count); i += 32)
+    for (uint i = ti; i < uint(meshlets[mi].vertex_count); i += MESH_WGSIZE)
     {
         uint vi = meshlet_data[meshlets[mi].data_offset + i] + meshlets[mi].vertex_offset;
 
@@ -73,7 +73,7 @@ void main()
 
     uint base = meshlets[mi].data_offset + vertex_count;
 
-    for (uint tri = ti; tri < prim_count; tri += 32)
+    for (uint tri = ti; tri < prim_count; tri += MESH_WGSIZE)
     {
         // calculate index byte by 4 bytes
         uint i0 = meshlet_data[base + (tri * 3 + 0) / 4];
