@@ -117,7 +117,7 @@ void MaterialSystem::initialize()
 	// creating descriptor set layout
 
 	std::vector<vk::DescriptorSetLayoutBinding> bindings(1);
-	bindings[0].setBinding(BINDLESS_CONBINED_BINDING).setDescriptorType(vk::DescriptorType::eCombinedImageSampler).setDescriptorCount(BINDLESS_RESOURCE_COUNT).setStageFlags(vk::ShaderStageFlagBits::eFragment);
+	bindings[0].setBinding(BINDLESS_TEXTURE_BINDING).setDescriptorType(vk::DescriptorType::eCombinedImageSampler).setDescriptorCount(BINDLESS_RESOURCE_COUNT).setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
 	vk::DescriptorSetLayoutBindingFlagsCreateInfo binding_flags_info;
 	std::vector<vk::DescriptorBindingFlags>       flags(bindings.size(),
@@ -362,7 +362,7 @@ void MaterialSystem::process_pending_updates()
 			descriptor_writes.emplace_back(
 			    vk::WriteDescriptorSet()
 			        .setDstSet(bindless_descriptor_set_.get())
-			        .setDstBinding(BINDLESS_CONBINED_BINDING)
+			        .setDstBinding(BINDLESS_TEXTURE_BINDING)
 			        .setDstArrayElement(texture_index)
 			        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 			        .setDescriptorCount(1)

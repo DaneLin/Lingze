@@ -78,7 +78,7 @@ static uint32_t check_for_bindless_resources(uint32_t set_id, uint32_t set_bindi
 
 	if (set_id == BINDLESS_SET_ID)
 	{
-		if (set_binding == BINDLESS_CONBINED_BINDING)
+		if (set_binding == BINDLESS_TEXTURE_BINDING)
 		{
 			descriptor_count = BINDLESS_RESOURCE_COUNT;
 		}
