@@ -1,7 +1,9 @@
 #define DEBUG 0
 #define CULL 1
+#define MESH 0
+#define BACK_CULL 1
 
-#include "../../../src/config/EngineConfig.h"
+#include "../../../src/backend/EngineConfig.h"
 
 struct Vertex
 {
@@ -17,7 +19,7 @@ struct Meshlet
 	int8_t  cone_cutoff;
 	uint    data_offset;
 	uint    vertex_offset;
-	uint    material_index;
+	uint    mesh_draw_index;
 	uint8_t triangle_count;
 	uint8_t vertex_count;
 };

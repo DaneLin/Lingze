@@ -11,10 +11,12 @@
 layout(local_size_x = MESH_WGSIZE, local_size_y = 1, local_size_z = 1) in;
 layout(triangles, max_vertices = MESHLET_MAX_VERTICES, max_primitives = MESHLET_MAX_TRIANGLES) out;
 
-layout(set = 0, binding = 0) uniform UboData
+layout(std140, set = 0, binding = 0) uniform UboData
 {
 	mat4 view;
 	mat4 projection;
+    float screen_width;
+    float screen_height;
 };
 
 layout(set = 0, binding = 1, scalar) readonly buffer Vertices
@@ -32,8 +34,15 @@ layout(set = 0, binding = 3) readonly buffer MeshletDataBuffer
 	uint meshlet_data[];
 };
 
+layout(set = 0, binding = 6, scalar) readonly buffer MeshDraws
+{
+	MeshDraw mesh_draws[];
+};
+
 
 taskPayloadSharedEXT TaskPayload payload;
+
+shared vec3 vertex_clip[MESHLET_MAX_VERTICES];
 
 layout(location = 0) out vec4 color[];
 layout(location = 1) out flat uint material_index[];
@@ -41,10 +50,8 @@ layout(location = 2) out vec2 texcoord[];
 
 void main()
 {
-    uint mi = payload.meshlet_indices[gl_WorkGroupID.x];
     uint ti = gl_LocalInvocationID.x;
-
-
+    uint mi = payload.meshlet_indices[gl_WorkGroupID.x];
 
 	uint vertex_count = uint(meshlets[mi].vertex_count);
     uint index_count = uint(meshlets[mi].triangle_count) * 3;
@@ -54,6 +61,8 @@ void main()
 
     vec3 meshlet_color = random_color(mi);
 
+    mat4 model_matrix = mesh_draws[meshlets[mi].mesh_draw_index].model_matrix;
+
     for (uint i = ti; i < uint(meshlets[mi].vertex_count); i += MESH_WGSIZE)
     {
         uint vi = meshlet_data[meshlets[mi].data_offset + i] + meshlets[mi].vertex_offset;
@@ -61,15 +70,24 @@ void main()
         vec3 position = vec3(vertices[vi].pos);
         vec3 normal = vec3(vertices[vi].normal);
 
-        gl_MeshVerticesEXT[i].gl_Position = projection * view * vec4(position, 1.0);
-#if DEBUG
+        vec4 position_clip = projection * view * model_matrix * vec4(position, 1.0);
+
+        gl_MeshVerticesEXT[i].gl_Position = position_clip;
+
+        vertex_clip[i] = vec3(position_clip.xy / position_clip.w, position_clip.w);
+
+#if MESH
         color[i] = vec4(meshlet_color, 1.0);
 #else
-        color[i] = vec4(1.0);
+        color[i] = vec4(normal, 1.0);
 #endif
-        material_index[i] = uint(meshlets[mi].material_index);
+        material_index[i] = uint(mesh_draws[meshlets[mi].mesh_draw_index].material_index);
         texcoord[i] = vec2(vertices[vi].uv);
     }
+
+    barrier();
+
+    vec2 screen = vec2(screen_width, screen_height);
 
     uint base = meshlets[mi].data_offset + vertex_count;
 
@@ -91,5 +109,32 @@ void main()
         uint v2 = (i2 >> s2) & 0xFF;
 
         gl_PrimitiveTriangleIndicesEXT[tri] = uvec3(v0, v1, v2);
+
+        #if BACK_CULL
+            bool culled = false;
+
+            vec2 pa = vertex_clip[v0].xy;
+            vec2 pb = vertex_clip[v1].xy;
+            vec2 pc = vertex_clip[v2].xy;
+
+            // backface culling
+            vec2 eba = pb - pa;
+            vec2 eca = pc - pa;
+            
+            culled = culled || (eba.x * eca.y <= eba.y * eca.x);
+
+           // small primitive culling
+            vec2 bmin = (min(pa, min(pb, pc)) * 0.5 + vec2(0.5)) * screen;
+            vec2 bmax = (max(pa, max(pb, pc)) * 0.5 + vec2(0.5)) * screen;
+
+            float sbprec = 1.0 / 256.0; // note: this can be set to 1 / 2 ^ subpixelPrecisionBits
+
+            culled = culled ||(round(bmin.x - sbprec) == round(bmax.x + sbprec) || round(bmin.y - sbprec) == round(bmax.y + sbprec));
+        
+            //the computations above are only valid if all vertices are in front of perspective plane
+            culled = culled && (vertex_clip[v0].z > 0 && vertex_clip[v1].z > 0 && vertex_clip[v2].z > 0);
+
+            gl_MeshPrimitivesEXT[tri].gl_CullPrimitiveEXT = culled;
+        #endif
     }
 }

@@ -351,7 +351,6 @@ Mesh GltfMeshLoader::load()
 						        normal_data[i * normal_stride + 1],
 						        normal_data[i * normal_stride + 2]);
 
-						    // apply node rotation (not include scale and translation)
 						    glm::mat3 normal_matrix = glm::transpose(glm::inverse(glm::mat3(node_transform)));
 						    vertices[i].normal      = glm::normalize(normal_matrix * normal);
 					    }

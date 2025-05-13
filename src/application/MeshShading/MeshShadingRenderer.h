@@ -27,18 +27,10 @@ class MeshShadingRenderer final : public BaseRenderer
 
 	constexpr static uint32_t k_shader_data_set_index = 0;
 
-#pragma pack(push, 1)
-	struct DataBuffer
-	{
-		glm::mat4 view_matrix;
-		glm::mat4 proj_matrix;
-	};
-#pragma pack(pop)
-
 	struct DrawCullShader
 	{
 		std::unique_ptr<lz::Shader> compute_shader;
-	}draw_cull_shader_;
+	} draw_cull_shader_;
 
 	struct MeshletShader
 	{
@@ -70,7 +62,7 @@ class MeshShadingRenderer final : public BaseRenderer
 		lz::RenderGraph::BufferProxyUnique visible_meshtask_count_proxy_;
 	};
 
-  std::unique_ptr<SceneResource> scene_resource_;
+	std::unique_ptr<SceneResource> scene_resource_;
 
 	std::map<lz::RenderGraph *, std::unique_ptr<FrameResource>> frame_resource_datum_;
 

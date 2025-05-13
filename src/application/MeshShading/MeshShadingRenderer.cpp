@@ -2,7 +2,7 @@
 
 #include "backend/Core.h"
 
-#include "config/EngineConfig.h"
+#include "backend/EngineConfig.h"
 
 namespace lz::render
 {
@@ -98,7 +98,7 @@ void MeshShadingRenderer::generate_indirect_draw_command(const lz::InFlightQueue
 		            pipeline_info.pipeline_layout, k_shader_data_set_index,
 		            {shader_data_set}, {shader_data.dynamic_offset});
 
-		        uint32_t dispatch_x = uint32_t((render_context.get_draw_count() + TASK_WGSIZE - 1) / TASK_WGSIZE);	
+		        uint32_t dispatch_x = uint32_t((render_context.get_draw_count() + TASK_WGSIZE - 1) / TASK_WGSIZE);
 		        context.get_command_buffer().dispatch(dispatch_x, 1, 1);
 
 		        vk::BufferMemoryBarrier fill_barrier = vk::BufferMemoryBarrier()
@@ -118,6 +118,14 @@ void MeshShadingRenderer::generate_indirect_draw_command(const lz::InFlightQueue
 
 void MeshShadingRenderer::draw_mesh_task(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, UnmippedImageProxy &depth_stencil_proxy)
 {
+	struct alignas(4) DataBuffer
+	{
+		glm::mat4 view_matrix;
+		glm::mat4 proj_matrix;
+		float     screen_width;
+		float     screen_height;
+	};
+
 	render_graph->add_pass(
 	    lz::RenderGraph::RenderPassDesc()
 	        .set_color_attachments({{frame_info.swapchain_image_view_proxy_id, vk::AttachmentLoadOp::eClear}})
@@ -139,8 +147,8 @@ void MeshShadingRenderer::draw_mesh_task(const lz::InFlightQueue::FrameInfo &fra
 			                lz::VertexDeclaration(),
 			                vk::PrimitiveTopology::eTriangleList, shader_program);
 
-					auto visible_meshtask_draw_proxy  = context.get_buffer(scene_resource_->visible_meshtask_draw_proxy_.get().id());
-		        	auto visible_meshtask_count_proxy = context.get_buffer(scene_resource_->visible_meshtask_count_proxy_.get().id());
+			        auto visible_meshtask_draw_proxy  = context.get_buffer(scene_resource_->visible_meshtask_draw_proxy_.get().id());
+			        auto visible_meshtask_count_proxy = context.get_buffer(scene_resource_->visible_meshtask_count_proxy_.get().id());
 
 			        // set = 0 uniform buffer binding
 			        const lz::DescriptorSetLayoutKey *shader_data_set_info = shader_program->get_set_info(k_shader_data_set_index);
@@ -151,8 +159,10 @@ void MeshShadingRenderer::draw_mesh_task(const lz::InFlightQueue::FrameInfo &fra
 				        auto shader_data_buffer = frame_info.memory_pool->get_uniform_buffer_data<DataBuffer>("UboData");
 				        auto main_camera        = scene.get_main_camera();
 				        // same name from shader
-				        shader_data_buffer->view_matrix = main_camera->get_view_matrix();
-				        shader_data_buffer->proj_matrix = main_camera->get_projection_matrix();
+				        shader_data_buffer->view_matrix   = main_camera->get_view_matrix();
+				        shader_data_buffer->proj_matrix   = main_camera->get_projection_matrix();
+				        shader_data_buffer->screen_width  = float(viewport_extent_.width);
+				        shader_data_buffer->screen_height = float(viewport_extent_.height);
 			        }
 			        frame_info.memory_pool->end_set();
 			        // create storage binding
@@ -162,6 +172,8 @@ void MeshShadingRenderer::draw_mesh_task(const lz::InFlightQueue::FrameInfo &fra
 			        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("MeshletDataBuffer", &render_context.get_mesh_let_data_buffer()));
 			        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("MaterialParametersBuffer", core_->get_material_parameters_buffer()));
 			        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("VisibleMeshTaskDrawCommand", visible_meshtask_draw_proxy));
+			        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("MeshDraws", &render_context.get_mesh_draw_buffer()));
+
 			        auto shader_data_set = core_->get_descriptor_set_cache()->get_descriptor_set(
 			            *shader_data_set_info,
 			            shader_data.uniform_buffer_bindings,
@@ -178,14 +190,14 @@ void MeshShadingRenderer::draw_mesh_task(const lz::InFlightQueue::FrameInfo &fra
 			            pipeline_info.pipeline_layout, BINDLESS_SET_ID,
 			            {core_->get_bindless_descriptor_set()->get()}, {});
 
-					context.get_command_buffer().drawMeshTasksIndirectCountEXT(
-						visible_meshtask_draw_proxy->get_handle(),
-						0,
-						visible_meshtask_count_proxy->get_handle(),
-						0,
-						static_cast<uint32_t>(render_context.get_meshlet_count()),
-						sizeof(lz::render::MeshTaskDrawCommand),
-						core_->get_dynamic_loader());
+			        context.get_command_buffer().drawMeshTasksIndirectCountEXT(
+			            visible_meshtask_draw_proxy->get_handle(),
+			            0,
+			            visible_meshtask_count_proxy->get_handle(),
+			            0,
+			            static_cast<uint32_t>(render_context.get_meshlet_count()),
+			            sizeof(lz::render::MeshTaskDrawCommand),
+			            core_->get_dynamic_loader());
 		        }
 	        }));
 }

@@ -121,6 +121,8 @@ set(lingze_backend_headers
     "${CMAKE_SOURCE_DIR}/src/backend/Handles.h"
     "${CMAKE_SOURCE_DIR}/src/backend/CpuProfiler.h"
     "${CMAKE_SOURCE_DIR}/src/backend/Pool.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/EngineConfig.h"
+
 )
 
 # Render common files 
@@ -139,11 +141,6 @@ set(lingze_render_common_headers
     "${CMAKE_SOURCE_DIR}/src/render/BaseRenderer.h"
     "${CMAKE_SOURCE_DIR}/src/render/MipBuilder.h"
     "${CMAKE_SOURCE_DIR}/src/render/ImGuiProfilerRenderer.h"
-)
-
-
-set(lingze_config_headers
-    "${CMAKE_SOURCE_DIR}/src/config/EngineConfig.h"
 )
 
 # Scene files 
@@ -189,7 +186,6 @@ set(lingze_lib_headers
     ${lingze_simpletriangle_headers}
     ${lingze_simplemesh_headers}
     ${lingze_basicshape_headers}
-    ${lingze_config_headers}
 )
 
 # Create engine core library for all applications to use
@@ -203,7 +199,6 @@ source_group("Application\\SimpleMeshShading" FILES ${lingze_simplemesh_sources}
 source_group("Application\\BasicShape" FILES ${lingze_basicshape_sources} ${lingze_basicshape_headers})
 source_group("Backend" FILES ${lingze_backend_sources} ${lingze_backend_headers})
 source_group("Render" FILES ${lingze_render_common_sources} ${lingze_render_common_headers})
-source_group("Config" FILES ${lingze_config_headers})
 source_group("Scene" FILES ${lingze_scene_sources} ${lingze_scene_headers})
 source_group("Shaders" FILES ${shader_files})
 

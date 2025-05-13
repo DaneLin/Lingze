@@ -8,7 +8,7 @@
 
 #include "backend/PresentQueue.h"
 
-#include "config/EngineConfig.h"
+#include "backend/EngineConfig.h"
 
 namespace lz
 {

@@ -18,12 +18,13 @@ void MeshShadingApp::prepare_render_context()
 
 	auto  Sponza = scene.create_entity("Sponza");
 	Mesh  mesh   = MeshLoaderManager::get_instance().load(GLTF_DIR "Sponza/glTF/Sponza.gltf");
+	Sponza->get_transform()->set_rotation(glm::vec3(0.0f, 90.0f, 0.0f));
 	Sponza->add_component<StaticMeshComponent>()->set_mesh(&mesh);
 
-	// auto buddha = scene.create_entity("Buddha");
-	// Mesh buddha_mesh = MeshLoaderManager::get_instance().load(DATA_DIR "Meshes/buddha.obj");
-	// buddha->get_transform()->set_scale(glm::vec3(0.5f, 0.5f, 0.5f));
-	// buddha->add_component<StaticMeshComponent>()->set_mesh(&buddha_mesh);
+	/* auto buddha = scene.create_entity("Buddha");
+	 Mesh buddha_mesh = MeshLoaderManager::get_instance().load(DATA_DIR "Meshes/buddha.obj");
+	 buddha->get_transform()->set_scale(glm::vec3(0.5f, 0.5f, 0.5f));
+	 buddha->add_component<StaticMeshComponent>()->set_mesh(&buddha_mesh);*/
 
 	render_context_->collect_draw_commands(&scene);
 	render_context_->build_meshlet_data();
@@ -34,6 +35,12 @@ void MeshShadingApp::prepare_render_context()
 void MeshShadingApp::render_ui()
 {
 	App::render_ui();
+
+	auto camera = scene_->get_main_camera();
+	// Camera position
+	ImGui::Begin("Camera Position");
+	ImGui::Text("Camera Position: %f, %f, %f", camera->pos.x, camera->pos.y, camera->pos.z);
+	ImGui::End();
 }
 
 std::unique_ptr<lz::render::BaseRenderer> MeshShadingApp::create_renderer()

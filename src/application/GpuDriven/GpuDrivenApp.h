@@ -15,6 +15,7 @@ class GpuDrivenApp : public lz::App
 	    lz::App("Lingze Gpu Driven Example", 1280, 760)
 	{
 		add_device_extension(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME, true);
+		add_device_extension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, true);
 	}
 
 	virtual ~GpuDrivenApp() override = default;

@@ -5,7 +5,7 @@
 #include "ShaderProgram.h"
 
 #include "Config.h"
-#include "config/EngineConfig.h"
+#include "backend/EngineConfig.h"
 
 namespace lz
 {

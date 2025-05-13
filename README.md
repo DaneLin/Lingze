@@ -83,8 +83,9 @@ cmake --build .
   - [x] GPU Driven Rendering
     - [x] 视锥剔除 (Frustum Culling)
     - [x] 锥形剔除 (Cone Culling)
+    - [x] 背面剔除 (Backface Culling)
+    - [x] 小三角形剔除 (Small Triangle Culling)
     - [ ] 遮挡剔除 (Occlusion Culling)
-    - [ ] 背面剔除 (Backface Culling)
   - [ ] 细节层次 (LOD)
   - [ ] 实例化渲染
 
@@ -227,8 +228,9 @@ cmake --build .
   - [x] GPU Driven Rendering
     - [x] Frustum Culling
     - [x] Cone Culling
+    - [x] Backface Culling
+    - [x] Small Triangle Culling
     - [ ] Occlusion Culling
-    - [ ] Backface Culling
   - [ ] Level of Detail (LOD)
   - [ ] Instanced Rendering
 
