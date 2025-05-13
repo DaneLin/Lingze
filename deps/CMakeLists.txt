@@ -61,8 +61,17 @@ add_subdirectory(meshoptimizer)
 add_subdirectory(glslang)
 
 # Collect other dependency library source files (excluding SPIRV-Cross now)
-file(GLOB_RECURSE JSONCPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/*.cpp)
-file(GLOB_RECURSE IMGUI_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/imgui/*.cpp)
+# 直接列出文件而不是使用GLOB_RECURSE
+set(JSONCPP_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp/jsoncpp.cpp
+)
+
+set(IMGUI_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_demo.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_draw.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_widgets.cpp
+)
 
 # Build other third-party libraries
 add_library(lingze_deps STATIC 

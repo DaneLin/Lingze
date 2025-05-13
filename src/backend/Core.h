@@ -128,6 +128,10 @@ class Core
 
 	const vk::UniqueDescriptorSet *get_bindless_descriptor_set() const;
 
+	uint32_t get_material_index(const std::string &material_name) const;
+
+	lz::Buffer* get_material_parameters_buffer() const;
+
   private:
 	// CreateInstance: Creates a Vulkan instance with specified extensions and layers
 	vk::UniqueInstance create_instance(const std::vector<const char *> &instance_extensions,

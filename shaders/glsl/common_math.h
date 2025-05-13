@@ -15,3 +15,8 @@ vec3 random_color(uint seed)
     return vec3(r, g, b);
 }
 
+bool cone_cull(vec3 center, float radius, vec3 cone_axis, float cone_cutoff, vec3 camera_position)
+{
+    // return false;
+	return dot(center - camera_position, cone_axis) >= cone_cutoff * length(center - camera_position) + radius;
+}

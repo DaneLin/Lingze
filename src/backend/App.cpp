@@ -1,5 +1,4 @@
 ﻿#include "backend/App.h"
-#include "backend/ImGuiProfilerRenderer.h"
 #include "backend/Logging.h"
 #include "scene/Entity.h"
 

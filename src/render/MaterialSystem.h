@@ -124,8 +124,8 @@ class MaterialSystem
 	std::unordered_map<std::string, uint32_t> material_name_to_index_;
 	uint32_t                                  material_count_{0};
 
-	std::unique_ptr<lz::Buffer> staging_buffer_;
 	std::unique_ptr<lz::Buffer> material_parameters_buffer_;
+
 
 	std::queue<UpdateRequest> pending_updates_;
 

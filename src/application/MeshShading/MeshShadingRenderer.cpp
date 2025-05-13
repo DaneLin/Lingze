@@ -65,9 +65,9 @@ void MeshShadingRenderer::render_frame(
 			        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("Vertices", &render_context.get_global_vertex_buffer()));
 			        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("Meshlets", &render_context.get_mesh_let_buffer()));
 			        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("MeshletDataBuffer", &render_context.get_mesh_let_data_buffer()));
-
-			        // TODO: add draw call buffer for model matrix
-			        auto shader_data_set = core_->get_descriptor_set_cache()->get_descriptor_set(
+			        storage_buffer_bindings.push_back(shader_data_set_info->make_storage_buffer_binding("MaterialParametersBuffer", core_->get_material_parameters_buffer()));
+					
+					auto shader_data_set = core_->get_descriptor_set_cache()->get_descriptor_set(
 			            *shader_data_set_info,
 			            shader_data.uniform_buffer_bindings,
 			            storage_buffer_bindings, {});
@@ -83,9 +83,8 @@ void MeshShadingRenderer::render_frame(
 			            pipeline_info.pipeline_layout, k_bindless_descriptor_set_index,
 			            {core_->get_bindless_descriptor_set()->get()}, {});
 
-			        uint32_t task_need_count = uint32_t(render_context.get_meshlet_count() / 32);
-			        context.get_command_buffer().drawMeshTasksEXT(
-			            task_need_count, 1, 1, core_->get_dynamic_loader());
+			        uint32_t task_need_count = uint32_t(render_context.get_meshlet_count() / k_mesh_task_thread_count_x);
+			        context.get_command_buffer().drawMeshTasksEXT(task_need_count, 1, 1, core_->get_dynamic_loader());
 		        }
 	        }));
 }

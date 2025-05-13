@@ -79,20 +79,13 @@ MaterialSystem::MaterialSystem(Core *core) :
 
 	default_sampler_ = std::make_unique<Sampler>(core_->get_logical_device(), sampler_create_info);
 
-	staging_buffer_ = std::make_unique<Buffer>(
-	    core_->get_physical_device(),
-	    core_->get_logical_device(),
-	    sizeof(MaterialParameters) * k_max_bindless_resources,
-	    vk::BufferUsageFlagBits::eTransferSrc,
-	    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
-	staging_buffer_->map();
-
 	material_parameters_buffer_ = std::make_unique<Buffer>(
 	    core_->get_physical_device(),
 	    core_->get_logical_device(),
 	    sizeof(MaterialParameters) * k_max_bindless_resources,
-	    vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
-	    vk::MemoryPropertyFlagBits::eDeviceLocal);
+	    vk::BufferUsageFlagBits::eStorageBuffer,
+	    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+	material_parameters_buffer_->map();
 
 	materials_.resize(k_max_bindless_resources);
 
@@ -100,7 +93,7 @@ MaterialSystem::MaterialSystem(Core *core) :
 }
 MaterialSystem::~MaterialSystem()
 {
-	staging_buffer_->unmap();
+	material_parameters_buffer_->unmap();
 }
 void MaterialSystem::initialize()
 {
@@ -381,7 +374,7 @@ void MaterialSystem::process_pending_updates()
 				continue;
 			}
 
-			MaterialParameters *mapped_params = static_cast<MaterialParameters *>(staging_buffer_->get_mapped_data());
+			MaterialParameters *mapped_params = static_cast<MaterialParameters *>(material_parameters_buffer_->get_mapped_data());
 
 			MaterialParameters &params              = mapped_params[material_index];
 			params.base_color_factor                = materials_[material_index]->base_color_factor;

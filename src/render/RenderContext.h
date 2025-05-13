@@ -28,6 +28,7 @@ struct alignas(16) Meshlet
 
 	uint32_t data_offset;
 	uint32_t vertex_offset;
+	uint32_t material_index;
 	uint8_t  triangle_count;
 	uint8_t  vertex_count;
 };

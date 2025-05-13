@@ -27,9 +27,9 @@
 
 #include "backend/Camera.h"
 #include "backend/Core.h"
-#include "backend/ImGuiProfilerRenderer.h"
 #include "imgui.h"
 #include "render/BaseRenderer.h"
+#include "render/ImGuiProfilerRenderer.h"
 #include "render/ImguiRenderer.h"
 #include "render/RenderContext.h"
 #include "scene/Scene.h"

@@ -638,6 +638,14 @@ const vk::UniqueDescriptorSet *Core::get_bindless_descriptor_set() const
 	return material_system_->get_bindless_descriptor_set();
 }
 
+uint32_t Core::get_material_index(const std::string &material_name) const
+{
+	return material_system_->get_material_index(material_name);
+}
 
+lz::Buffer* Core::get_material_parameters_buffer() const
+{
+	return material_system_->get_material_parameters_buffer();
+}
 
 }        // namespace lz

@@ -37,6 +37,7 @@ add_subdirectory(deps)
 include_directories("${CMAKE_SOURCE_DIR}/src")
 include_directories("${Vulkan_INCLUDE_DIRS}")
 
+add_compile_options(/GR)
 
 # Define shader paths for use in code
 add_compile_definitions(
@@ -57,18 +58,113 @@ add_compile_definitions(
 file(GLOB lingze_main_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cpp")
 file(GLOB lingze_main_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.h")
 
+# Backend files - 直接列出所有文件而不是使用GLOB_RECURSE
+set(lingze_backend_sources
+    "${CMAKE_SOURCE_DIR}/src/backend/App.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/Core.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/ShaderProgram.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/DescriptorSetCache.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/Buffer.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/StagedResources.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/Sampler.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/Pipeline.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/tiny_loader_impl.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/Camera.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/VertexDeclaration.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/TimestampQuery.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/Swapchain.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/ShaderMemoryPool.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/ShaderModule.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/RenderPass.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/RenderPassCache.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/RenderGraph.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/PresentQueue.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/PipelineCache.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/ImageView.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/Image.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/GpuProfiler.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/Framebuffer.cpp"
+    "${CMAKE_SOURCE_DIR}/src/backend/CpuProfiler.cpp"
+)
 
-# Backend files
-file(GLOB_RECURSE lingze_backend_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/backend/*.cpp")
-file(GLOB_RECURSE lingze_backend_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/backend/*.h")
+set(lingze_backend_headers
+    "${CMAKE_SOURCE_DIR}/src/backend/Logging.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/ShaderProgram.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/DescriptorSetCache.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/Core.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/Config.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/Buffer.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/StagedResources.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/ImageLoader.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/PipelineCache.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/TimestampQuery.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/Sampler.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/RenderGraph.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/Image.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/Swapchain.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/Synchronization.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/ShaderModule.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/Pipeline.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/RenderPass.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/ShaderMemoryPool.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/RenderPassCache.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/ImageView.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/Framebuffer.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/Surface.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/PresentQueue.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/VertexDeclaration.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/App.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/Camera.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/QueueIndices.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/ProfilerTask.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/GpuProfiler.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/Handles.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/CpuProfiler.h"
+    "${CMAKE_SOURCE_DIR}/src/backend/Pool.h"
+)
 
-# Render common files
-file(GLOB_RECURSE lingze_render_common_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/render/*.cpp")
-file(GLOB_RECURSE lingze_render_common_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/render/*.h")
+# Render common files - 直接列出所有文件而不是使用GLOB_RECURSE
+set(lingze_render_common_sources
+    "${CMAKE_SOURCE_DIR}/src/render/MaterialSystem.cpp"
+    "${CMAKE_SOURCE_DIR}/src/render/RenderContext.cpp"
+    "${CMAKE_SOURCE_DIR}/src/render/ImguiRenderer.cpp"
+    "${CMAKE_SOURCE_DIR}/src/render/MipBuilder.cpp"
+    "${CMAKE_SOURCE_DIR}/src/render/ImGuiProfilerRenderer.cpp"
+)
 
-# Scene files
-file(GLOB_RECURSE lingze_scene_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/scene/*.cpp")
-file(GLOB_RECURSE lingze_scene_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/scene/*.h")
+set(lingze_render_common_headers
+    "${CMAKE_SOURCE_DIR}/src/render/RenderContext.h"
+    "${CMAKE_SOURCE_DIR}/src/render/MaterialSystem.h"
+    "${CMAKE_SOURCE_DIR}/src/render/ImguiRenderer.h"
+    "${CMAKE_SOURCE_DIR}/src/render/BaseRenderer.h"
+    "${CMAKE_SOURCE_DIR}/src/render/MipBuilder.h"
+    "${CMAKE_SOURCE_DIR}/src/render/ImGuiProfilerRenderer.h"
+
+)
+
+# Scene files - 直接列出所有文件而不是使用GLOB_RECURSE
+set(lingze_scene_sources
+    "${CMAKE_SOURCE_DIR}/src/scene/MeshLoader.cpp"
+    "${CMAKE_SOURCE_DIR}/src/scene/Mesh.cpp"
+    "${CMAKE_SOURCE_DIR}/src/scene/Transform.cpp"
+    "${CMAKE_SOURCE_DIR}/src/scene/Scene.cpp"
+    "${CMAKE_SOURCE_DIR}/src/scene/StaticMeshComponent.cpp"
+    "${CMAKE_SOURCE_DIR}/src/scene/Entity.cpp"
+    "${CMAKE_SOURCE_DIR}/src/scene/Component.cpp"
+    "${CMAKE_SOURCE_DIR}/src/scene/CameraComponent.cpp"
+)
+
+set(lingze_scene_headers
+    "${CMAKE_SOURCE_DIR}/src/scene/Mesh.h"
+    "${CMAKE_SOURCE_DIR}/src/scene/MeshLoader.h"
+    "${CMAKE_SOURCE_DIR}/src/scene/Transform.h"
+    "${CMAKE_SOURCE_DIR}/src/scene/Scene.h"
+    "${CMAKE_SOURCE_DIR}/src/scene/StaticMeshComponent.h"
+    "${CMAKE_SOURCE_DIR}/src/scene/Config.h"
+    "${CMAKE_SOURCE_DIR}/src/scene/Entity.h"
+    "${CMAKE_SOURCE_DIR}/src/scene/CameraComponent.h"
+    "${CMAKE_SOURCE_DIR}/src/scene/Component.h"
+)
 
 # Create engine library, including all code except the application entry point
 set(lingze_lib_sources 
@@ -118,11 +214,26 @@ foreach(app_dir ${app_dirs})
         # Get the directory name
         get_filename_component(dir_name ${app_dir} NAME)
         
-        # Find all cpp files in the directory
-        file(GLOB_RECURSE app_source_files CONFIGURE_DEPENDS "${app_dir}/*.cpp")
-        file(GLOB_RECURSE app_header_files CONFIGURE_DEPENDS "${app_dir}/*.h")
+        # 获取应用程序目录中的所有源文件
+        set(app_source_files "")
+        set(app_header_files "")
         
-        # Skip empty directories or directories without cpp files
+        # 针对每个应用程序目录，手动收集文件
+        if(${dir_name} STREQUAL "SimpleTriangle")
+            file(GLOB app_source_files "${app_dir}/*.cpp")
+            file(GLOB app_header_files "${app_dir}/*.h")
+        elseif(${dir_name} STREQUAL "SimpleMeshShading")
+            file(GLOB app_source_files "${app_dir}/*.cpp")
+            file(GLOB app_header_files "${app_dir}/*.h")
+        elseif(${dir_name} STREQUAL "MeshShading")
+            file(GLOB app_source_files "${app_dir}/*.cpp")
+            file(GLOB app_header_files "${app_dir}/*.h")
+        elseif(${dir_name} STREQUAL "GpuDriven")
+            file(GLOB app_source_files "${app_dir}/*.cpp")
+            file(GLOB app_header_files "${app_dir}/*.h")
+        endif()
+        
+        # 保留原始逻辑，检查是否有源文件
         if(app_source_files)
             # Find a suitable main file - look for patterns that could indicate an entry point
             set(main_file "")

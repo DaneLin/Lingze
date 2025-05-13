@@ -10,3 +10,6 @@ constexpr uint32_t k_max_bindless_resources        = 1024;
 
 constexpr uint32_t k_max_common_resources = 1024;
 
+constexpr uint32_t k_mesh_task_thread_count_x = 32;
+constexpr uint32_t k_mesh_task_thread_count_y = 1;
+constexpr uint32_t k_mesh_task_thread_count_z = 1;

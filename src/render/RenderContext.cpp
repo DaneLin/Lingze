@@ -95,6 +95,7 @@ void RenderContext::build_meshlet_data()
 			m.vertex_offset  = mesh_info.vertex_offset;
 			m.triangle_count = meshlet.triangle_count;
 			m.vertex_count   = meshlet.vertex_count;
+			m.material_index = mesh_draw.material_index;
 
 			meshlets_.push_back(m);
 		}
@@ -135,6 +136,7 @@ void RenderContext::process_entity(const std::shared_ptr<lz::Entity> &entity)
 			MeshDraw mesh_draw;
 			mesh_draw.mesh_index   = uint32_t(mesh_infos_.size());
 			mesh_draw.model_matrix = model_matrix;
+			mesh_draw.material_index = core_->get_material_index(sub_mesh.material_name);
 			mesh_draws_.push_back(mesh_draw);
 
 			// Collect mesh info
