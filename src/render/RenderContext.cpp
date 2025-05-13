@@ -5,7 +5,7 @@
 #include "scene/Mesh.h"
 
 #include "meshoptimizer.h"
-#include "scene/Config.h"
+#include "config/EngineConfig.h"
 
 namespace lz::render
 {
@@ -45,19 +45,21 @@ void RenderContext::build_meshlet_data()
 	// iterate through all the mesh draws
 	for (const auto &mesh_draw : mesh_draws_)
 	{
-		auto mesh_index = mesh_draw.mesh_index;
-		auto mesh_info  = mesh_infos_[mesh_index];
+		auto  mesh_index = mesh_draw.mesh_index;
+		auto &mesh_info  = mesh_infos_[mesh_index];
 
 		// build the meshlet data
-		std::vector<meshopt_Meshlet> tmp_meshlets(meshopt_buildMeshletsBound(mesh_info.index_count, k_max_vertices, k_max_triangles));
-		std::vector<unsigned int>    meshlet_vertices(tmp_meshlets.size() * k_max_vertices);
-		std::vector<unsigned char>   meshlet_triangles(tmp_meshlets.size() * k_max_triangles * 3);
+		std::vector<meshopt_Meshlet> tmp_meshlets(meshopt_buildMeshletsBound(mesh_info.index_count, MESHLET_MAX_VERTICES, MESHLET_MAX_TRIANGLES));
+		std::vector<unsigned int>    meshlet_vertices(tmp_meshlets.size() * MESHLET_MAX_VERTICES);
+		std::vector<unsigned char>   meshlet_triangles(tmp_meshlets.size() * MESHLET_MAX_TRIANGLES * 3);
 
 		tmp_meshlets.resize(meshopt_buildMeshlets(tmp_meshlets.data(),
 		                                          meshlet_vertices.data(), meshlet_triangles.data(),
 		                                          global_indices_.data() + mesh_info.index_offset, mesh_info.index_count,
 		                                          &(global_vertices_.data() + mesh_info.vertex_offset)->pos.x, mesh_info.vertex_count, sizeof(Vertex),
-		                                          k_max_vertices, k_max_triangles, k_cone_weight));
+		                                          MESHLET_MAX_VERTICES, MESHLET_MAX_TRIANGLES, MESHLET_CONE_WEIGHT));
+		mesh_info.meshlet_count  = uint32_t(tmp_meshlets.size());
+		mesh_info.meshlet_offset = uint32_t(meshlets_.size());
 
 		for (auto &meshlet : tmp_meshlets)
 		{
@@ -100,7 +102,7 @@ void RenderContext::build_meshlet_data()
 			meshlets_.push_back(m);
 		}
 	}
-	while (meshlets_.size() % 32 != 0)
+	while (meshlets_.size() % TASK_WGSIZE != 0)
 	{
 		meshlets_.push_back(Meshlet{});
 	}
@@ -118,7 +120,7 @@ void RenderContext::process_entity(const std::shared_ptr<lz::Entity> &entity)
 
 		// register material
 		auto &materials = mesh->get_materials();
-		for (auto& material: materials)
+		for (auto &material : materials)
 		{
 			core_->register_material(material);
 		}
@@ -134,8 +136,8 @@ void RenderContext::process_entity(const std::shared_ptr<lz::Entity> &entity)
 
 			// Collect mesh draw info
 			MeshDraw mesh_draw;
-			mesh_draw.mesh_index   = uint32_t(mesh_infos_.size());
-			mesh_draw.model_matrix = model_matrix;
+			mesh_draw.mesh_index     = uint32_t(mesh_infos_.size());
+			mesh_draw.model_matrix   = model_matrix;
 			mesh_draw.material_index = core_->get_material_index(sub_mesh.material_name);
 			mesh_draws_.push_back(mesh_draw);
 

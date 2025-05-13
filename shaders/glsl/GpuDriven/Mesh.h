@@ -20,6 +20,7 @@ struct Mesh
 	uint vertex_count;        // vertex offset in the buffer
 	uint index_offset;         // index offset in the buffer
 	uint index_count;          // number of indices
+	uint meshlet_count;
 };
 
 struct MeshDraw

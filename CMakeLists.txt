@@ -58,7 +58,7 @@ add_compile_definitions(
 file(GLOB lingze_main_sources CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cpp")
 file(GLOB lingze_main_headers CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.h")
 
-# Backend files - 直接列出所有文件而不是使用GLOB_RECURSE
+# Backend files
 set(lingze_backend_sources
     "${CMAKE_SOURCE_DIR}/src/backend/App.cpp"
     "${CMAKE_SOURCE_DIR}/src/backend/Core.cpp"
@@ -123,7 +123,7 @@ set(lingze_backend_headers
     "${CMAKE_SOURCE_DIR}/src/backend/Pool.h"
 )
 
-# Render common files - 直接列出所有文件而不是使用GLOB_RECURSE
+# Render common files 
 set(lingze_render_common_sources
     "${CMAKE_SOURCE_DIR}/src/render/MaterialSystem.cpp"
     "${CMAKE_SOURCE_DIR}/src/render/RenderContext.cpp"
@@ -139,10 +139,14 @@ set(lingze_render_common_headers
     "${CMAKE_SOURCE_DIR}/src/render/BaseRenderer.h"
     "${CMAKE_SOURCE_DIR}/src/render/MipBuilder.h"
     "${CMAKE_SOURCE_DIR}/src/render/ImGuiProfilerRenderer.h"
-
 )
 
-# Scene files - 直接列出所有文件而不是使用GLOB_RECURSE
+
+set(lingze_config_headers
+    "${CMAKE_SOURCE_DIR}/src/config/EngineConfig.h"
+)
+
+# Scene files 
 set(lingze_scene_sources
     "${CMAKE_SOURCE_DIR}/src/scene/MeshLoader.cpp"
     "${CMAKE_SOURCE_DIR}/src/scene/Mesh.cpp"
@@ -160,7 +164,6 @@ set(lingze_scene_headers
     "${CMAKE_SOURCE_DIR}/src/scene/Transform.h"
     "${CMAKE_SOURCE_DIR}/src/scene/Scene.h"
     "${CMAKE_SOURCE_DIR}/src/scene/StaticMeshComponent.h"
-    "${CMAKE_SOURCE_DIR}/src/scene/Config.h"
     "${CMAKE_SOURCE_DIR}/src/scene/Entity.h"
     "${CMAKE_SOURCE_DIR}/src/scene/CameraComponent.h"
     "${CMAKE_SOURCE_DIR}/src/scene/Component.h"
@@ -186,6 +189,7 @@ set(lingze_lib_headers
     ${lingze_simpletriangle_headers}
     ${lingze_simplemesh_headers}
     ${lingze_basicshape_headers}
+    ${lingze_config_headers}
 )
 
 # Create engine core library for all applications to use
@@ -199,6 +203,7 @@ source_group("Application\\SimpleMeshShading" FILES ${lingze_simplemesh_sources}
 source_group("Application\\BasicShape" FILES ${lingze_basicshape_sources} ${lingze_basicshape_headers})
 source_group("Backend" FILES ${lingze_backend_sources} ${lingze_backend_headers})
 source_group("Render" FILES ${lingze_render_common_sources} ${lingze_render_common_headers})
+source_group("Config" FILES ${lingze_config_headers})
 source_group("Scene" FILES ${lingze_scene_sources} ${lingze_scene_headers})
 source_group("Shaders" FILES ${shader_files})
 

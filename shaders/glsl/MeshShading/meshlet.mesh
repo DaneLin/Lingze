@@ -8,27 +8,30 @@
 #include "mesh.h"
 #include "../common_math.h"
 
-layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = MESH_WGSIZE, local_size_y = 1, local_size_z = 1) in;
 layout(triangles, max_vertices = 64, max_primitives = 126) out;
 
-layout(binding = 1, scalar) readonly buffer Vertices
+layout(set = 0, binding = 0) uniform UboData
 {
-    Vertex vertices[];
+	mat4 view;
+	mat4 projection;
 };
 
-layout(binding = 2) readonly buffer Meshlets
+layout(set = 0, binding = 1, scalar) readonly buffer Vertices
 {
-    Meshlet meshlets[];
+	Vertex vertices[];
 };
 
-layout(binding = 3) readonly buffer MeshletDataBuffer
+layout(set = 0, binding = 2) readonly buffer Meshlets
 {
-    uint meshlet_data[];
+	Meshlet meshlets[];
 };
 
-struct TaskPayload {
-    uint meshlet_indices[32];
+layout(set = 0, binding = 3) readonly buffer MeshletDataBuffer
+{
+	uint meshlet_data[];
 };
+
 
 taskPayloadSharedEXT TaskPayload payload;
 
@@ -40,6 +43,8 @@ void main()
 {
     uint mi = payload.meshlet_indices[gl_WorkGroupID.x];
     uint ti = gl_LocalInvocationID.x;
+
+
 
 	uint vertex_count = uint(meshlets[mi].vertex_count);
     uint index_count = uint(meshlets[mi].triangle_count) * 3;

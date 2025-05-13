@@ -43,6 +43,8 @@ struct alignas(16) MeshInfo
 	uint32_t  vertex_count;         // number of vertices
 	uint32_t  index_offset;         // index offset in the buffer
 	uint32_t  index_count;          // number of indices
+	uint32_t  meshlet_offset;
+	uint32_t  meshlet_count;
 };
 
 /**
@@ -70,6 +72,16 @@ struct DrawCommand
 	uint32_t first_instance;
 
 	uint32_t draw_index;
+};
+
+struct MeshTaskDrawCommand
+{
+	// VkDrawMeshTasksIndirectCommandEXT
+	uint32_t group_count_x;
+	uint32_t group_count_y;
+	uint32_t group_count_z;
+
+	uint32_t meshlet_offset;
 };
 
 /**

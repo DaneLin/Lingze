@@ -17,10 +17,11 @@ layout (location = 2) in vec2 texcoord;
 
 layout(set = 0, binding = 4) readonly buffer MaterialParametersBuffer
 {
-    MaterialParameters material_parameters[];
+	MaterialParameters material_parameters[];
 };
 
-layout(set = 1, binding = 11) uniform sampler2D textures[];
+// bindless texture
+layout(set = BINDLESS_SET_ID, binding = BINDLESS_TEXTURE_BINDING) uniform sampler2D textures[];
 
 void main()
 {

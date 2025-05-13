@@ -80,10 +80,11 @@ cmake --build .
   - [ ] 光线追踪
 
 - **渲染优化技术**
-  - [x] 视锥剔除 (Frustum Culling)
-  - [x] 锥形剔除 (Cone Culling)
-  - [ ] 遮挡剔除 (Occlusion Culling)
-  - [ ] 背面剔除 (Backface Culling)
+  - [x] GPU Driven Rendering
+    - [x] 视锥剔除 (Frustum Culling)
+    - [x] 锥形剔除 (Cone Culling)
+    - [ ] 遮挡剔除 (Occlusion Culling)
+    - [ ] 背面剔除 (Backface Culling)
   - [ ] 细节层次 (LOD)
   - [ ] 实例化渲染
 
@@ -101,7 +102,17 @@ cmake --build .
   - [ ] 多线程命令生成
 
 ## 运行截图
-![Mesh Shading演示](docs/imgs/meshshading.png)
+<div align="center">
+  <img src="docs/imgs/meshshading.png" alt="Mesh Shading演示">
+  <br>
+  <em>图1: Mesh Shading技术的演示效果</em>
+</div>
+
+<div align="center">
+  <img src="docs/imgs/MeshTaskDrawIndirect.png" alt="Mesh Shading演示">
+  <br>
+  <em>图2: Mesh与Task Shader结合间接绘制的效果展示</em>
+</div>
 
 ## 参考文档和仓库
 
@@ -213,10 +224,11 @@ cmake --build .
   - [ ] Deferred Rendering
 
 - **Rendering Optimization**
-  - [x] Frustum Culling
-  - [x] Cone Culling
-  - [ ] Occlusion Culling
-  - [ ] Backface Culling
+  - [x] GPU Driven Rendering
+    - [x] Frustum Culling
+    - [x] Cone Culling
+    - [ ] Occlusion Culling
+    - [ ] Backface Culling
   - [ ] Level of Detail (LOD)
   - [ ] Instanced Rendering
 
@@ -234,7 +246,17 @@ cmake --build .
   - [ ] Multi-threaded Command Generation
 
 ## Screenshots
-![Mesh Shading Demo](docs/imgs/meshshading.png)
+<div align="center">
+  <img src="docs/imgs/meshshading.png" alt="Mesh Shading Demo">
+  <br>
+  <em>Figure 1: Demonstration of Mesh Shading technology</em>
+</div>
+
+<div align="center">
+  <img src="docs/imgs/MeshTaskDrawIndirect.png" alt="Mesh Shading Demo">
+  <br>
+  <em>Figure 2: Showcasing Mesh and Task Shaders with indirect drawing</em>
+</div>
 
 ## Reference Documentation and Repositories
 

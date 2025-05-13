@@ -5,6 +5,7 @@
 #include "ShaderProgram.h"
 
 #include "Config.h"
+#include "config/EngineConfig.h"
 
 namespace lz
 {
@@ -42,28 +43,28 @@ DescriptorSetCache::DescriptorSetCache(const vk::Device logical_device, bool bin
 	std::vector<vk::DescriptorPoolSize> pool_sizes;
 
 	constexpr auto uniform_pool_size = vk::DescriptorPoolSize()
-	                                       .setDescriptorCount(k_max_common_resources)
+	                                       .setDescriptorCount(COMMON_RESOURCE_COUNT)
 	                                       .setType(vk::DescriptorType::eUniformBufferDynamic);
 	pool_sizes.push_back(uniform_pool_size);
 
 	constexpr auto image_sampler_pool_size = vk::DescriptorPoolSize()
-	                                             .setDescriptorCount(k_max_common_resources)
+	                                             .setDescriptorCount(COMMON_RESOURCE_COUNT)
 	                                             .setType(vk::DescriptorType::eCombinedImageSampler);
 	pool_sizes.push_back(image_sampler_pool_size);
 
 	constexpr auto storage_pool_size = vk::DescriptorPoolSize()
-	                                       .setDescriptorCount(k_max_common_resources)
+	                                       .setDescriptorCount(COMMON_RESOURCE_COUNT)
 	                                       .setType(vk::DescriptorType::eStorageBuffer);
 	pool_sizes.push_back(storage_pool_size);
 
 	constexpr auto storage_image_pool_size = vk::DescriptorPoolSize()
-	                                             .setDescriptorCount(k_max_common_resources)
+	                                             .setDescriptorCount(COMMON_RESOURCE_COUNT)
 	                                             .setType(vk::DescriptorType::eStorageImage);
 	pool_sizes.push_back(storage_image_pool_size);
 
 
 	const auto pool_create_info = vk::DescriptorPoolCreateInfo()
-	                                  .setMaxSets(k_max_common_resources) // Allocate enough sets for all resource types
+	                                  .setMaxSets(COMMON_RESOURCE_COUNT) // Allocate enough sets for all resource types
 	                                  .setPoolSizeCount(uint32_t(pool_sizes.size()))
 	                                  .setFlags(bindless_supported ? vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind : vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
 	                                  .setPPoolSizes(pool_sizes.data());
@@ -75,11 +76,11 @@ static uint32_t check_for_bindless_resources(uint32_t set_id, uint32_t set_bindi
 {
 	uint32_t descriptor_count = 1;
 
-	if (set_id == k_bindless_descriptor_set_index)
+	if (set_id == BINDLESS_SET_ID)
 	{
-		if (set_binding == k_bindless_texture_binding)
+		if (set_binding == BINDLESS_CONBINED_BINDING)
 		{
-			descriptor_count = k_max_bindless_resources;
+			descriptor_count = BINDLESS_RESOURCE_COUNT;
 		}
 	}
 
@@ -113,7 +114,7 @@ vk::DescriptorSetLayout DescriptorSetCache::get_descriptor_set_layout(
 			
 			// Add binding flags
 			vk::DescriptorBindingFlags flags = {};
-			if (descriptor_set_layout_key.get_set_id() == k_bindless_descriptor_set_index)
+			if (descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID)
 			{
 				flags = vk::DescriptorBindingFlagBits::eUpdateAfterBind |
 					vk::DescriptorBindingFlagBits::ePartiallyBound;
@@ -143,7 +144,7 @@ vk::DescriptorSetLayout DescriptorSetCache::get_descriptor_set_layout(
 			
 			// Add binding flags
 			vk::DescriptorBindingFlags flags = {};
-			if (descriptor_set_layout_key.get_set_id() == k_bindless_descriptor_set_index)
+			if (descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID)
 			{
 				flags = vk::DescriptorBindingFlagBits::eUpdateAfterBind |
 					vk::DescriptorBindingFlagBits::ePartiallyBound;
@@ -173,7 +174,7 @@ vk::DescriptorSetLayout DescriptorSetCache::get_descriptor_set_layout(
 			
 			// Add binding flags
 			vk::DescriptorBindingFlags flags = {};
-			if (descriptor_set_layout_key.get_set_id() == k_bindless_descriptor_set_index)
+			if (descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID)
 			{
 				flags = vk::DescriptorBindingFlagBits::eUpdateAfterBind |
 					vk::DescriptorBindingFlagBits::ePartiallyBound;
@@ -203,7 +204,7 @@ vk::DescriptorSetLayout DescriptorSetCache::get_descriptor_set_layout(
 			
 			// Add binding flags
 			vk::DescriptorBindingFlags flags = {};
-			if (descriptor_set_layout_key.get_set_id() == k_bindless_descriptor_set_index)
+			if (descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID)
 			{
 				flags = vk::DescriptorBindingFlagBits::eUpdateAfterBind |
 					vk::DescriptorBindingFlagBits::ePartiallyBound;
@@ -222,7 +223,7 @@ vk::DescriptorSetLayout DescriptorSetCache::get_descriptor_set_layout(
 		
 		// If this is a bindless set or has bindless resources, set appropriate flags
 		vk::DescriptorSetLayoutBindingFlagsCreateInfo binding_flags_info;
-		if (descriptor_set_layout_key.get_set_id() == k_bindless_descriptor_set_index && !binding_flags.empty())
+		if (descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID && !binding_flags.empty())
 		{
 			binding_flags_info.setBindingCount(static_cast<uint32_t>(binding_flags.size()));
 			binding_flags_info.setPBindingFlags(binding_flags.data());
@@ -266,7 +267,7 @@ vk::DescriptorSet DescriptorSetCache::get_descriptor_set(const lz::DescriptorSet
 		vk::DescriptorSetVariableDescriptorCountAllocateInfo variable_count_info;
 		uint32_t max_binding_count = 0;
 		
-		if (set_layout_key.get_set_id() == k_bindless_descriptor_set_index)
+		if (set_layout_key.get_set_id() == BINDLESS_SET_ID)
 		{
 			// Find max descriptor count for this set's bindings
 			std::vector<uint32_t> descriptor_counts;

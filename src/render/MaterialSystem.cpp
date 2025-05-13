@@ -8,6 +8,8 @@
 
 #include "backend/PresentQueue.h"
 
+#include "config/EngineConfig.h"
+
 namespace lz
 {
 uint32_t MaterialSystem::allocate_texture_slot()
@@ -57,8 +59,8 @@ void MaterialSystem::update_material_parameters(const std::shared_ptr<Material> 
 MaterialSystem::MaterialSystem(Core *core) :
     core_(core)
 {
-	texture_images_.resize(k_max_bindless_resources);
-	texture_views_.resize(k_max_bindless_resources);
+	texture_images_.resize(BINDLESS_RESOURCE_COUNT);
+	texture_views_.resize(BINDLESS_RESOURCE_COUNT);
 
 	vk::SamplerCreateInfo sampler_create_info;
 	sampler_create_info.setMagFilter(vk::Filter::eLinear)
@@ -82,12 +84,12 @@ MaterialSystem::MaterialSystem(Core *core) :
 	material_parameters_buffer_ = std::make_unique<Buffer>(
 	    core_->get_physical_device(),
 	    core_->get_logical_device(),
-	    sizeof(MaterialParameters) * k_max_bindless_resources,
+	    sizeof(MaterialParameters) * BINDLESS_RESOURCE_COUNT,
 	    vk::BufferUsageFlagBits::eStorageBuffer,
 	    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 	material_parameters_buffer_->map();
 
-	materials_.resize(k_max_bindless_resources);
+	materials_.resize(BINDLESS_RESOURCE_COUNT);
 
 	initialize();
 }
@@ -99,14 +101,14 @@ void MaterialSystem::initialize()
 {
 	// creating descriptor pool
 	std::vector<vk::DescriptorPoolSize> pool_sizes = {
-	    {vk::DescriptorType::eCombinedImageSampler, k_max_bindless_resources},
+	    {vk::DescriptorType::eCombinedImageSampler, BINDLESS_RESOURCE_COUNT},
 	};
 
 	vk::DescriptorPoolCreateInfo pool_create_info =
 	    vk::DescriptorPoolCreateInfo()
 	        .setPoolSizeCount(static_cast<uint32_t>(pool_sizes.size()))
 	        .setPPoolSizes(pool_sizes.data())
-	        .setMaxSets(k_max_bindless_resources)
+	        .setMaxSets(BINDLESS_RESOURCE_COUNT)
 	        .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind);
 
 	bindless_descriptor_pool_ = core_->get_logical_device().createDescriptorPoolUnique(pool_create_info);
@@ -115,7 +117,7 @@ void MaterialSystem::initialize()
 	// creating descriptor set layout
 
 	std::vector<vk::DescriptorSetLayoutBinding> bindings(1);
-	bindings[0].setBinding(k_bindless_texture_binding).setDescriptorType(vk::DescriptorType::eCombinedImageSampler).setDescriptorCount(k_max_bindless_resources).setStageFlags(vk::ShaderStageFlagBits::eFragment);
+	bindings[0].setBinding(BINDLESS_CONBINED_BINDING).setDescriptorType(vk::DescriptorType::eCombinedImageSampler).setDescriptorCount(BINDLESS_RESOURCE_COUNT).setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
 	vk::DescriptorSetLayoutBindingFlagsCreateInfo binding_flags_info;
 	std::vector<vk::DescriptorBindingFlags>       flags(bindings.size(),
@@ -140,9 +142,10 @@ void MaterialSystem::initialize()
 	    .setDescriptorSetCount(1)
 	    .setPSetLayouts(&bindless_descriptor_set_layout_.get());
 
+	uint32_t                                             max_bindless_resources = BINDLESS_RESOURCE_COUNT;
 	vk::DescriptorSetVariableDescriptorCountAllocateInfo count_allocate_info;
 	count_allocate_info.setDescriptorSetCount(1)
-	    .setPDescriptorCounts(&k_max_bindless_resources);
+	    .setPDescriptorCounts(&max_bindless_resources);
 
 	alloc_info.pNext = &count_allocate_info;
 
@@ -215,7 +218,7 @@ uint32_t MaterialSystem::upload_texture(const std::shared_ptr<Texture> &texture)
 
 	uint32_t texture_index = allocate_texture_slot();
 
-	if (texture_index >= k_max_bindless_resources)
+	if (texture_index >= BINDLESS_RESOURCE_COUNT)
 	{
 		LOGD("Exceeded maximum bindless resources limit");
 		return UINT32_MAX;
@@ -359,7 +362,7 @@ void MaterialSystem::process_pending_updates()
 			descriptor_writes.emplace_back(
 			    vk::WriteDescriptorSet()
 			        .setDstSet(bindless_descriptor_set_.get())
-			        .setDstBinding(k_bindless_texture_binding)
+			        .setDstBinding(BINDLESS_CONBINED_BINDING)
 			        .setDstArrayElement(texture_index)
 			        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 			        .setDescriptorCount(1)
