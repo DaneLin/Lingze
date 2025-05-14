@@ -21,6 +21,7 @@ void SimpleRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_info
 	render_graph->add_pass(lz::RenderGraph::RenderPassDesc()
 	                           .set_color_attachments({{frame_info.swapchain_image_view_proxy_id, vk::AttachmentLoadOp::eClear}})
 	                           .set_render_area_extent(viewport_extent_)
+	                           .set_profiler_info(lz::Colors::sun_flower, "TriangleShadingPass")
 	                           .set_record_func([this](lz::RenderGraph::RenderPassContext context) {
 		                           auto shader_program = shader_program_.get();
 		                           auto pipeline_info  = this->core_->get_pipeline_cache()->bind_graphics_pipeline(

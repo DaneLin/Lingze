@@ -9,7 +9,6 @@ namespace lz::render
 MeshShadingRenderer::MeshShadingRenderer(lz::Core *core) :
     core_(core)
 {
-	
 	depth_reduce_sampler_ = std::make_unique<Sampler>(core_->get_logical_device(), vk::SamplerAddressMode::eClampToEdge, vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear, vk::SamplerReductionModeEXT::eMin);
 
 	reload_shaders();
@@ -28,7 +27,7 @@ void MeshShadingRenderer::recreate_render_context_resources(lz::render::RenderCo
 
 void MeshShadingRenderer::generate_depth_pyramid(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, UnmippedImageProxy &depth_stencil_proxy)
 {
-
+	// TODO: implement
 }
 
 void MeshShadingRenderer::generate_indirect_draw_command(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph)
@@ -45,6 +44,7 @@ void MeshShadingRenderer::generate_indirect_draw_command(const lz::InFlightQueue
 	render_graph->add_pass(
 	    lz::RenderGraph::ComputePassDesc()
 	        .set_storage_buffers({scene_resource_->visible_meshtask_draw_proxy_.get().id(), scene_resource_->visible_meshtask_count_proxy_.get().id()})
+	        .set_profiler_info(lz::Colors::carrot, "DrawCullPass")
 	        .set_record_func([&](lz::RenderGraph::PassContext context) {
 		        auto pipeline_info = core_->get_pipeline_cache()->bind_compute_pipeline(context.get_command_buffer(), draw_cull_shader_.compute_shader.get());
 
@@ -142,6 +142,7 @@ void MeshShadingRenderer::draw_mesh_task(const lz::InFlightQueue::FrameInfo &fra
 	            vk::AttachmentLoadOp::eClear)
 	        .set_storage_buffers({scene_resource_->visible_meshtask_draw_proxy_.get().id(), scene_resource_->visible_meshtask_count_proxy_.get().id()})
 	        .set_render_area_extent(viewport_extent_)
+	        .set_profiler_info(lz::Colors::peter_river, "MeshShadingPass")
 	        .set_record_func([&](lz::RenderGraph::RenderPassContext context) {
 		        if (core_->mesh_shader_supported())
 		        {

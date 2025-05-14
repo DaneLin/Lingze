@@ -28,6 +28,7 @@ class MeshShadingRenderer final : public BaseRenderer
 	void draw_mesh_task(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, UnmippedImageProxy &depth_stencil_proxy);
 
 	constexpr static uint32_t k_shader_data_set_index = 0;
+	constexpr static uint32_t k_draw_call_data_set_index = 1;
 
 	struct DrawCullShader
 	{
