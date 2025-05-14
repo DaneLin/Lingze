@@ -577,6 +577,7 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 	device_vulkan12_features.setScalarBlockLayout(true);
 	device_vulkan12_features.setDrawIndirectCount(true);
 	device_vulkan12_features.setStorageBuffer8BitAccess(true);
+	device_vulkan12_features.setSamplerFilterMinmax(true);
 
 	if (bindless_supported_)
 	{

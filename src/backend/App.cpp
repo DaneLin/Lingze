@@ -149,7 +149,11 @@ bool App::init()
 	window_desc.h_wnd      = glfwGetWin32Window(window_);
 
 	// Create Vulkan core
+#ifdef _DEBUG
 	bool enable_debugging = true;
+#else
+	bool enable_debugging = false;
+#endif
 
 	// Prepare device extensions
 	std::vector<const char *> device_extension_names;

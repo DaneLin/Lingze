@@ -9,6 +9,9 @@ namespace lz::render
 MeshShadingRenderer::MeshShadingRenderer(lz::Core *core) :
     core_(core)
 {
+	
+	depth_reduce_sampler_ = std::make_unique<Sampler>(core_->get_logical_device(), vk::SamplerAddressMode::eClampToEdge, vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear, vk::SamplerReductionModeEXT::eMin);
+
 	reload_shaders();
 }
 
@@ -21,6 +24,11 @@ void MeshShadingRenderer::recreate_swapchain_resources(vk::Extent2D viewport_ext
 void MeshShadingRenderer::recreate_render_context_resources(lz::render::RenderContext *render_context)
 {
 	scene_resource_.reset(new SceneResource(core_, render_context));
+}
+
+void MeshShadingRenderer::generate_depth_pyramid(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, UnmippedImageProxy &depth_stencil_proxy)
+{
+
 }
 
 void MeshShadingRenderer::generate_indirect_draw_command(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph)

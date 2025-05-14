@@ -17,4 +17,5 @@ struct UnmippedImageProxy
 	lz::RenderGraph::ImageViewProxyUnique image_view_proxy;        // The image view resource in the render graph
 	glm::uvec2                            base_size;               // Base dimensions of the image
 };
+}
 }        // namespace lz::render

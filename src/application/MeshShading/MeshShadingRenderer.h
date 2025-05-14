@@ -3,6 +3,7 @@
 #include "backend/ShaderProgram.h"
 #include "render/BaseRenderer.h"
 #include "render/MipBuilder.h"
+#include "backend/Sampler.h"
 
 #define NEW_MESH_PATH 1
 
@@ -22,6 +23,7 @@ class MeshShadingRenderer final : public BaseRenderer
 	virtual void change_view() override;
 
   private:
+	void generate_depth_pyramid(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, UnmippedImageProxy &depth_stencil_proxy);
 	void generate_indirect_draw_command(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph);
 	void draw_mesh_task(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, UnmippedImageProxy &depth_stencil_proxy);
 
@@ -31,6 +33,11 @@ class MeshShadingRenderer final : public BaseRenderer
 	{
 		std::unique_ptr<lz::Shader> compute_shader;
 	} draw_cull_shader_;
+
+	struct DepthPyramidShader
+	{
+		std::unique_ptr<lz::Shader> compute_shader;
+	} depth_pyramid_shader_;
 
 	struct MeshletShader
 	{
@@ -61,6 +68,10 @@ class MeshShadingRenderer final : public BaseRenderer
 		lz::RenderGraph::BufferProxyUnique mesh_proxy_;
 		lz::RenderGraph::BufferProxyUnique visible_meshtask_count_proxy_;
 	};
+
+
+
+	std::unique_ptr<lz::Sampler> depth_reduce_sampler_;
 
 	std::unique_ptr<SceneResource> scene_resource_;
 
