@@ -36,7 +36,7 @@ MipBuilder::MipBuilder(lz::Core *core) :
 }
 void MipBuilder::build_mips(lz::RenderGraph *render_graph, lz::ShaderMemoryPool *memory_pool, const MippedImageProxy &mipped_proxy, FilterTypes filter_type)
 {
-	vk::Extent2D layer_size(mipped_proxy.base_size.x, mipped_proxy.base_size.y);
+	vk::Extent2D layer_size(lz::math::previous_power_of_two(mipped_proxy.base_size.x), lz::math::previous_power_of_two(mipped_proxy.base_size.y));
 
 	for (size_t mip_index = 1; mip_index < mipped_proxy.mip_image_view_proxies.size(); ++mip_index)
 	{
@@ -74,7 +74,7 @@ void MipBuilder::build_mips(lz::RenderGraph *render_graph, lz::ShaderMemoryPool 
 				        std::vector<lz::ImageSamplerBinding> image_sampler_bindings;
 				        auto                                 prev_mip_view = pass_context.get_image_view(src_proxy_id);
 				        image_sampler_bindings.push_back(shader_data_set_info->make_image_sampler_binding("prev_level_sampler", prev_mip_view, image_space_sampler_.get()));
-				        auto shader_data_set = this->core_->get_descriptor_set_cache()->get_descriptor_set(*shader_data_set_info, dynamic_uniform_bindings.uniform_buffer_bindings, {}, image_sampler_bindings);
+				        auto shader_data_set = this->core_->get_descriptor_set_cache()->get_descriptor_set(*shader_data_set_info, dynamic_uniform_bindings.uniform_buffer_bindings, {}, {} ,image_sampler_bindings);
 				        pass_context.get_command_buffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeineInfo.pipeline_layout, k_shader_data_set_index, {shader_data_set}, {dynamic_uniform_bindings.dynamic_offset});
 				        pass_context.get_command_buffer().draw(4, 1, 0, 0);
 			        }

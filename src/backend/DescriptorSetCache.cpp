@@ -242,17 +242,16 @@ vk::DescriptorSetLayout DescriptorSetCache::get_descriptor_set_layout(
 	return descriptor_set_layout.get();
 }
 
-vk::DescriptorSet DescriptorSetCache::get_descriptor_set(const lz::DescriptorSetLayoutKey        &set_layout_key,
-                                                         const std::vector<UniformBufferBinding> &uniform_buffer_bindings,
-                                                         const std::vector<StorageBufferBinding> &storage_buffer_bindings,
-                                                         const std::vector<ImageSamplerBinding>  &image_sampler_bindings)
+vk::DescriptorSet DescriptorSetCache::get_descriptor_set(const lz::DescriptorSetLayoutKey &set_layout_key, const std::vector<UniformBufferBinding> &uniform_buffer_bindings, const std::vector<StorageBufferBinding> &storage_buffer_bindings, const std::vector<StorageImageBinding> &storage_image_bindings, const std::vector<ImageSamplerBinding> &image_sampler_bindings)
 {
 	const auto set_bindings = lz::DescriptorSetBindings()
 	                              .set_uniform_buffer_bindings(uniform_buffer_bindings)
 	                              .set_storage_buffer_bindings(storage_buffer_bindings)
+	                              .set_storage_image_bindings(storage_image_bindings)
 	                              .set_image_sampler_bindings(image_sampler_bindings);
 	return get_descriptor_set(set_layout_key, set_bindings);
 }
+
 
 vk::DescriptorSet DescriptorSetCache::get_descriptor_set(const lz::DescriptorSetLayoutKey &set_layout_key,
                                                          const lz::DescriptorSetBindings  &set_bindings)

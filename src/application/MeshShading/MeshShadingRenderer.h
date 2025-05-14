@@ -1,9 +1,9 @@
 #pragma once
 
+#include "backend/Sampler.h"
 #include "backend/ShaderProgram.h"
 #include "render/BaseRenderer.h"
 #include "render/MipBuilder.h"
-#include "backend/Sampler.h"
 
 #define NEW_MESH_PATH 1
 
@@ -23,11 +23,13 @@ class MeshShadingRenderer final : public BaseRenderer
 	virtual void change_view() override;
 
   private:
-	void generate_depth_pyramid(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, UnmippedImageProxy &depth_stencil_proxy);
+	void generate_depth_pyramid(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph,
+	                            UnmippedImageProxy &depth_stencil_proxy, MippedImageProxy &depth_pyramid_proxy);
 	void generate_indirect_draw_command(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph);
-	void draw_mesh_task(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, UnmippedImageProxy &depth_stencil_proxy);
+	void draw_mesh_task(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph,
+	                    UnmippedImageProxy &depth_stencil_proxy);
 
-	constexpr static uint32_t k_shader_data_set_index = 0;
+	constexpr static uint32_t k_shader_data_set_index    = 0;
 	constexpr static uint32_t k_draw_call_data_set_index = 1;
 
 	struct DrawCullShader
@@ -53,11 +55,12 @@ class MeshShadingRenderer final : public BaseRenderer
 	struct FrameResource
 	{
 		FrameResource(lz::RenderGraph *render_graph, glm::uvec2 screen_size) :
-		    depth_stencil_proxy_(render_graph, vk::Format::eD32Sfloat,
-		                         screen_size, lz::depth_image_usage)
+		    depth_stencil_proxy(render_graph, vk::Format::eD32Sfloat, screen_size, lz::depth_image_usage),
+		    depth_pyramid_proxy(render_graph, vk::Format::eR32Sfloat, screen_size, lz::color_image_usage)
 		{}
 
-		UnmippedImageProxy depth_stencil_proxy_;
+		UnmippedImageProxy depth_stencil_proxy;
+		MippedImageProxy   depth_pyramid_proxy;
 	};
 
 	struct SceneResource
@@ -69,8 +72,6 @@ class MeshShadingRenderer final : public BaseRenderer
 		lz::RenderGraph::BufferProxyUnique mesh_proxy_;
 		lz::RenderGraph::BufferProxyUnique visible_meshtask_count_proxy_;
 	};
-
-
 
 	std::unique_ptr<lz::Sampler> depth_reduce_sampler_;
 

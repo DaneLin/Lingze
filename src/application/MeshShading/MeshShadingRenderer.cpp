@@ -3,6 +3,7 @@
 #include "backend/Core.h"
 
 #include "backend/EngineConfig.h"
+#include "backend/MathUtils.h"
 
 namespace lz::render
 {
@@ -25,9 +26,70 @@ void MeshShadingRenderer::recreate_render_context_resources(lz::render::RenderCo
 	scene_resource_.reset(new SceneResource(core_, render_context));
 }
 
-void MeshShadingRenderer::generate_depth_pyramid(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, UnmippedImageProxy &depth_stencil_proxy)
+void MeshShadingRenderer::generate_depth_pyramid(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, UnmippedImageProxy &depth_stencil_proxy, MippedImageProxy &depth_pyramid_proxy)
 {
 	// TODO: implement
+
+	uint32_t mip_width  = lz::math::previous_power_of_two(depth_pyramid_proxy.base_size.x);
+	uint32_t mip_height = lz::math::previous_power_of_two(depth_pyramid_proxy.base_size.y);
+
+	struct PushData
+	{
+		glm::vec2 image_size;
+	};
+
+	for (size_t mip_index = 0; mip_index < depth_pyramid_proxy.mip_image_view_proxies.size(); ++mip_index)
+	{
+		auto dst_proxy_id = depth_pyramid_proxy.mip_image_view_proxies[mip_index]->id();
+		auto src_proxy_id = mip_index == 0 ? depth_stencil_proxy.image_view_proxy->id() : depth_pyramid_proxy.mip_image_view_proxies[mip_index - 1]->id();
+		render_graph->add_pass(
+		    lz::RenderGraph::ComputePassDesc()
+		        .set_input_images({src_proxy_id})
+		        .set_storage_images({dst_proxy_id})
+		        .set_profiler_info(lz::Colors::carrot, "DepthPyramidPass")
+		        .set_record_func([this, frame_info, mip_width, mip_height, src_proxy_id, dst_proxy_id](lz::RenderGraph::PassContext context) {
+			        auto pipeline_info = core_->get_pipeline_cache()->bind_compute_pipeline(context.get_command_buffer(), depth_pyramid_shader_.compute_shader.get());
+
+			        const lz::DescriptorSetLayoutKey *shader_data_set_info = depth_pyramid_shader_.compute_shader->get_set_info(k_shader_data_set_index);
+
+			        auto shader_data = frame_info.memory_pool->begin_set(shader_data_set_info);
+			        {
+				        auto push_data        = frame_info.memory_pool->get_uniform_buffer_data<PushData>("ImageData");
+				        push_data->image_size = {float(mip_width), float(mip_height)};
+			        }
+			        frame_info.memory_pool->end_set();
+
+			        std::vector<lz::ImageSamplerBinding> image_sampler_bindings;
+
+			        auto depth_image_view         = context.get_image_view(src_proxy_id);
+			        auto depth_pyramid_image_view = context.get_image_view(dst_proxy_id);
+			        image_sampler_bindings.push_back(shader_data_set_info->make_image_sampler_binding("in_image", depth_image_view, depth_reduce_sampler_.get()));
+
+			        std::vector<lz::StorageImageBinding> storage_image_sampler_bindings;
+			        storage_image_sampler_bindings.push_back(shader_data_set_info->make_storage_image_binding("out_image", depth_pyramid_image_view));
+
+			        auto shader_data_set = core_->get_descriptor_set_cache()->get_descriptor_set(*shader_data_set_info, shader_data.uniform_buffer_bindings, {}, storage_image_sampler_bindings, image_sampler_bindings);
+
+			        // TODO: Support push constant
+			        /*PushData push_data;
+			        push_data.image_size = {mip_width, mip_height};
+			        context.get_command_buffer().pushConstants(pipeline_info.pipeline_layout,
+			                                                   vk::ShaderStageFlagBits::eCompute,
+			                                                   0,
+			                                                   sizeof(PushData),
+			                                                   &push_data);*/
+
+			        context.get_command_buffer().bindDescriptorSets(
+			            vk::PipelineBindPoint::eCompute,
+			            pipeline_info.pipeline_layout, k_shader_data_set_index,
+			            {shader_data_set}, {shader_data.dynamic_offset});
+
+			        context.get_command_buffer().dispatch(lz::math::get_group_count(mip_width, 32), lz::math::get_group_count(mip_height, 32), 1);
+			
+		        }));
+		mip_width /= 2;
+		mip_height /= 2;
+	}
 }
 
 void MeshShadingRenderer::generate_indirect_draw_command(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph)
@@ -223,7 +285,8 @@ void MeshShadingRenderer::render_frame(
 		frame_resource.reset(new FrameResource(render_graph, size));
 	}
 	generate_indirect_draw_command(frame_info, scene, render_context, render_graph);
-	draw_mesh_task(frame_info, scene, render_context, render_graph, frame_resource->depth_stencil_proxy_);
+	draw_mesh_task(frame_info, scene, render_context, render_graph, frame_resource->depth_stencil_proxy);
+	generate_depth_pyramid(frame_info, scene, render_context, render_graph, frame_resource->depth_stencil_proxy, frame_resource->depth_pyramid_proxy);
 }
 
 void MeshShadingRenderer::reload_shaders()
@@ -231,6 +294,8 @@ void MeshShadingRenderer::reload_shaders()
 	const auto &logical_device = core_->get_logical_device();
 
 	draw_cull_shader_.compute_shader.reset(new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/drawcull.comp"));
+
+	depth_pyramid_shader_.compute_shader.reset(new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/depthreduce.comp"));
 
 	meshlet_shader_.task_shader.reset(new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/meshlet.task"));
 	meshlet_shader_.mesh_shader.reset(new Shader(logical_device, SHADER_GLSL_DIR "MeshShading/meshlet.mesh"));

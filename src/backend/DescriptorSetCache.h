@@ -29,15 +29,14 @@ class DescriptorSetCache
 
 	vk::DescriptorSet get_descriptor_set(
 	    const lz::DescriptorSetLayoutKey        &set_layout_key,
-	    const std::vector<UniformBufferBinding> &uniform_buffer_bindings,
-	    const std::vector<StorageBufferBinding> &storage_buffer_bindings,
-	    const std::vector<ImageSamplerBinding>  &image_sampler_bindings);
+	    const std::vector<UniformBufferBinding> &uniform_buffer_bindings = {},
+	    const std::vector<StorageBufferBinding> &storage_buffer_bindings = {},
+	    const std::vector<StorageImageBinding>  &storage_image_bindings  = {},
+	    const std::vector<ImageSamplerBinding>  &image_sampler_bindings  = {});
 
 	vk::DescriptorSet get_descriptor_set(const lz::DescriptorSetLayoutKey &set_layout_key, const lz::DescriptorSetBindings &set_bindings);
 
 	void clear();
-
-
 
   private:
 	struct DescriptorSetKey
