@@ -1,0 +1,104 @@
+#version 450
+
+#extension GL_EXT_shader_16bit_storage: require
+#extension GL_EXT_shader_8bit_storage: require
+
+#extension GL_GOOGLE_include_directive: require
+
+#include "mesh.h"
+#include "../common_math.h"
+
+layout(local_size_x = COMPUTE_WGSIZE, local_size_y = 1, local_size_z = 1) in;
+
+layout(push_constant) uniform block
+{
+	DrawCullData cull_data;
+};
+
+layout(binding = 0) readonly buffer Draws
+{
+	MeshDraw draws[];
+};
+
+layout(binding = 1) readonly buffer Meshes
+{
+	Mesh meshes[];
+};
+
+layout(binding = 2) writeonly buffer DrawCommands
+{
+	MeshDrawCommand draw_cmds[];
+};
+
+layout(binding = 3) buffer DrawCommandCount
+{
+	uint draw_cmd_count;
+};
+
+layout(binding = 4) buffer DrawVisibility
+{
+	uint draw_visibility[];
+};
+
+layout(binding = 5) uniform sampler2D depth_pyramid;
+
+void main()
+{
+	uint di = gl_GlobalInvocationID.x;
+
+	if (di >= cull_data.drawCount)
+		return;
+
+	uint meshIndex = draws[di].meshIndex;
+	Mesh mesh = meshes[meshIndex];
+
+	vec3 center = mesh.center * draws[di].scale + draws[di].position;
+	float radius = mesh.radius * draws[di].scale;
+
+	bool visible = true;
+	for (int i = 0; i < 6; ++i)
+		visible = visible && dot(cull_data.frustum[i], vec4(center, 1)) > -radius;
+
+	visible = cull_data.cullingEnabled == 1 ? visible : true;
+
+	if (visible && cull_data.occlusionEnabled == 1)
+	{
+		vec4 aabb;
+		if (project_sphere(center, radius, cull_data.znear, cull_data.P00, cull_data.P11, aabb))
+		{
+			float width = (aabb.z - aabb.x) * cull_data.pyramidWidth;
+			float height = (aabb.w - aabb.y) * cull_data.pyramidHeight;
+
+			float level = floor(log2(max(width, height)));
+
+			// Sampler is set up to do min reduction, so this computes the minimum depth of a 2x2 texel quad
+			float depth = textureLod(depth_pyramid, (aabb.xy + aabb.zw) * 0.5, level).x;
+			float depthSphere = cull_data.znear / (center.z - radius);
+
+			visible = visible && depthSphere > depth;
+		}
+	}
+
+	if (visible && draw_visibility[di] == 0)
+	{
+		uint dci = atomicAdd(draw_cmd_count, 1);
+
+		float lodDistance = log2(max(1, (distance(center, vec3(0)) - radius)));
+		uint lodIndex = clamp(int(lodDistance), 0, int(mesh.lodCount) - 1);
+
+		lodIndex = cull_data.lodEnabled == 1 ? lodIndex : 0;
+
+		MeshLod lod = meshes[meshIndex].lods[lodIndex];
+
+		draw_cmds[dci].drawId = di;
+		draw_cmds[dci].indexCount = lod.indexCount;
+		draw_cmds[dci].instanceCount = 1;
+		draw_cmds[dci].firstIndex = lod.indexOffset;
+		draw_cmds[dci].vertexOffset = mesh.vertexOffset;
+		draw_cmds[dci].firstInstance = 0;
+		draw_cmds[dci].taskCount = (lod.meshletCount + 31) / 32;
+		draw_cmds[dci].firstTask = lod.meshletOffset / 32;
+	}
+
+	draw_visibility[di] = visible ? 1 : 0;
+}

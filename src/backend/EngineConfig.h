@@ -7,6 +7,9 @@
 // Workgroup size for mesh shader; mesh shader workgroup processes the entire meshlet in parallel
 #define MESH_WGSIZE 32
 
+// Workgroup size for compute shader; compute shader workgroup processes the entire meshlet in parallel
+#define COMPUTE_WGSIZE 32
+
 #define MESHLET_MAX_VERTICES 64
 #define MESHLET_MAX_TRIANGLES 124        // we use 4 bytes to store indices, so the max triangle count is 124 that is divisible by 4
 #define MESHLET_CONE_WEIGHT 0.5f

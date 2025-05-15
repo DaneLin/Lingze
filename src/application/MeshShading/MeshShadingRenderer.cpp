@@ -28,8 +28,6 @@ void MeshShadingRenderer::recreate_render_context_resources(lz::render::RenderCo
 
 void MeshShadingRenderer::generate_depth_pyramid(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, UnmippedImageProxy &depth_stencil_proxy, MippedImageProxy &depth_pyramid_proxy)
 {
-	// TODO: implement
-
 	uint32_t mip_width  = depth_pyramid_proxy.base_size.x;
 	uint32_t mip_height = depth_pyramid_proxy.base_size.y;
 
@@ -86,7 +84,7 @@ void MeshShadingRenderer::generate_depth_pyramid(const lz::InFlightQueue::FrameI
 			            pipeline_info.pipeline_layout, k_shader_data_set_index,
 			            {shader_data_set}, {shader_data.dynamic_offset});
 
-			        context.get_command_buffer().dispatch(lz::math::get_group_count(level_width, 32), lz::math::get_group_count(level_height, 32), 1);
+			        context.get_command_buffer().dispatch(lz::math::get_group_count(level_width, COMPUTE_WGSIZE), lz::math::get_group_count(level_height, COMPUTE_WGSIZE), 1);
 		        }));
 	}
 }
