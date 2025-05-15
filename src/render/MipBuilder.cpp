@@ -16,6 +16,7 @@ UnmippedImageProxy::UnmippedImageProxy(lz::RenderGraph *render_graph, vk::Format
 MippedImageProxy::MippedImageProxy(lz::RenderGraph *render_graph, vk::Format format, glm::uvec2 base_size, vk::ImageUsageFlags usage_flags) :
     base_size(base_size)
 {
+	base_size           = glm::vec2(lz::math::previous_power_of_two(base_size.x), lz::math::previous_power_of_two(base_size.y));
 	uint32_t mip_levels = lz::math::get_mip_levels(base_size.x, base_size.y);
 
 	image_proxy      = render_graph->add_image(format, mip_levels, 1, base_size, usage_flags);
@@ -74,7 +75,7 @@ void MipBuilder::build_mips(lz::RenderGraph *render_graph, lz::ShaderMemoryPool 
 				        std::vector<lz::ImageSamplerBinding> image_sampler_bindings;
 				        auto                                 prev_mip_view = pass_context.get_image_view(src_proxy_id);
 				        image_sampler_bindings.push_back(shader_data_set_info->make_image_sampler_binding("prev_level_sampler", prev_mip_view, image_space_sampler_.get()));
-				        auto shader_data_set = this->core_->get_descriptor_set_cache()->get_descriptor_set(*shader_data_set_info, dynamic_uniform_bindings.uniform_buffer_bindings, {}, {} ,image_sampler_bindings);
+				        auto shader_data_set = this->core_->get_descriptor_set_cache()->get_descriptor_set(*shader_data_set_info, dynamic_uniform_bindings.uniform_buffer_bindings, {}, {}, image_sampler_bindings);
 				        pass_context.get_command_buffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeineInfo.pipeline_layout, k_shader_data_set_index, {shader_data_set}, {dynamic_uniform_bindings.dynamic_offset});
 				        pass_context.get_command_buffer().draw(4, 1, 0, 0);
 			        }

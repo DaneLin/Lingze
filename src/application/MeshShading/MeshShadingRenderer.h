@@ -56,7 +56,7 @@ class MeshShadingRenderer final : public BaseRenderer
 	{
 		FrameResource(lz::RenderGraph *render_graph, glm::uvec2 screen_size) :
 		    depth_stencil_proxy(render_graph, vk::Format::eD32Sfloat, screen_size, lz::depth_image_usage),
-		    depth_pyramid_proxy(render_graph, vk::Format::eR32Sfloat, screen_size, lz::color_image_usage)
+		    depth_pyramid_proxy(render_graph, vk::Format::eR32Sfloat, screen_size, lz::storage_image_usage)
 		{}
 
 		UnmippedImageProxy depth_stencil_proxy;

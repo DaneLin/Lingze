@@ -10,7 +10,7 @@ namespace lz::render
 MeshShadingRenderer::MeshShadingRenderer(lz::Core *core) :
     core_(core)
 {
-	depth_reduce_sampler_ = std::make_unique<Sampler>(core_->get_logical_device(), vk::SamplerAddressMode::eClampToEdge, vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear, vk::SamplerReductionModeEXT::eMin);
+	depth_reduce_sampler_ = std::make_unique<Sampler>(core_->get_logical_device(), vk::SamplerAddressMode::eClampToEdge, vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear, vk::SamplerReductionModeEXT::eMax);
 
 	reload_shaders();
 }
@@ -30,8 +30,8 @@ void MeshShadingRenderer::generate_depth_pyramid(const lz::InFlightQueue::FrameI
 {
 	// TODO: implement
 
-	uint32_t mip_width  = lz::math::previous_power_of_two(depth_pyramid_proxy.base_size.x);
-	uint32_t mip_height = lz::math::previous_power_of_two(depth_pyramid_proxy.base_size.y);
+	uint32_t mip_width  = depth_pyramid_proxy.base_size.x;
+	uint32_t mip_height = depth_pyramid_proxy.base_size.y;
 
 	struct PushData
 	{
@@ -47,15 +47,17 @@ void MeshShadingRenderer::generate_depth_pyramid(const lz::InFlightQueue::FrameI
 		        .set_input_images({src_proxy_id})
 		        .set_storage_images({dst_proxy_id})
 		        .set_profiler_info(lz::Colors::carrot, "DepthPyramidPass")
-		        .set_record_func([this, frame_info, mip_width, mip_height, src_proxy_id, dst_proxy_id](lz::RenderGraph::PassContext context) {
+		        .set_record_func([this, frame_info, mip_width, mip_height, mip_index, src_proxy_id, dst_proxy_id](lz::RenderGraph::PassContext context) {
 			        auto pipeline_info = core_->get_pipeline_cache()->bind_compute_pipeline(context.get_command_buffer(), depth_pyramid_shader_.compute_shader.get());
 
 			        const lz::DescriptorSetLayoutKey *shader_data_set_info = depth_pyramid_shader_.compute_shader->get_set_info(k_shader_data_set_index);
 
-			        auto shader_data = frame_info.memory_pool->begin_set(shader_data_set_info);
+			        uint32_t level_width  = std::max(1u, mip_width >> mip_index);
+			        uint32_t level_height = std::max(1u, mip_height >> mip_index);
+			        auto     shader_data  = frame_info.memory_pool->begin_set(shader_data_set_info);
 			        {
 				        auto push_data        = frame_info.memory_pool->get_uniform_buffer_data<PushData>("ImageData");
-				        push_data->image_size = {float(mip_width), float(mip_height)};
+				        push_data->image_size = {float(level_width), float(level_height)};
 			        }
 			        frame_info.memory_pool->end_set();
 
@@ -84,11 +86,8 @@ void MeshShadingRenderer::generate_depth_pyramid(const lz::InFlightQueue::FrameI
 			            pipeline_info.pipeline_layout, k_shader_data_set_index,
 			            {shader_data_set}, {shader_data.dynamic_offset});
 
-			        context.get_command_buffer().dispatch(lz::math::get_group_count(mip_width, 32), lz::math::get_group_count(mip_height, 32), 1);
-			
+			        context.get_command_buffer().dispatch(lz::math::get_group_count(level_width, 32), lz::math::get_group_count(level_height, 32), 1);
 		        }));
-		mip_width /= 2;
-		mip_height /= 2;
 	}
 }
 
