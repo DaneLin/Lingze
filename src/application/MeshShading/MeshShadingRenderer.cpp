@@ -99,6 +99,15 @@ void MeshShadingRenderer::generate_indirect_draw_command(const lz::InFlightQueue
 		uint32_t  draw_count;                   // number of draw commands
 	};
 
+	render_graph->add_pass(
+	    lz::RenderGraph::TransferPassDesc()
+	        .set_dst_buffers({scene_resource_->visible_meshtask_count_proxy_.get().id()})
+	        .set_profiler_info(lz::Colors::carrot, "ClearVisibleMeshTaskPass")
+	        .set_record_func([&](lz::RenderGraph::PassContext context) {
+				auto visible_meshtask_count_proxy = context.get_buffer(scene_resource_->visible_meshtask_count_proxy_.get().id());
+				context.get_command_buffer().fillBuffer(visible_meshtask_count_proxy->get_handle(), 0, sizeof(uint32_t), 0);
+	        }));
+
 	// pass 1 : culling
 	render_graph->add_pass(
 	    lz::RenderGraph::ComputePassDesc()

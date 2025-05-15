@@ -985,7 +985,7 @@ void RenderGraph::execute(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu
 				for (auto dst_buffer_proxy : transfer_pass_desc.dst_buffer_proxies)
 				{
 					auto storage_buffer = get_resolved_buffer(task_index, dst_buffer_proxy);
-					add_buffer_barriers(storage_buffer, BufferUsageTypes::eTransferSrc, task_index, src_stage,
+					add_buffer_barriers(storage_buffer, BufferUsageTypes::eTransferDst, task_index, src_stage,
 					                    dst_stage, buffer_barriers);
 				}
 
