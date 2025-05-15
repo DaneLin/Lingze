@@ -102,7 +102,8 @@ void MeshShadingRenderer::generate_indirect_draw_command(const lz::InFlightQueue
 	// pass 1 : culling
 	render_graph->add_pass(
 	    lz::RenderGraph::ComputePassDesc()
-	        .set_storage_buffers({scene_resource_->visible_meshtask_draw_proxy_.get().id(), scene_resource_->visible_meshtask_count_proxy_.get().id()})
+	        .set_storage_buffers({scene_resource_->mesh_proxy_.get().id(), scene_resource_->mesh_draw_proxy_.get().id()})
+	        .set_indirect_buffers({scene_resource_->visible_meshtask_draw_proxy_.get().id(), scene_resource_->visible_meshtask_count_proxy_.get().id()})
 	        .set_profiler_info(lz::Colors::carrot, "DrawCullPass")
 	        .set_record_func([&](lz::RenderGraph::PassContext context) {
 		        auto pipeline_info = core_->get_pipeline_cache()->bind_compute_pipeline(context.get_command_buffer(), draw_cull_shader_.compute_shader.get());
@@ -143,23 +144,6 @@ void MeshShadingRenderer::generate_indirect_draw_command(const lz::InFlightQueue
 
 		        auto shader_data_set = core_->get_descriptor_set_cache()->get_descriptor_set(*shader_data_set_info, shader_data.uniform_buffer_bindings, storage_buffer_bindings, {});
 
-		        // Clear visible mesh count buffer
-		        context.get_command_buffer().fillBuffer(
-		            visible_meshtask_count_proxy->get_handle(), 0, sizeof(uint32_t), 0);
-
-		        vk::BufferMemoryBarrier clear_barrier = vk::BufferMemoryBarrier()
-		                                                    .setBuffer(visible_meshtask_count_proxy->get_handle())
-		                                                    .setSize(sizeof(uint32_t))
-		                                                    .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
-		                                                    .setDstAccessMask(vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite);
-		        context.get_command_buffer().pipelineBarrier(
-		            vk::PipelineStageFlagBits::eTransfer,
-		            vk::PipelineStageFlagBits::eComputeShader,
-		            vk::DependencyFlags(),
-		            {},
-		            {clear_barrier},
-		            {});
-
 		        context.get_command_buffer().bindDescriptorSets(
 		            vk::PipelineBindPoint::eCompute,
 		            pipeline_info.pipeline_layout, k_shader_data_set_index,
@@ -167,19 +151,6 @@ void MeshShadingRenderer::generate_indirect_draw_command(const lz::InFlightQueue
 
 		        uint32_t dispatch_x = uint32_t((render_context.get_draw_count() + TASK_WGSIZE - 1) / TASK_WGSIZE);
 		        context.get_command_buffer().dispatch(dispatch_x, 1, 1);
-
-		        vk::BufferMemoryBarrier fill_barrier = vk::BufferMemoryBarrier()
-		                                                   .setBuffer(visible_meshtask_count_proxy->get_handle())
-		                                                   .setSize(sizeof(uint32_t))
-		                                                   .setSrcAccessMask(vk::AccessFlagBits::eShaderWrite)
-		                                                   .setDstAccessMask(vk::AccessFlagBits::eIndirectCommandRead);
-		        context.get_command_buffer().pipelineBarrier(
-		            vk::PipelineStageFlagBits::eComputeShader,
-		            vk::PipelineStageFlagBits::eDrawIndirect,
-		            vk::DependencyFlags(),
-		            {},
-		            {fill_barrier},
-		            {});
 	        }));
 }
 
@@ -196,10 +167,9 @@ void MeshShadingRenderer::draw_mesh_task(const lz::InFlightQueue::FrameInfo &fra
 	render_graph->add_pass(
 	    lz::RenderGraph::RenderPassDesc()
 	        .set_color_attachments({{frame_info.swapchain_image_view_proxy_id, vk::AttachmentLoadOp::eClear}})
-	        .set_depth_attachment(
-	            depth_stencil_proxy.image_view_proxy.get().id(),
-	            vk::AttachmentLoadOp::eClear)
-	        .set_storage_buffers({scene_resource_->visible_meshtask_draw_proxy_.get().id(), scene_resource_->visible_meshtask_count_proxy_.get().id()})
+	        .set_depth_attachment(depth_stencil_proxy.image_view_proxy.get().id(), vk::AttachmentLoadOp::eClear)
+	        .set_storage_buffers({scene_resource_->mesh_proxy_.get().id(), scene_resource_->mesh_draw_proxy_.get().id()})
+	        .set_indirect_buffers({scene_resource_->visible_meshtask_draw_proxy_.get().id(), scene_resource_->visible_meshtask_count_proxy_.get().id()})
 	        .set_render_area_extent(viewport_extent_)
 	        .set_profiler_info(lz::Colors::peter_river, "MeshShadingPass")
 	        .set_record_func([&](lz::RenderGraph::RenderPassContext context) {
