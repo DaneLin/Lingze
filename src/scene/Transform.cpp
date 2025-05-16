@@ -45,7 +45,7 @@ glm::mat4 Transform::get_local_matrix()
 		glm::mat4 rotate_matrix = rotate_z * rotate_y * rotate_x;
 
 		glm::mat4 scale_matrix = glm::scale(glm::mat4(1.0f), scale_);
-
+		max_scale_ = std::max({scale_.x, scale_.y, scale_.z});
 		local_matrix_ = translate_matrix * rotate_matrix * scale_matrix;
 		matrix_dirty_ = false;
 	}
@@ -65,6 +65,11 @@ glm::mat4 Transform::get_world_matrix()
 	}
 
 	return local;
+}
+
+float Transform::get_max_scale() const
+{
+	return max_scale_;
 }
 
 }        // namespace lz

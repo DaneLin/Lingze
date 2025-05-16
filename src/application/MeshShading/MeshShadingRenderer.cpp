@@ -3,6 +3,7 @@
 #include "backend/Core.h"
 
 #include "backend/EngineConfig.h"
+#include "backend/Logging.h"
 #include "backend/MathUtils.h"
 
 namespace lz::render
@@ -235,14 +236,6 @@ void MeshShadingRenderer::cull_last_frame_not_visible(const lz::InFlightQueue::F
 
 void MeshShadingRenderer::draw_mesh_task(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, UnmippedImageProxy &depth_stencil_proxy, bool late)
 {
-	struct alignas(4) DataBuffer
-	{
-		glm::mat4 view_matrix;
-		glm::mat4 proj_matrix;
-		float     screen_width;
-		float     screen_height;
-	};
-
 	render_graph->add_pass(
 	    lz::RenderGraph::RenderPassDesc()
 	        .set_color_attachments({{frame_info.swapchain_image_view_proxy_id, late ? vk::AttachmentLoadOp::eLoad :vk::AttachmentLoadOp::eClear}})
@@ -273,13 +266,26 @@ void MeshShadingRenderer::draw_mesh_task(const lz::InFlightQueue::FrameInfo &fra
 			        // for uniform data
 			        auto shader_data = frame_info.memory_pool->begin_set(shader_data_set_info);
 			        {
-				        auto shader_data_buffer = frame_info.memory_pool->get_uniform_buffer_data<DataBuffer>("UboData");
+				        
 				        auto main_camera        = scene.get_main_camera();
-				        // same name from shader
-				        shader_data_buffer->view_matrix   = main_camera->get_view_matrix();
-				        shader_data_buffer->proj_matrix   = main_camera->get_projection_matrix();
-				        shader_data_buffer->screen_width  = float(viewport_extent_.width);
-				        shader_data_buffer->screen_height = float(viewport_extent_.height);
+						glm::mat4 proj_matrix   = main_camera->get_projection_matrix();
+						glm::mat4 proj_matrix_t = glm::transpose(proj_matrix);
+						glm::vec4 frustum_x     = glm::normalize(proj_matrix_t[3] + proj_matrix_t[0]);
+						glm::vec4 frustum_y     = glm::normalize(proj_matrix_t[3] + proj_matrix_t[1]);
+
+						auto cull_data         = frame_info.memory_pool->get_uniform_buffer_data<CullData>("UboData");
+						cull_data->view_matrix = glm::inverse(main_camera->get_transform_matrix());
+						cull_data->proj_matrix = proj_matrix;
+						cull_data->P00         = proj_matrix[0][0];
+						cull_data->P11         = proj_matrix[1][1];
+						cull_data->znear       = main_camera->get_near_plane();
+						cull_data->zfar        = main_camera->get_far_plane();
+						cull_data->screen_width  = float(viewport_extent_.width);
+						cull_data->screen_height = float(viewport_extent_.height);
+						cull_data->frustum[0]  = frustum_x.x;
+						cull_data->frustum[1]  = frustum_x.z;
+						cull_data->frustum[2]  = frustum_y.y;
+						cull_data->frustum[3]  = frustum_y.z;
 			        }
 			        frame_info.memory_pool->end_set();
 			        // create storage binding

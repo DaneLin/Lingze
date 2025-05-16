@@ -12,7 +12,7 @@
 layout(local_size_x = COMPUTE_WGSIZE, local_size_y = 1, local_size_z = 1) in;
 
 // uniform buffer
-layout(std430, set = 0, binding = 0) uniform UboData
+layout( set = 0, binding = 0,scalar) uniform UboData
 {
 	CullData cull_data;
 };
@@ -62,16 +62,8 @@ void main()
     MeshInfo mesh_info = mesh_infos[mesh_draw.mesh_index];
 
     // calculate center in view space
-    vec3 center = mesh_info.sphere_bound.xyz;
-    center = (cull_data.view_matrix *mesh_draw.model_matrix * vec4(center, 1.0)).xyz;
-    float sphere_radius = mesh_info.sphere_bound.w;
-    // calculate maximum scale to get final scale parameter
-    float scale_x = length(vec3(mesh_draw.model_matrix[0][0], mesh_draw.model_matrix[0][1], mesh_draw.model_matrix[0][2]));
-    float scale_y = length(vec3(mesh_draw.model_matrix[1][0], mesh_draw.model_matrix[1][1], mesh_draw.model_matrix[1][2]));
-    float scale_z = length(vec3(mesh_draw.model_matrix[2][0], mesh_draw.model_matrix[2][1], mesh_draw.model_matrix[2][2]));
-    float max_scale = max(max(scale_x, scale_y), scale_z);
-
-    float radius = sphere_radius * max_scale;
+    float radius = mesh_info.sphere_bound.w* mesh_draw.scale;
+    vec3 center =  (cull_data.view_matrix * mesh_draw.model_matrix * vec4(mesh_info.sphere_bound.xyz, 1.0)).xyz;
 
     bool is_visible = true;
     // the left/top/right/bottom plane culling utilizes frustum symmetry to cull against two planes at the same time

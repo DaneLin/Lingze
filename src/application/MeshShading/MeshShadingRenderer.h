@@ -33,14 +33,18 @@ class MeshShadingRenderer final : public BaseRenderer
 	constexpr static uint32_t k_shader_data_set_index    = 0;
 	constexpr static uint32_t k_draw_call_data_set_index = 1;
 
-	struct alignas(4) CullData
+	struct CullData
 	{
 		glm::mat4 view_matrix;
+		glm::mat4 proj_matrix;
 		float     P00, P11, znear, zfar;        // symmetirc projection parameters
 		float     frustum[4];                   // data for left / right / top / bottom
 		uint32_t  draw_count;                   // number of draw commands
+		float     screen_width;
+		float     screen_height;
 		float     depth_pyramid_width;
 		float     depth_pyramid_height;
+		float 	  pad[3];
 	};
 
 	struct DrawCullShader

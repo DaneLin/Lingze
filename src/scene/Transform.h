@@ -43,6 +43,9 @@ class Transform : public Component
 		return scale_;
 	}
 
+	// get max scale
+	float get_max_scale() const;
+
 	// get the local matrix
 	glm::mat4 get_local_matrix();
 
@@ -54,6 +57,8 @@ class Transform : public Component
 	glm::vec3 rotation_;            // the rotation
 	glm::vec3 scale_;               // the scale
 	glm::mat4 local_matrix_;        // the local matrix
+
+	float      max_scale_;           // the max scale
 	bool      matrix_dirty_;        // the matrix is dirty
 };
 

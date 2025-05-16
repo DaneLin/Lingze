@@ -11,13 +11,11 @@
 layout(local_size_x = MESH_WGSIZE, local_size_y = 1, local_size_z = 1) in;
 layout(triangles, max_vertices = MESHLET_MAX_VERTICES, max_primitives = MESHLET_MAX_TRIANGLES) out;
 
-layout(std140, set = 0, binding = 0) uniform UboData
+layout(set = 0, binding = 0,scalar) uniform UboData
 {
-	mat4 view;
-	mat4 projection;
-    float screen_width;
-    float screen_height;
+	CullData cull_data;
 };
+
 
 layout(set = 0, binding = 1, scalar) readonly buffer Vertices
 {
@@ -70,7 +68,7 @@ void main()
         vec3 position = vec3(vertices[vi].pos);
         vec3 normal = vec3(vertices[vi].normal);
 
-        vec4 position_clip = projection * view * model_matrix * vec4(position, 1.0);
+        vec4 position_clip = cull_data.proj_matrix * cull_data.view_matrix * model_matrix * vec4(position, 1.0);
 
         gl_MeshVerticesEXT[i].gl_Position = position_clip;
 
@@ -87,7 +85,7 @@ void main()
 
     barrier();
 
-    vec2 screen = vec2(screen_width, screen_height);
+    vec2 screen = vec2(cull_data.screen_width, cull_data.screen_height);
 
     uint base = meshlets[mi].data_offset + vertex_count;
 

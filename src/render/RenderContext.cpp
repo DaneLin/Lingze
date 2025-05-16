@@ -143,6 +143,7 @@ void RenderContext::process_entity(const std::shared_ptr<lz::Entity> &entity)
 			mesh_draw.mesh_index     = uint32_t(mesh_infos_.size());
 			mesh_draw.model_matrix   = model_matrix;
 			mesh_draw.material_index = core_->get_material_index(sub_mesh.material_name);
+			mesh_draw.scale          = transform->get_max_scale();
 			mesh_draws_.push_back(mesh_draw);
 
 			// Collect mesh info

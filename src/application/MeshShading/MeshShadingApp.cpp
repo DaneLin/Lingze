@@ -16,10 +16,10 @@ void MeshShadingApp::prepare_render_context()
 {
 	Scene scene;
 
-	/*auto  Sponza = scene.create_entity("Sponza");
+	auto  Sponza = scene.create_entity("Sponza");
 	Mesh  mesh   = MeshLoaderManager::get_instance().load(GLTF_DIR "Sponza/glTF/Sponza.gltf");
 	Sponza->get_transform()->set_rotation(glm::vec3(0.0f, 90.0f, 0.0f));
-	Sponza->add_component<StaticMeshComponent>()->set_mesh(&mesh);*/
+	Sponza->add_component<StaticMeshComponent>()->set_mesh(&mesh);
 
 	Mesh buddha_mesh = MeshLoaderManager::get_instance().load(DATA_DIR "Meshes/buddha.obj");
 

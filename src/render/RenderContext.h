@@ -55,6 +55,7 @@ struct MeshDraw
 {
 	uint32_t  mesh_index;
 	uint32_t  material_index;
+	float     scale;
 	glm::mat4 model_matrix;
 };
 #pragma pack(pop)

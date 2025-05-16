@@ -14,12 +14,9 @@
 
 layout(local_size_x = TASK_WGSIZE, local_size_y = 1, local_size_z = 1) in;
 
-layout(set = 0, binding = 0) uniform UboData
+layout(set = 0, binding = 0,scalar) uniform UboData
 {
-	mat4 view;
-	mat4 projection;
-    float screen_width;
-    float screen_height;
+	CullData cull_data;
 };
 
 
@@ -51,16 +48,22 @@ void main()
 
     mat4 model_matrix = mesh_draws[meshlets[mi].mesh_draw_index].model_matrix;
 
-    vec4 view_center = (view * model_matrix * vec4(meshlets[mi].sphere_bound.xyz, 1.0));
-    float radius = meshlets[mi].sphere_bound.w;
+    // calculate center in view space
+    float radius = meshlets[mi].sphere_bound.w* mesh_draws[meshlets[mi].mesh_draw_index].scale;
+    vec3 center =  (cull_data.view_matrix * model_matrix * vec4(meshlets[mi].sphere_bound.xyz, 1.0)).xyz;
     vec3 cone_axis = vec3(int(meshlets[mi].cone_axis[0]) / 127.0, int(meshlets[mi].cone_axis[1]) / 127.0, int(meshlets[mi].cone_axis[2]) / 127.0);
-    vec4 view_cone_axis = view * model_matrix* vec4(cone_axis, 0.0);
+    vec3 view_cone_axis = (cull_data.view_matrix * model_matrix * vec4(cone_axis, 0.0)).xyz;
     float cone_cutoff = int(meshlets[mi].cone_cutoff) / 127.0;
 
     vec3 camera_position = vec3(0,0,0);
 
 #if CULL
-    bool accept = !cone_cull(view_center.xyz, radius, view_cone_axis.xyz, cone_cutoff, camera_position);
+    bool accept = !cone_cull(center, radius, view_cone_axis, cone_cutoff, camera_position);
+
+    accept = accept && center.z + radius > cull_data.znear && center.z - radius < cull_data.zfar;
+    accept = accept && center.z * cull_data.frustum[1] - abs(center.x) * cull_data.frustum[0] > -radius;
+    accept = accept && center.z * cull_data.frustum[3] - abs(center.y) * cull_data.frustum[2] > -radius;
+
 #else
     bool accept = true;
 #endif

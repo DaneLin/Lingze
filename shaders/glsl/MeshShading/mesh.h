@@ -26,12 +26,16 @@ struct Meshlet
 
 struct CullData
 {
-	mat4  view_matrix;                  // view matrix, for converting world coordinates to view coordinates
-	float P00, P11, znear, zfar;        // symmetirc projection parameters
-	float frustum[4];                   // data for left / right / top / bottom
+		mat4 view_matrix;
+	mat4 proj_matrix;
+	float     P00, P11, znear, zfar;        // symmetirc projection parameters
+	float     frustum[4];                   // data for left / right / top / bottom
 	uint  draw_count;                   // number of draw commands
-	float depth_pyramid_width;
-	float depth_pyramid_height;
+	float     screen_width;
+	float     screen_height;
+			float     depth_pyramid_width;
+			float     depth_pyramid_height;
+			float padding[3];
 };
 
 struct MeshInfo
@@ -49,6 +53,7 @@ struct MeshDraw
 {
 	uint mesh_index;        // index of the mesh in the mesh array
 	uint material_index;
+	float scale;
 	mat4 model_matrix;
 };
 
