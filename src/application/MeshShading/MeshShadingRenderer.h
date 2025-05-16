@@ -25,8 +25,8 @@ class MeshShadingRenderer final : public BaseRenderer
   private:
 	void generate_depth_pyramid(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph,
 	                            UnmippedImageProxy &depth_stencil_proxy, MippedImageProxy &depth_pyramid_proxy);
-	void draw_last_frame_visible(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph);
-	void draw_last_frame_not_visible(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, MippedImageProxy &depth_pyramid_proxy);
+	void cull_last_frame_visible(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph);
+	void cull_last_frame_not_visible(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, MippedImageProxy &depth_pyramid_proxy);
 	void draw_mesh_task(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph,
 	                    UnmippedImageProxy &depth_stencil_proxy, bool late);
 

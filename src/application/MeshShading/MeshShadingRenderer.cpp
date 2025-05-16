@@ -89,7 +89,7 @@ void MeshShadingRenderer::generate_depth_pyramid(const lz::InFlightQueue::FrameI
 	}
 }
 
-void MeshShadingRenderer::draw_last_frame_visible(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph)
+void MeshShadingRenderer::cull_last_frame_visible(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph)
 {
 	render_graph->add_pass(
 	    lz::RenderGraph::TransferPassDesc()
@@ -157,7 +157,7 @@ void MeshShadingRenderer::draw_last_frame_visible(const lz::InFlightQueue::Frame
 	        }));
 }
 
-void MeshShadingRenderer::draw_last_frame_not_visible(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, MippedImageProxy &depth_pyramid_proxy)
+void MeshShadingRenderer::cull_last_frame_not_visible(const lz::InFlightQueue::FrameInfo &frame_info, const lz::Scene &scene, lz::render::RenderContext &render_context, lz::RenderGraph *render_graph, MippedImageProxy &depth_pyramid_proxy)
 {
 	render_graph->add_pass(
 	    lz::RenderGraph::TransferPassDesc()
@@ -246,7 +246,7 @@ void MeshShadingRenderer::draw_mesh_task(const lz::InFlightQueue::FrameInfo &fra
 	render_graph->add_pass(
 	    lz::RenderGraph::RenderPassDesc()
 	        .set_color_attachments({{frame_info.swapchain_image_view_proxy_id, late ? vk::AttachmentLoadOp::eLoad :vk::AttachmentLoadOp::eClear}})
-	        .set_depth_attachment(depth_stencil_proxy.image_view_proxy.get().id(), vk::AttachmentLoadOp::eClear)
+	        .set_depth_attachment(depth_stencil_proxy.image_view_proxy.get().id(),late ? vk::AttachmentLoadOp::eLoad : vk::AttachmentLoadOp::eClear)
 	        .set_storage_buffers({scene_resource_->mesh_proxy_.get().id(), scene_resource_->mesh_draw_proxy_.get().id(),scene_resource_->visible_meshtask_draw_proxy_.get().id()})
 	        .set_indirect_buffers({ scene_resource_->visible_meshtask_count_proxy_.get().id()})
 	        .set_render_area_extent(viewport_extent_)
@@ -330,10 +330,10 @@ void MeshShadingRenderer::render_frame(
 		glm::uvec2 size = {viewport_extent_.width, viewport_extent_.height};
 		frame_resource.reset(new FrameResource(render_graph, size));
 	}
-	draw_last_frame_visible(frame_info, scene, render_context, render_graph);
+	cull_last_frame_visible(frame_info, scene, render_context, render_graph);
 	draw_mesh_task(frame_info, scene, render_context, render_graph, frame_resource->depth_stencil_proxy, false);
 	generate_depth_pyramid(frame_info, scene, render_context, render_graph, frame_resource->depth_stencil_proxy, frame_resource->depth_pyramid_proxy);
-	draw_last_frame_not_visible(frame_info, scene, render_context, render_graph, frame_resource->depth_pyramid_proxy);
+	cull_last_frame_not_visible(frame_info, scene, render_context, render_graph, frame_resource->depth_pyramid_proxy);
 	draw_mesh_task(frame_info, scene, render_context, render_graph, frame_resource->depth_stencil_proxy, true);
 }
 
