@@ -1,4 +1,4 @@
-#define DEBUG 0
+#define DEBUG 1
 #define CULL 1
 #define MESH 0
 #define BACK_CULL 1

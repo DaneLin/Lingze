@@ -16,19 +16,20 @@ void MeshShadingApp::prepare_render_context()
 {
 	Scene scene;
 
-	auto  Sponza = scene.create_entity("Sponza");
+	/*auto  Sponza = scene.create_entity("Sponza");
 	Mesh  mesh   = MeshLoaderManager::get_instance().load(GLTF_DIR "Sponza/glTF/Sponza.gltf");
 	Sponza->get_transform()->set_rotation(glm::vec3(0.0f, 90.0f, 0.0f));
-	Sponza->add_component<StaticMeshComponent>()->set_mesh(&mesh);
+	Sponza->add_component<StaticMeshComponent>()->set_mesh(&mesh);*/
+
+	Mesh buddha_mesh = MeshLoaderManager::get_instance().load(DATA_DIR "Meshes/buddha.obj");
 
 	auto buddha = scene.create_entity("Buddha");
-	Mesh buddha_mesh = MeshLoaderManager::get_instance().load(DATA_DIR "Meshes/buddha.obj");
 	buddha->get_transform()->set_scale(glm::vec3(0.5f, 0.5f, 0.5f));
 	buddha->add_component<StaticMeshComponent>()->set_mesh(&buddha_mesh);
 
 	auto buddha1 = scene.create_entity("Buddha1");
 	buddha1->get_transform()->set_scale(glm::vec3(0.1f, 0.1f, 0.1f));
-	buddha1->get_transform()->set_position(glm::vec3(0.0f, 0.0f, -2.0f));
+	buddha1->get_transform()->set_position(glm::vec3(-3.0f, 0.0f, 4.0f));
 	buddha1->add_component<StaticMeshComponent>()->set_mesh(&buddha_mesh);
 
 	render_context_->collect_draw_commands(&scene);

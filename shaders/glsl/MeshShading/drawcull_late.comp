@@ -62,21 +62,16 @@ void main()
     MeshInfo mesh_info = mesh_infos[mesh_draw.mesh_index];
 
     // calculate center in view space
-    vec3 sphere_center = mesh_info.sphere_bound.xyz;
+    vec3 center = mesh_info.sphere_bound.xyz;
+    center = (cull_data.view_matrix *mesh_draw.model_matrix * vec4(center, 1.0)).xyz;
     float sphere_radius = mesh_info.sphere_bound.w;
-    vec3 world_center = (mesh_draw.model_matrix * vec4(sphere_center, 1.0)).xyz;
-    vec3 view_center = (cull_data.view_matrix * vec4(world_center, 1.0)).xyz;
-
     // calculate maximum scale to get final scale parameter
     float scale_x = length(vec3(mesh_draw.model_matrix[0][0], mesh_draw.model_matrix[0][1], mesh_draw.model_matrix[0][2]));
     float scale_y = length(vec3(mesh_draw.model_matrix[1][0], mesh_draw.model_matrix[1][1], mesh_draw.model_matrix[1][2]));
     float scale_z = length(vec3(mesh_draw.model_matrix[2][0], mesh_draw.model_matrix[2][1], mesh_draw.model_matrix[2][2]));
     float max_scale = max(max(scale_x, scale_y), scale_z);
 
-    float transformed_radius = sphere_radius * max_scale;
-
-    vec4 center = vec4(view_center, transformed_radius);
-    float radius = center.w;
+    float radius = sphere_radius * max_scale;
 
     bool is_visible = true;
     // the left/top/right/bottom plane culling utilizes frustum symmetry to cull against two planes at the same time
@@ -88,18 +83,18 @@ void main()
     if (is_visible)
     {
        vec4 aabb;
-		if (project_sphere(center.xyz, radius, cull_data.znear, cull_data.P00, cull_data.P11, aabb))
+		if (project_sphere(center, radius, cull_data.znear, cull_data.P00, cull_data.P11, aabb))
 		{
 			float width = (aabb.z - aabb.x) * cull_data.depth_pyramid_width;
-			float height = (aabb.w - aabb.y) * cull_data.depth_pyramid_height;
+			float height = (aabb.y - aabb.w) * cull_data.depth_pyramid_height;
 
 			float level = floor(log2(max(width, height)));
 
 			// Sampler is set up to do max reduction, so this computes the maximum depth of a 2x2 texel quad
 			float depth = textureLod(depth_pyramid, (aabb.xy + aabb.zw) * 0.5, level).x;
-			float depthSphere = cull_data.znear / (center.z - radius);
+			float depthSphere = 1.0 - cull_data.znear / (center.z - radius);
 
-			is_visible = is_visible && depthSphere < depth;
+			is_visible = is_visible && depthSphere <= depth;
 		}
     }
 

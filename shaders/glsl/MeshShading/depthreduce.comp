@@ -19,7 +19,7 @@ void main()
 {
 	uvec2 pos = gl_GlobalInvocationID.xy;
 
-	// Sampler is set up to do min reduction, so this computes the minimum depth of a 2x2 texel quad
+	// Sampler is set up to do max reduction, so this computes the maximum depth of a 2x2 texel quad
 	float depth = texture(in_image, (vec2(pos) + vec2(0.5)) / image_size).x;
 
 	imageStore(out_image, ivec2(pos), vec4(depth));

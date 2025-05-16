@@ -10,7 +10,7 @@ namespace lz::render
 MeshShadingRenderer::MeshShadingRenderer(lz::Core *core) :
     core_(core)
 {
-	depth_reduce_sampler_ = std::make_unique<Sampler>(core_->get_logical_device(), vk::SamplerAddressMode::eClampToEdge, vk::Filter::eLinear, vk::SamplerMipmapMode::eLinear, vk::SamplerReductionModeEXT::eMax);
+	depth_reduce_sampler_ = std::make_unique<Sampler>(core_->get_logical_device(), vk::SamplerAddressMode::eClampToEdge, vk::Filter::eLinear, vk::SamplerMipmapMode::eNearest, vk::SamplerReductionModeEXT::eMax);
 
 	reload_shaders();
 }
