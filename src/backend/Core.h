@@ -135,7 +135,8 @@ class Core
   private:
 	// CreateInstance: Creates a Vulkan instance with specified extensions and layers
 	vk::UniqueInstance create_instance(const std::vector<const char *> &instance_extensions,
-	                                   const std::vector<const char *> &validation_layers);
+	                                   const std::vector<const char *> &validation_layers,
+	                                   bool enable_debugging);
 
 	// CreateDebugUtilsMessenger: Sets up the debug messenger for validation layers
 	static vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic> create_debug_utils_messenger(

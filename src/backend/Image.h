@@ -30,6 +30,7 @@ static vk::ImageUsageFlags get_general_usage_flags(const vk::Format format)
 // Common image usage flag combinations
 static constexpr vk::ImageUsageFlags color_image_usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 static constexpr vk::ImageUsageFlags depth_image_usage = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled;
+static constexpr vk::ImageUsageFlags storage_image_usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 
 class Swapchain;
 class RenderTarget;

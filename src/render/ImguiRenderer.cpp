@@ -314,11 +314,10 @@ void ImGuiRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_info,
 						            // The vast majority of draw calls will use the Dear ImGui texture atlas, which value you have set yourself during initialization.
 
 						            lz::ImageView          *tex_image_view = (lz::ImageView *) draw_cmd->TextureId;
-						            lz::ImageSamplerBinding tex_binding    = draw_call_set_info->make_image_sampler_binding(
-                                        "tex", tex_image_view, image_space_sampler_.get());
+						            lz::ImageSamplerBinding tex_binding    = draw_call_set_info->make_image_sampler_binding("tex", tex_image_view, image_space_sampler_.get());
 
 						            auto draw_call_set = this->core_->get_descriptor_set_cache()->get_descriptor_set(
-						                *draw_call_set_info, {}, {}, {tex_binding});
+						                *draw_call_set_info, {}, {}, {} ,{tex_binding});
 
 						            pass_context.get_command_buffer().bindDescriptorSets(
 						                vk::PipelineBindPoint::eGraphics, pipeline_info.pipeline_layout,

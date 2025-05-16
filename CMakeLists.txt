@@ -122,7 +122,7 @@ set(lingze_backend_headers
     "${CMAKE_SOURCE_DIR}/src/backend/CpuProfiler.h"
     "${CMAKE_SOURCE_DIR}/src/backend/Pool.h"
     "${CMAKE_SOURCE_DIR}/src/backend/EngineConfig.h"
-
+    "${CMAKE_SOURCE_DIR}/src/backend/MathUtils.h"
 )
 
 # Render common files 

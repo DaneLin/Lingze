@@ -90,11 +90,10 @@ int App::run()
 
 			glfwPollEvents();
 			recreate_swapchain();
-
 			update(delta_time_);
-
 			process_input();
 			render_frame();
+			
 		}
 
 		// Wait for the device to be idle before exiting
@@ -149,7 +148,11 @@ bool App::init()
 	window_desc.h_wnd      = glfwGetWin32Window(window_);
 
 	// Create Vulkan core
+#ifdef _DEBUG
 	bool enable_debugging = true;
+#else
+	bool enable_debugging = false;
+#endif
 
 	// Prepare device extensions
 	std::vector<const char *> device_extension_names;
@@ -267,7 +270,6 @@ void App::process_input()
 					renderer_->change_view();
 				}
 
-				// 根据新的坐标系统调整旋转方向
 				scene_->get_main_camera()->hor_angle += float((mouse_pos_ - prev_mouse_pos_).x * mouse_speed);
 				scene_->get_main_camera()->vert_angle += float((mouse_pos_ - prev_mouse_pos_).y * mouse_speed);
 			}
@@ -278,30 +280,30 @@ void App::process_input()
 			glm::vec3 camera_right     = glm::vec3(camera_transform * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
 			glm::vec3 camera_up        = glm::vec3(camera_transform * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f));
 
-			// 调整按键映射以匹配新的坐标系统
+
 			if (glfwGetKey(window_, GLFW_KEY_W) == GLFW_PRESS)
 			{
-				dir += glm::vec3(0.0f, 0.0f, 1.0f);        // 向前移动（Z轴正方向）
+				dir += glm::vec3(0.0f, 0.0f, 1.0f);        
 			}
 			if (glfwGetKey(window_, GLFW_KEY_S) == GLFW_PRESS)
 			{
-				dir += glm::vec3(0.0f, 0.0f, -1.0f);        // 向后移动（Z轴负方向）
+				dir += glm::vec3(0.0f, 0.0f, -1.0f);       
 			}
 			if (glfwGetKey(window_, GLFW_KEY_A) == GLFW_PRESS)
 			{
-				dir += glm::vec3(-1.0f, 0.0f, 0.0f);        // 向左移动（X轴负方向）
+				dir += glm::vec3(-1.0f, 0.0f, 0.0f);        
 			}
 			if (glfwGetKey(window_, GLFW_KEY_D) == GLFW_PRESS)
 			{
-				dir += glm::vec3(1.0f, 0.0f, 0.0f);        // 向右移动（X轴正方向）
+				dir += glm::vec3(1.0f, 0.0f, 0.0f);        
 			}
 			if (glfwGetKey(window_, GLFW_KEY_Q) == GLFW_PRESS)
 			{
-				dir += glm::vec3(0.0f, -1.0f, 0.0f);        // 向下移动（Y轴负方向）
+				dir += glm::vec3(0.0f, -1.0f, 0.0f);      
 			}
 			if (glfwGetKey(window_, GLFW_KEY_E) == GLFW_PRESS)
 			{
-				dir += glm::vec3(0.0f, 1.0f, 0.0f);        // 向上移动（Y轴正方向）
+				dir += glm::vec3(0.0f, 1.0f, 0.0f);       
 			}
 
 			// Normalize direction vector
@@ -317,6 +319,13 @@ void App::process_input()
 			scene_->get_main_camera()->pos += camera_forward * dir.z * camera_speed * delta_time_;
 			scene_->get_main_camera()->pos += camera_right * dir.x * camera_speed * delta_time_;
 			scene_->get_main_camera()->pos += camera_up * dir.y * camera_speed * delta_time_;
+
+			if (glfwGetKey(window_, GLFW_KEY_V))
+			{
+				renderer_->reload_shaders();
+				core_->wait_idle();
+				core_->get_pipeline_cache()->clear();
+			}
 		}
 	}
 }

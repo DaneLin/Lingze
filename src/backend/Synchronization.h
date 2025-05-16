@@ -325,6 +325,7 @@ enum struct BufferUsageTypes : uint8_t
 	eComputeShaderReadWrite,         // Used by compute shader for read/write
 	eTransferDst,                    // Used as transfer destination
 	eTransferSrc,                    // Used as transfer source
+	eIndirectBuffer,                 // Used as indirect buffer (e.g., visible_mesh_count_buffer in MeshShading)
 	eNone,                           // Not used
 	eUnknown                         // Unknown usage
 };
@@ -362,6 +363,14 @@ static BufferAccessPattern get_src_buffer_access_pattern(const BufferUsageTypes 
 			access_pattern.stage             = vk::PipelineStageFlagBits::eComputeShader;
 			access_pattern.access_mask       = vk::AccessFlagBits::eShaderWrite;
 			access_pattern.queue_family_type = QueueFamilyTypes::eCompute;
+		}
+		break;
+		case BufferUsageTypes::eIndirectBuffer:
+		{
+			// Buffer used for indirect commands (like visible_mesh_count_buffer in MeshShading)
+			access_pattern.stage             = vk::PipelineStageFlagBits::eDrawIndirect;
+			access_pattern.access_mask       = vk::AccessFlagBits::eIndirectCommandRead;
+			access_pattern.queue_family_type = QueueFamilyTypes::eGraphics;
 		}
 		break;
 		case BufferUsageTypes::eTransferDst:
@@ -433,6 +442,14 @@ static BufferAccessPattern get_dst_buffer_access_pattern(const BufferUsageTypes 
 			access_pattern.stage             = vk::PipelineStageFlagBits::eComputeShader;
 			access_pattern.access_mask       = vk::AccessFlagBits::eShaderWrite | vk::AccessFlagBits::eShaderRead;
 			access_pattern.queue_family_type = QueueFamilyTypes::eCompute;
+		}
+		break;
+		case BufferUsageTypes::eIndirectBuffer:
+		{
+			// Buffer used for indirect commands (like visible_mesh_count_buffer in MeshShading)
+			access_pattern.stage             = vk::PipelineStageFlagBits::eDrawIndirect;
+			access_pattern.access_mask       = vk::AccessFlagBits::eIndirectCommandRead;
+			access_pattern.queue_family_type = QueueFamilyTypes::eGraphics;
 		}
 		break;
 		case BufferUsageTypes::eTransferDst:

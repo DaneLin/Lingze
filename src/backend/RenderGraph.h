@@ -290,6 +290,7 @@ class RenderGraph
 		RenderPassDesc &set_input_images(std::vector<ImageViewProxyId> &&input_image_view_proxies);
 		RenderPassDesc &set_storage_buffers(std::vector<BufferProxyId> &&inout_storage_buffer_proxies);
 		RenderPassDesc &set_storage_images(std::vector<ImageViewProxyId> &&inout_storage_image_proxies);
+		RenderPassDesc &set_indirect_buffers(std::vector<BufferProxyId> &&indirect_buffer_proxies);
 		RenderPassDesc &set_render_area_extent(vk::Extent2D render_area_extent);
 		RenderPassDesc &set_record_func(std::function<void(RenderPassContext)> record_func);
 		RenderPassDesc &set_profiler_info(uint32_t task_color, std::string task_name);
@@ -301,6 +302,7 @@ class RenderGraph
 		std::vector<BufferProxyId>    vertex_buffer_proxies;
 		std::vector<BufferProxyId>    inout_storage_buffer_proxies;
 		std::vector<ImageViewProxyId> inout_storage_image_proxies;
+		std::vector<BufferProxyId>    indirect_buffer_proxies;
 
 		vk::Extent2D                           render_area_extent;
 		std::function<void(RenderPassContext)> record_func;
@@ -328,12 +330,14 @@ class RenderGraph
 		ComputePassDesc &set_input_images(std::vector<ImageViewProxyId> &&input_image_view_proxies);
 		ComputePassDesc &set_storage_buffers(std::vector<BufferProxyId> &&inout_storage_buffer_proxies);
 		ComputePassDesc &set_storage_images(std::vector<ImageViewProxyId> &&inout_storage_image_proxies);
+		ComputePassDesc &set_indirect_buffers(std::vector<BufferProxyId> &&indirect_buffer_proxies);
 		ComputePassDesc &set_record_func(std::function<void(PassContext)> record_func);
 		ComputePassDesc &set_profiler_info(uint32_t task_color, std::string task_name);
 
 		std::vector<BufferProxyId>    inout_storage_buffer_proxies;
 		std::vector<ImageViewProxyId> input_image_view_proxies;
 		std::vector<ImageViewProxyId> inout_storage_image_proxies;
+		std::vector<BufferProxyId>    indirect_buffer_proxies;
 
 		std::function<void(PassContext)> record_func;
 

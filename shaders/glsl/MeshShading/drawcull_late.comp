@@ -1,5 +1,4 @@
 // Using compute shader to do gpu driven culling and draw command generation
-// Only render meshes that were visible in last frame
 #version 450
 
 #extension GL_EXT_scalar_block_layout : require
@@ -8,6 +7,7 @@
 #extension GL_GOOGLE_include_directive : require
 
 #include "Mesh.h"
+#include "../common_math.h"
 
 layout(local_size_x = COMPUTE_WGSIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -47,6 +47,8 @@ layout(set = 0, binding = 5) buffer DrawVisibilityBuffer
     uint draw_visibility[];
 };
 
+layout(set = 0, binding = 6) uniform sampler2D depth_pyramid;
+
 void main()
 {
     uint draw_index = gl_GlobalInvocationID.x;
@@ -55,12 +57,6 @@ void main()
     {
         return;
     }
-
-    // not visible in last frame;
-    if (draw_visibility[draw_index] == 0)
-	{
-		return;
-	}
 
     MeshDraw mesh_draw = mesh_draws[draw_index];
     MeshInfo mesh_info = mesh_infos[mesh_draw.mesh_index];
@@ -91,6 +87,24 @@ void main()
 
     if (is_visible)
     {
+       vec4 aabb;
+		if (project_sphere(center.xyz, radius, cull_data.znear, cull_data.P00, cull_data.P11, aabb))
+		{
+			float width = (aabb.z - aabb.x) * cull_data.depth_pyramid_width;
+			float height = (aabb.w - aabb.y) * cull_data.depth_pyramid_height;
+
+			float level = floor(log2(max(width, height)));
+
+			// Sampler is set up to do max reduction, so this computes the maximum depth of a 2x2 texel quad
+			float depth = textureLod(depth_pyramid, (aabb.xy + aabb.zw) * 0.5, level).x;
+			float depthSphere = cull_data.znear / (center.z - radius);
+
+			is_visible = is_visible && depthSphere < depth;
+		}
+    }
+
+    if (is_visible && draw_visibility[draw_index] == 0)
+    {
         uint draw_cmd_index = atomicAdd(visible_mesh_task_draw_cmd_count, 1);
 
         draw_cmds[draw_cmd_index].group_count_x = (mesh_info.meshlet_count + TASK_WGSIZE - 1) / TASK_WGSIZE;
@@ -98,4 +112,5 @@ void main()
         draw_cmds[draw_cmd_index].group_count_z = 1;
         draw_cmds[draw_cmd_index].meshlet_offset = mesh_info.meshlet_offset;
     }
+    draw_visibility[draw_index] = is_visible ? 1 : 0;
 }

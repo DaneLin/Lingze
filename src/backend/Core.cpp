@@ -28,7 +28,7 @@ Core::Core(const char **instance_extensions, const uint32_t instance_extensions_
 		res_instance_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
 
-	instance_ = create_instance(res_instance_extensions, validation_layers);
+	instance_ = create_instance(res_instance_extensions, validation_layers, enable_debugging);
 	loader_   = vk::DispatchLoaderDynamic(instance_.get(), vkGetInstanceProcAddr);
 
 	auto prop = vk::enumerateInstanceLayerProperties();
@@ -214,7 +214,7 @@ bool Core::bindless_supported() const
 	return bindless_supported_;
 }
 
-void Core::register_material(const std::shared_ptr<lz::Material> &material)	
+void Core::register_material(const std::shared_ptr<lz::Material> &material)
 {
 	if (material_system_)
 	{
@@ -230,7 +230,7 @@ void Core::process_pending_material_updates()
 	}
 }
 
-vk::UniqueInstance Core::create_instance(const std::vector<const char *> &instance_extensions, const std::vector<const char *> &validation_layers)
+vk::UniqueInstance Core::create_instance(const std::vector<const char *> &instance_extensions, const std::vector<const char *> &validation_layers, bool enable_debugging)
 {
 	constexpr auto app_info = vk::ApplicationInfo()
 	                              .setPApplicationName("Lingze app")
@@ -239,12 +239,22 @@ vk::UniqueInstance Core::create_instance(const std::vector<const char *> &instan
 	                              .setEngineVersion(VK_MAKE_VERSION(-1, 0, 0))
 	                              .setApiVersion(VK_API_VERSION_1_2);
 
-	const auto instance_create_info = vk::InstanceCreateInfo()
-	                                      .setPApplicationInfo(&app_info)
-	                                      .setEnabledExtensionCount(uint32_t(instance_extensions.size()))
-	                                      .setPpEnabledExtensionNames(instance_extensions.data())
-	                                      .setEnabledLayerCount(uint32_t(validation_layers.size()))
-	                                      .setPpEnabledLayerNames(validation_layers.data());
+	std::vector<vk::ValidationFeatureEnableEXT> enable_validation_features = {
+	    vk::ValidationFeatureEnableEXT::eSynchronizationValidation};
+	vk::ValidationFeaturesEXT validation_features;
+	validation_features.setEnabledValidationFeatures(enable_validation_features);
+
+	auto instance_create_info = vk::InstanceCreateInfo()
+	                                .setPApplicationInfo(&app_info)
+	                                .setEnabledExtensionCount(uint32_t(instance_extensions.size()))
+	                                .setPpEnabledExtensionNames(instance_extensions.data())
+	                                .setEnabledLayerCount(uint32_t(validation_layers.size()))
+	                                .setPpEnabledLayerNames(validation_layers.data());
+
+	if (enable_debugging)
+	{
+		instance_create_info.setPNext(&validation_features);
+	}
 
 	return vk::createInstanceUnique(instance_create_info);
 }
@@ -256,8 +266,8 @@ vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic> Core::cr
 	const auto messenger_create_info = vk::DebugUtilsMessengerCreateInfoEXT()
 	                                       .setMessageSeverity(
 	                                           vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
-	                                           vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
-	                                           /* | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo*/)
+	                                           vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
+	                                           vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo)
 	                                       .setMessageType(
 	                                           vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
 	                                           vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
@@ -577,6 +587,7 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 	device_vulkan12_features.setScalarBlockLayout(true);
 	device_vulkan12_features.setDrawIndirectCount(true);
 	device_vulkan12_features.setStorageBuffer8BitAccess(true);
+	device_vulkan12_features.setSamplerFilterMinmax(true);
 
 	if (bindless_supported_)
 	{
@@ -610,7 +621,6 @@ vk::UniqueDevice Core::create_logical_device(vk::PhysicalDevice physical_device,
 	void *pNext = &device_vulkan12_features;
 	if (mesh_shader_supported_)
 	{
-		
 		mesh_shader_features.pNext = pNext;
 		pNext                      = &mesh_shader_features;
 	}
@@ -643,7 +653,7 @@ uint32_t Core::get_material_index(const std::string &material_name) const
 	return material_system_->get_material_index(material_name);
 }
 
-lz::Buffer* Core::get_material_parameters_buffer() const
+lz::Buffer *Core::get_material_parameters_buffer() const
 {
 	return material_system_->get_material_parameters_buffer();
 }

@@ -126,7 +126,6 @@ class MaterialSystem
 
 	std::unique_ptr<lz::Buffer> material_parameters_buffer_;
 
-
 	std::queue<UpdateRequest> pending_updates_;
 
 	std::vector<uint32_t> free_texture_slots_;

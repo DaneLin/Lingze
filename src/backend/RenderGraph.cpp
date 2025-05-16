@@ -462,6 +462,13 @@ RenderGraph::RenderPassDesc &RenderGraph::RenderPassDesc::set_profiler_info(
 	return *this;
 }
 
+RenderGraph::RenderPassDesc &RenderGraph::RenderPassDesc::set_indirect_buffers(
+    std::vector<BufferProxyId> &&indirect_buffer_proxies)
+{
+	this->indirect_buffer_proxies = std::move(indirect_buffer_proxies);
+	return *this;
+}
+
 void RenderGraph::add_render_pass(std::vector<ImageViewProxyId> color_attachment_image_proxies,
                                   ImageViewProxyId              depth_attachment_image_proxy,
                                   std::vector<ImageViewProxyId> input_image_view_proxies,
@@ -539,6 +546,13 @@ RenderGraph::ComputePassDesc &RenderGraph::ComputePassDesc::set_profiler_info(ui
 {
 	this->profiler_task_color = task_color;
 	this->profiler_task_name  = task_name;
+	return *this;
+}
+
+RenderGraph::ComputePassDesc &RenderGraph::ComputePassDesc::set_indirect_buffers(
+    std::vector<BufferProxyId> &&indirect_buffer_proxies)
+{
+	this->indirect_buffer_proxies = std::move(indirect_buffer_proxies);
 	return *this;
 }
 
@@ -715,6 +729,12 @@ void RenderGraph::execute(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu
 					pass_context.resolved_buffers_[vertex_buffer_proxy.as_int] = get_resolved_buffer(
 					    task_index, vertex_buffer_proxy);
 				}
+				
+				for (auto &indirect_buffer_proxy : render_pass_desc.indirect_buffer_proxies)
+				{
+					pass_context.resolved_buffers_[indirect_buffer_proxy.as_int] = get_resolved_buffer(
+					    task_index, indirect_buffer_proxy);
+				}
 
 				vk::PipelineStageFlags              src_stage;
 				vk::PipelineStageFlags              dst_stage;
@@ -765,6 +785,13 @@ void RenderGraph::execute(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu
 					auto storage_buffer = get_resolved_buffer(task_index, inout_buffer_proxy);
 					add_buffer_barriers(storage_buffer, BufferUsageTypes::eGraphicsShaderReadWrite, task_index,
 					                    src_stage, dst_stage, buffer_barriers);
+				}
+				
+				for (auto indirect_buffer_proxy : render_pass_desc.indirect_buffer_proxies)
+				{
+					auto indirect_buffer = get_resolved_buffer(task_index, indirect_buffer_proxy);
+					add_buffer_barriers(indirect_buffer, BufferUsageTypes::eIndirectBuffer, task_index,
+					                   src_stage, dst_stage, buffer_barriers);
 				}
 
 				if (image_barriers.size() > 0 || buffer_barriers.size() > 0)
@@ -841,6 +868,12 @@ void RenderGraph::execute(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu
 					pass_context.resolved_image_views_[inout_storage_image_proxy.as_int] = get_resolved_image_view(
 					    task_index, inout_storage_image_proxy);
 				}
+				
+				for (auto &indirect_buffer_proxy : compute_pass_desc.indirect_buffer_proxies)
+				{
+					pass_context.resolved_buffers_[indirect_buffer_proxy.as_int] = get_resolved_buffer(
+					    task_index, indirect_buffer_proxy);
+				}
 
 				vk::PipelineStageFlags src_stage;
 				vk::PipelineStageFlags dst_stage;
@@ -866,6 +899,13 @@ void RenderGraph::execute(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu
 					auto storage_buffer = get_resolved_buffer(task_index, inout_buffer_proxy);
 					add_buffer_barriers(storage_buffer, BufferUsageTypes::eComputeShaderReadWrite, task_index,
 					                    src_stage, dst_stage, buffer_barriers);
+				}
+				
+				for (auto indirect_buffer_proxy : compute_pass_desc.indirect_buffer_proxies)
+				{
+					auto indirect_buffer = get_resolved_buffer(task_index, indirect_buffer_proxy);
+					add_buffer_barriers(indirect_buffer, BufferUsageTypes::eIndirectBuffer, task_index,
+					                   src_stage, dst_stage, buffer_barriers);
 				}
 
 				if (image_barriers.size() > 0 || buffer_barriers.size() > 0)
@@ -945,7 +985,7 @@ void RenderGraph::execute(vk::CommandBuffer command_buffer, lz::CpuProfiler *cpu
 				for (auto dst_buffer_proxy : transfer_pass_desc.dst_buffer_proxies)
 				{
 					auto storage_buffer = get_resolved_buffer(task_index, dst_buffer_proxy);
-					add_buffer_barriers(storage_buffer, BufferUsageTypes::eTransferSrc, task_index, src_stage,
+					add_buffer_barriers(storage_buffer, BufferUsageTypes::eTransferDst, task_index, src_stage,
 					                    dst_stage, buffer_barriers);
 				}
 
@@ -1147,14 +1187,14 @@ ImageUsageTypes RenderGraph::get_task_image_subresource_usage_type(size_t task_i
 		case Task::Types::eTransferPass:
 		{
 			const auto &transfer_pass_desc = transfer_pass_descs_[task.index];
-			for (const auto &src_image_view_proxy : transfer_pass_desc.src_image_view_proxies)
+			for (const auto src_image_view_proxy : transfer_pass_desc.src_image_view_proxies)
 			{
 				if (image_view_contains_subresource(get_resolved_image_view(task_index, src_image_view_proxy),
 				                                    image_data,
 				                                    mip_level, array_layer))
 					return ImageUsageTypes::eTransferSrc;
 			}
-			for (const auto &dst_image_view_proxy : transfer_pass_desc.dst_image_view_proxies)
+			for (const auto dst_image_view_proxy : transfer_pass_desc.dst_image_view_proxies)
 			{
 				if (image_view_contains_subresource(get_resolved_image_view(task_index, dst_image_view_proxy),
 				                                    image_data,
@@ -1187,6 +1227,18 @@ BufferUsageTypes RenderGraph::get_task_buffer_usage_type(size_t task_index, lz::
 		case Task::Types::eRenderPass:
 		{
 			const auto &render_pass_desc = render_pass_descs_[task.index];
+			
+			// indirect buffer
+			for (const auto &indirect_buffer_proxy : render_pass_desc.indirect_buffer_proxies)
+			{
+				const auto indirect_buffer = get_resolved_buffer(task_index, indirect_buffer_proxy);
+				if (buffer->get_handle() == indirect_buffer->get_handle())
+				{
+					return BufferUsageTypes::eIndirectBuffer;
+				}
+			}
+			
+			// storage buffer
 			for (const auto &storage_buffer_proxy : render_pass_desc.inout_storage_buffer_proxies)
 			{
 				const auto storage_buffer = get_resolved_buffer(task_index, storage_buffer_proxy);
@@ -1196,6 +1248,7 @@ BufferUsageTypes RenderGraph::get_task_buffer_usage_type(size_t task_index, lz::
 				}
 			}
 
+			// vertex buffer
 			for (const auto &vertex_buffer_proxy : render_pass_desc.vertex_buffer_proxies)
 			{
 				const auto vertex_buffer = get_resolved_buffer(task_index, vertex_buffer_proxy);
@@ -1209,11 +1262,25 @@ BufferUsageTypes RenderGraph::get_task_buffer_usage_type(size_t task_index, lz::
 		case Task::Types::eComputePass:
 		{
 			const auto &compute_pass_desc = compute_pass_descs_[task.index];
+			
+			// indirect buffer
+			for (const auto &indirect_buffer_proxy : compute_pass_desc.indirect_buffer_proxies)
+			{
+				const auto indirect_buffer = get_resolved_buffer(task_index, indirect_buffer_proxy);
+				if (buffer->get_handle() == indirect_buffer->get_handle())
+				{
+					return BufferUsageTypes::eIndirectBuffer;
+				}
+			}
+			
+			// storage buffer
 			for (const auto storage_buffer_proxy : compute_pass_desc.inout_storage_buffer_proxies)
 			{
 				const auto storage_buffer = get_resolved_buffer(task_index, storage_buffer_proxy);
 				if (buffer->get_handle() == storage_buffer->get_handle())
+				{
 					return BufferUsageTypes::eComputeShaderReadWrite;
+				}
 			}
 		}
 		break;
@@ -1231,7 +1298,7 @@ BufferUsageTypes RenderGraph::get_task_buffer_usage_type(size_t task_index, lz::
 			{
 				const auto dst_buffer = get_resolved_buffer(task_index, dst_buffer_proxy);
 				if (buffer->get_handle() == dst_buffer->get_handle())
-					return BufferUsageTypes::eTransferSrc;
+					return BufferUsageTypes::eTransferDst;
 			}
 		}
 		break;

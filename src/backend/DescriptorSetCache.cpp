@@ -62,9 +62,8 @@ DescriptorSetCache::DescriptorSetCache(const vk::Device logical_device, bool bin
 	                                             .setType(vk::DescriptorType::eStorageImage);
 	pool_sizes.push_back(storage_image_pool_size);
 
-
 	const auto pool_create_info = vk::DescriptorPoolCreateInfo()
-	                                  .setMaxSets(COMMON_RESOURCE_COUNT) // Allocate enough sets for all resource types
+	                                  .setMaxSets(COMMON_RESOURCE_COUNT)        // Allocate enough sets for all resource types
 	                                  .setPoolSizeCount(uint32_t(pool_sizes.size()))
 	                                  .setFlags(bindless_supported ? vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind : vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
 	                                  .setPPoolSizes(pool_sizes.data());
@@ -91,11 +90,11 @@ vk::DescriptorSetLayout DescriptorSetCache::get_descriptor_set_layout(
     const lz::DescriptorSetLayoutKey &descriptor_set_layout_key)
 {
 	auto &descriptor_set_layout = descriptor_set_layout_cache_[descriptor_set_layout_key];
-
+	bool  has_bindless          = false;
 	if (!descriptor_set_layout)
 	{
 		std::vector<vk::DescriptorSetLayoutBinding> layout_bindings;
-		std::vector<vk::DescriptorBindingFlags> binding_flags;
+		std::vector<vk::DescriptorBindingFlags>     binding_flags;
 
 		std::vector<lz::DescriptorSetLayoutKey::UniformBufferId> uniform_buffer_ids;
 		uniform_buffer_ids.resize(descriptor_set_layout_key.get_uniform_buffers_count());
@@ -111,14 +110,16 @@ vk::DescriptorSetLayout DescriptorSetCache::get_descriptor_set_layout(
 			                                 .setDescriptorType(vk::DescriptorType::eUniformBufferDynamic)
 			                                 .setStageFlags(buffer_info.stage_flags);
 			layout_bindings.push_back(buffer_layout_binding);
-			
+
 			// Add binding flags
 			vk::DescriptorBindingFlags flags = {};
-			if (descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID)
+			if (descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID && buffer_info.shader_binding_index == BINDLESS_BUFFER_BINDING)
 			{
+				has_bindless = true;
+
 				flags = vk::DescriptorBindingFlagBits::eUpdateAfterBind |
-					vk::DescriptorBindingFlagBits::ePartiallyBound;
-				
+				        vk::DescriptorBindingFlagBits::ePartiallyBound;
+
 				if (descriptor_count > 1)
 				{
 					flags |= vk::DescriptorBindingFlagBits::eVariableDescriptorCount;
@@ -141,14 +142,15 @@ vk::DescriptorSetLayout DescriptorSetCache::get_descriptor_set_layout(
 			                                 .setDescriptorType(vk::DescriptorType::eStorageBuffer)
 			                                 .setStageFlags(buffer_info.stage_flags);
 			layout_bindings.push_back(buffer_layout_binding);
-			
+
 			// Add binding flags
 			vk::DescriptorBindingFlags flags = {};
-			if (descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID)
+			if (descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID && buffer_info.shader_binding_index == BINDLESS_STORAGE_BUFFER_BINDING)
 			{
-				flags = vk::DescriptorBindingFlagBits::eUpdateAfterBind |
-					vk::DescriptorBindingFlagBits::ePartiallyBound;
-				
+				has_bindless = true;
+
+				flags = vk::DescriptorBindingFlagBits::eUpdateAfterBind | vk::DescriptorBindingFlagBits::ePartiallyBound;
+
 				if (descriptor_count > 1)
 				{
 					flags |= vk::DescriptorBindingFlagBits::eVariableDescriptorCount;
@@ -171,14 +173,16 @@ vk::DescriptorSetLayout DescriptorSetCache::get_descriptor_set_layout(
 			                                        .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 			                                        .setStageFlags(image_sampler_info.stage_flags);
 			layout_bindings.push_back(image_sampler_layout_binding);
-			
+
 			// Add binding flags
 			vk::DescriptorBindingFlags flags = {};
-			if (descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID)
+			if (descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID && image_sampler_info.shader_binding_index == BINDLESS_TEXTURE_BINDING)
 			{
+				has_bindless = true;
+
 				flags = vk::DescriptorBindingFlagBits::eUpdateAfterBind |
-					vk::DescriptorBindingFlagBits::ePartiallyBound;
-				
+				        vk::DescriptorBindingFlagBits::ePartiallyBound;
+
 				if (descriptor_count > 1)
 				{
 					flags |= vk::DescriptorBindingFlagBits::eVariableDescriptorCount;
@@ -201,14 +205,16 @@ vk::DescriptorSetLayout DescriptorSetCache::get_descriptor_set_layout(
 			                                .setDescriptorType(vk::DescriptorType::eStorageImage)
 			                                .setStageFlags(image_info.stage_flags);
 			layout_bindings.push_back(image_layout_binding);
-			
+
 			// Add binding flags
 			vk::DescriptorBindingFlags flags = {};
-			if (descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID)
+			if (descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID && image_info.shader_binding_index == BINDLESS_STORAGE_IMAGE_BINDING)
 			{
+				has_bindless = true;
+
 				flags = vk::DescriptorBindingFlagBits::eUpdateAfterBind |
-					vk::DescriptorBindingFlagBits::ePartiallyBound;
-				
+				        vk::DescriptorBindingFlagBits::ePartiallyBound;
+
 				if (descriptor_count > 1)
 				{
 					flags |= vk::DescriptorBindingFlagBits::eVariableDescriptorCount;
@@ -220,10 +226,10 @@ vk::DescriptorSetLayout DescriptorSetCache::get_descriptor_set_layout(
 		auto descriptor_layout_info = vk::DescriptorSetLayoutCreateInfo()
 		                                  .setBindingCount(uint32_t(layout_bindings.size()))
 		                                  .setPBindings(layout_bindings.data());
-		
+
 		// If this is a bindless set or has bindless resources, set appropriate flags
 		vk::DescriptorSetLayoutBindingFlagsCreateInfo binding_flags_info;
-		if (descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID && !binding_flags.empty())
+		if (has_bindless && descriptor_set_layout_key.get_set_id() == BINDLESS_SET_ID && !binding_flags.empty())
 		{
 			binding_flags_info.setBindingCount(static_cast<uint32_t>(binding_flags.size()));
 			binding_flags_info.setPBindingFlags(binding_flags.data());
@@ -236,17 +242,16 @@ vk::DescriptorSetLayout DescriptorSetCache::get_descriptor_set_layout(
 	return descriptor_set_layout.get();
 }
 
-vk::DescriptorSet DescriptorSetCache::get_descriptor_set(const lz::DescriptorSetLayoutKey        &set_layout_key,
-                                                         const std::vector<UniformBufferBinding> &uniform_buffer_bindings,
-                                                         const std::vector<StorageBufferBinding> &storage_buffer_bindings,
-                                                         const std::vector<ImageSamplerBinding>  &image_sampler_bindings)
+vk::DescriptorSet DescriptorSetCache::get_descriptor_set(const lz::DescriptorSetLayoutKey &set_layout_key, const std::vector<UniformBufferBinding> &uniform_buffer_bindings, const std::vector<StorageBufferBinding> &storage_buffer_bindings, const std::vector<StorageImageBinding> &storage_image_bindings, const std::vector<ImageSamplerBinding> &image_sampler_bindings)
 {
 	const auto set_bindings = lz::DescriptorSetBindings()
 	                              .set_uniform_buffer_bindings(uniform_buffer_bindings)
 	                              .set_storage_buffer_bindings(storage_buffer_bindings)
+	                              .set_storage_image_bindings(storage_image_bindings)
 	                              .set_image_sampler_bindings(image_sampler_bindings);
 	return get_descriptor_set(set_layout_key, set_bindings);
 }
+
 
 vk::DescriptorSet DescriptorSetCache::get_descriptor_set(const lz::DescriptorSetLayoutKey &set_layout_key,
                                                          const lz::DescriptorSetBindings  &set_bindings)
@@ -265,70 +270,70 @@ vk::DescriptorSet DescriptorSetCache::get_descriptor_set(const lz::DescriptorSet
 
 		// Check if we need to handle variable descriptor counts for bindless sets
 		vk::DescriptorSetVariableDescriptorCountAllocateInfo variable_count_info;
-		uint32_t max_binding_count = 0;
-		
+		uint32_t                                             max_binding_count = 0;
+
 		if (set_layout_key.get_set_id() == BINDLESS_SET_ID)
 		{
 			// Find max descriptor count for this set's bindings
 			std::vector<uint32_t> descriptor_counts;
-			
+
 			// Check uniform buffers
 			std::vector<lz::DescriptorSetLayoutKey::UniformBufferId> uniform_buffer_ids;
 			uniform_buffer_ids.resize(set_layout_key.get_uniform_buffers_count());
 			set_layout_key.get_uniform_buffer_ids(uniform_buffer_ids.data());
-			
+
 			for (auto uniform_buffer_id : uniform_buffer_ids)
 			{
 				auto buffer_info = set_layout_key.get_uniform_buffer_info(uniform_buffer_id);
-				auto count = check_for_bindless_resources(set_layout_key.get_set_id(), buffer_info.shader_binding_index);
+				auto count       = check_for_bindless_resources(set_layout_key.get_set_id(), buffer_info.shader_binding_index);
 				if (count > max_binding_count)
 					max_binding_count = count;
 			}
-			
+
 			// Check storage buffers
 			std::vector<lz::DescriptorSetLayoutKey::StorageBufferId> storage_buffer_ids;
 			storage_buffer_ids.resize(set_layout_key.get_storage_buffers_count());
 			set_layout_key.get_storage_buffer_ids(storage_buffer_ids.data());
-			
+
 			for (auto storage_buffer_id : storage_buffer_ids)
 			{
 				auto buffer_info = set_layout_key.get_storage_buffer_info(storage_buffer_id);
-				auto count = check_for_bindless_resources(set_layout_key.get_set_id(), buffer_info.shader_binding_index);
+				auto count       = check_for_bindless_resources(set_layout_key.get_set_id(), buffer_info.shader_binding_index);
 				if (count > max_binding_count)
 					max_binding_count = count;
 			}
-			
+
 			// Check image samplers
 			std::vector<lz::DescriptorSetLayoutKey::ImageSamplerId> image_sampler_ids;
 			image_sampler_ids.resize(set_layout_key.get_image_samplers_count());
 			set_layout_key.get_image_sampler_ids(image_sampler_ids.data());
-			
+
 			for (auto image_sampler_id : image_sampler_ids)
 			{
 				auto image_info = set_layout_key.get_image_sampler_info(image_sampler_id);
-				auto count = check_for_bindless_resources(set_layout_key.get_set_id(), image_info.shader_binding_index);
+				auto count      = check_for_bindless_resources(set_layout_key.get_set_id(), image_info.shader_binding_index);
 				if (count > max_binding_count)
 					max_binding_count = count;
 			}
-			
+
 			// Check storage images
 			std::vector<lz::DescriptorSetLayoutKey::StorageImageId> storage_image_ids;
 			storage_image_ids.resize(set_layout_key.get_storage_images_count());
 			set_layout_key.get_storage_image_ids(storage_image_ids.data());
-			
+
 			for (auto storage_image_id : storage_image_ids)
 			{
 				auto image_info = set_layout_key.get_storage_image_info(storage_image_id);
-				auto count = check_for_bindless_resources(set_layout_key.get_set_id(), image_info.shader_binding_index);
+				auto count      = check_for_bindless_resources(set_layout_key.get_set_id(), image_info.shader_binding_index);
 				if (count > max_binding_count)
 					max_binding_count = count;
 			}
-			
+
 			if (max_binding_count > 1)
 			{
 				descriptor_counts.push_back(max_binding_count);
 				variable_count_info.setDescriptorSetCount(1)
-					.setPDescriptorCounts(descriptor_counts.data());
+				    .setPDescriptorCounts(descriptor_counts.data());
 				set_alloc_info.setPNext(&variable_count_info);
 			}
 		}

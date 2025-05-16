@@ -44,6 +44,7 @@ void GpuDrivenRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_i
 	render_graph->add_pass(
 	    lz::RenderGraph::ComputePassDesc()
 	        .set_storage_buffers({scene_resource_->visible_mesh_draw_proxy_.get().id(), scene_resource_->visible_mesh_count_proxy_.get().id()})
+	        .set_profiler_info(lz::Colors::carrot, "CullingPass")
 	        .set_record_func([&](lz::RenderGraph::PassContext context) {
 		        auto pipeline_info = core_->get_pipeline_cache()->bind_compute_pipeline(context.get_command_buffer(), culling_shader_.compute_shader.get());
 
@@ -131,6 +132,7 @@ void GpuDrivenRenderer::render_frame(const lz::InFlightQueue::FrameInfo &frame_i
 	            vk::AttachmentLoadOp::eClear)
 	        .set_render_area_extent(viewport_extent_)
 	        .set_storage_buffers({scene_resource_->visible_mesh_draw_proxy_.get().id(), scene_resource_->visible_mesh_count_proxy_.get().id()})
+	        .set_profiler_info(lz::Colors::nephritis, "RenderingPass")
 	        .set_record_func([&](lz::RenderGraph::RenderPassContext context) {
 		        auto visible_mesh_draw_proxy  = context.get_buffer(scene_resource_->visible_mesh_draw_proxy_.get().id());
 		        auto visible_mesh_count_proxy = context.get_buffer(scene_resource_->visible_mesh_count_proxy_.get().id());

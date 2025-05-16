@@ -1,0 +1,26 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive : enable
+
+#include "../../../src/backend/EngineConfig.h"
+
+layout(local_size_x = COMPUTE_WGSIZE, local_size_y = COMPUTE_WGSIZE, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform ImageData
+{
+	vec2 image_size;
+};
+
+layout(binding = 1, r32f) uniform writeonly image2D out_image;
+layout(binding = 2) uniform sampler2D in_image;
+
+
+void main()
+{
+	uvec2 pos = gl_GlobalInvocationID.xy;
+
+	// Sampler is set up to do min reduction, so this computes the minimum depth of a 2x2 texel quad
+	float depth = texture(in_image, (vec2(pos) + vec2(0.5)) / image_size).x;
+
+	imageStore(out_image, ivec2(pos), vec4(depth));
+}

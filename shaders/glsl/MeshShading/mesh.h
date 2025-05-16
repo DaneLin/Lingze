@@ -30,6 +30,8 @@ struct CullData
 	float P00, P11, znear, zfar;        // symmetirc projection parameters
 	float frustum[4];                   // data for left / right / top / bottom
 	uint  draw_count;                   // number of draw commands
+	float depth_pyramid_width;
+	float depth_pyramid_height;
 };
 
 struct MeshInfo

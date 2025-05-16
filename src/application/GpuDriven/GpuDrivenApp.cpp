@@ -18,7 +18,6 @@ void GpuDrivenApp::prepare_render_context()
 
 	Mesh mesh   = MeshLoaderManager::get_instance().load(GLTF_DIR "Sponza/glTF/Sponza.gltf");
 	auto entity = scene.create_entity("Sponza");
-	entity->get_transform()->set_rotation(glm::vec3(0.0f, 90.0f, 90.0f));
 	entity->add_component<StaticMeshComponent>()->set_mesh(&mesh);
 
 	/*Mesh buddha_mesh = MeshLoaderManager::get_instance().load(DATA_DIR "Meshes/buddha.obj");
