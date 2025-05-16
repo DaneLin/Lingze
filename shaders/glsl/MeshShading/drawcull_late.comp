@@ -1,104 +1,116 @@
+// Using compute shader to do gpu driven culling and draw command generation
 #version 450
 
+#extension GL_EXT_scalar_block_layout : require
 #extension GL_EXT_shader_16bit_storage: require
 #extension GL_EXT_shader_8bit_storage: require
+#extension GL_GOOGLE_include_directive : require
 
-#extension GL_GOOGLE_include_directive: require
-
-#include "mesh.h"
+#include "Mesh.h"
 #include "../common_math.h"
 
 layout(local_size_x = COMPUTE_WGSIZE, local_size_y = 1, local_size_z = 1) in;
 
-layout(push_constant) uniform block
+// uniform buffer
+layout(std430, set = 0, binding = 0) uniform UboData
 {
-	DrawCullData cull_data;
+	CullData cull_data;
 };
 
-layout(binding = 0) readonly buffer Draws
+// storage buffer for meshes
+layout(set = 0, binding = 1) readonly buffer MeshData
 {
-	MeshDraw draws[];
+	MeshInfo mesh_infos[];
 };
 
-layout(binding = 1) readonly buffer Meshes
+// storage buffer for mesh draws
+layout(set = 0, binding = 2, scalar) readonly buffer MeshDrawData
 {
-	Mesh meshes[];
+	MeshDraw mesh_draws[];
 };
 
-layout(binding = 2) writeonly buffer DrawCommands
+// storage buffer for draw commands
+layout(set = 0, binding = 3) writeonly buffer VisibleMeshTaskDrawCommand
 {
-	MeshDrawCommand draw_cmds[];
+	MeshTaskDrawCommand draw_cmds[];
 };
 
-layout(binding = 3) buffer DrawCommandCount
+// storage buffer for visible mesh draw commands count
+layout(std430, set = 0, binding = 4) writeonly buffer VisibleMeshTaskDrawCommandCount
 {
-	uint draw_cmd_count;
+	uint visible_mesh_task_draw_cmd_count;
 };
 
-layout(binding = 4) buffer DrawVisibility
+// storage buffer for visible mesh draw commands
+layout(set = 0, binding = 5) buffer DrawVisibilityBuffer
 {
-	uint draw_visibility[];
+    uint draw_visibility[];
 };
 
-layout(binding = 5) uniform sampler2D depth_pyramid;
+layout(set = 0, binding = 6) uniform sampler2D depth_pyramid;
 
 void main()
 {
-	uint di = gl_GlobalInvocationID.x;
+    uint draw_index = gl_GlobalInvocationID.x;
 
-	if (di >= cull_data.drawCount)
-		return;
+    if (draw_index >= cull_data.draw_count)
+    {
+        return;
+    }
 
-	uint meshIndex = draws[di].meshIndex;
-	Mesh mesh = meshes[meshIndex];
+    MeshDraw mesh_draw = mesh_draws[draw_index];
+    MeshInfo mesh_info = mesh_infos[mesh_draw.mesh_index];
 
-	vec3 center = mesh.center * draws[di].scale + draws[di].position;
-	float radius = mesh.radius * draws[di].scale;
+    // calculate center in view space
+    vec3 sphere_center = mesh_info.sphere_bound.xyz;
+    float sphere_radius = mesh_info.sphere_bound.w;
+    vec3 world_center = (mesh_draw.model_matrix * vec4(sphere_center, 1.0)).xyz;
+    vec3 view_center = (cull_data.view_matrix * vec4(world_center, 1.0)).xyz;
 
-	bool visible = true;
-	for (int i = 0; i < 6; ++i)
-		visible = visible && dot(cull_data.frustum[i], vec4(center, 1)) > -radius;
+    // calculate maximum scale to get final scale parameter
+    float scale_x = length(vec3(mesh_draw.model_matrix[0][0], mesh_draw.model_matrix[0][1], mesh_draw.model_matrix[0][2]));
+    float scale_y = length(vec3(mesh_draw.model_matrix[1][0], mesh_draw.model_matrix[1][1], mesh_draw.model_matrix[1][2]));
+    float scale_z = length(vec3(mesh_draw.model_matrix[2][0], mesh_draw.model_matrix[2][1], mesh_draw.model_matrix[2][2]));
+    float max_scale = max(max(scale_x, scale_y), scale_z);
 
-	visible = cull_data.cullingEnabled == 1 ? visible : true;
+    float transformed_radius = sphere_radius * max_scale;
 
-	if (visible && cull_data.occlusionEnabled == 1)
-	{
-		vec4 aabb;
-		if (project_sphere(center, radius, cull_data.znear, cull_data.P00, cull_data.P11, aabb))
+    vec4 center = vec4(view_center, transformed_radius);
+    float radius = center.w;
+
+    bool is_visible = true;
+    // the left/top/right/bottom plane culling utilizes frustum symmetry to cull against two planes at the same time
+	is_visible = is_visible && center.z * cull_data.frustum[1] - abs(center.x) * cull_data.frustum[0] > -radius;
+	is_visible = is_visible && center.z * cull_data.frustum[3] - abs(center.y) * cull_data.frustum[2] > -radius;
+	// the near/far plane culling uses camera space Z directly
+	is_visible = is_visible && center.z + radius > cull_data.znear && center.z - radius < cull_data.zfar;
+
+    if (is_visible)
+    {
+       vec4 aabb;
+		if (project_sphere(center.xyz, radius, cull_data.znear, cull_data.P00, cull_data.P11, aabb))
 		{
-			float width = (aabb.z - aabb.x) * cull_data.pyramidWidth;
-			float height = (aabb.w - aabb.y) * cull_data.pyramidHeight;
+			float width = (aabb.z - aabb.x) * cull_data.depth_pyramid_width;
+			float height = (aabb.w - aabb.y) * cull_data.depth_pyramid_height;
 
 			float level = floor(log2(max(width, height)));
 
-			// Sampler is set up to do min reduction, so this computes the minimum depth of a 2x2 texel quad
+			// Sampler is set up to do max reduction, so this computes the maximum depth of a 2x2 texel quad
 			float depth = textureLod(depth_pyramid, (aabb.xy + aabb.zw) * 0.5, level).x;
 			float depthSphere = cull_data.znear / (center.z - radius);
 
-			visible = visible && depthSphere > depth;
+			is_visible = is_visible && depthSphere < depth;
 		}
-	}
+    }
 
-	if (visible && draw_visibility[di] == 0)
-	{
-		uint dci = atomicAdd(draw_cmd_count, 1);
+    if (is_visible && draw_visibility[draw_index] == 0)
+    {
+        uint draw_cmd_index = atomicAdd(visible_mesh_task_draw_cmd_count, 1);
 
-		float lodDistance = log2(max(1, (distance(center, vec3(0)) - radius)));
-		uint lodIndex = clamp(int(lodDistance), 0, int(mesh.lodCount) - 1);
-
-		lodIndex = cull_data.lodEnabled == 1 ? lodIndex : 0;
-
-		MeshLod lod = meshes[meshIndex].lods[lodIndex];
-
-		draw_cmds[dci].drawId = di;
-		draw_cmds[dci].indexCount = lod.indexCount;
-		draw_cmds[dci].instanceCount = 1;
-		draw_cmds[dci].firstIndex = lod.indexOffset;
-		draw_cmds[dci].vertexOffset = mesh.vertexOffset;
-		draw_cmds[dci].firstInstance = 0;
-		draw_cmds[dci].taskCount = (lod.meshletCount + 31) / 32;
-		draw_cmds[dci].firstTask = lod.meshletOffset / 32;
-	}
-
-	draw_visibility[di] = visible ? 1 : 0;
+        draw_cmds[draw_cmd_index].group_count_x = (mesh_info.meshlet_count + TASK_WGSIZE - 1) / TASK_WGSIZE;
+        draw_cmds[draw_cmd_index].group_count_y = 1;
+        draw_cmds[draw_cmd_index].group_count_z = 1;
+        draw_cmds[draw_cmd_index].meshlet_offset = mesh_info.meshlet_offset;
+    }
+    draw_visibility[draw_index] = is_visible ? 1 : 0;
 }

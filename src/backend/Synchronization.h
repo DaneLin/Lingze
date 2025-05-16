@@ -369,7 +369,7 @@ static BufferAccessPattern get_src_buffer_access_pattern(const BufferUsageTypes 
 		{
 			// Buffer used for indirect commands (like visible_mesh_count_buffer in MeshShading)
 			access_pattern.stage             = vk::PipelineStageFlagBits::eDrawIndirect;
-			access_pattern.access_mask       = vk::AccessFlagBits::eShaderWrite;
+			access_pattern.access_mask       = vk::AccessFlagBits::eIndirectCommandRead;
 			access_pattern.queue_family_type = QueueFamilyTypes::eGraphics;
 		}
 		break;

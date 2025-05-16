@@ -1,4 +1,5 @@
 // Using compute shader to do gpu driven culling and draw command generation
+// Only render meshes that were visible in last frame
 #version 450
 
 #extension GL_EXT_scalar_block_layout : require
@@ -40,6 +41,12 @@ layout(std430, set = 0, binding = 4) writeonly buffer VisibleMeshTaskDrawCommand
 	uint visible_mesh_task_draw_cmd_count;
 };
 
+// storage buffer for visible mesh draw commands
+layout(set = 0, binding = 5) buffer DrawVisibilityBuffer
+{
+    uint draw_visibility[];
+};
+
 void main()
 {
     uint draw_index = gl_GlobalInvocationID.x;
@@ -48,6 +55,12 @@ void main()
     {
         return;
     }
+
+    // not visible in last frame;
+    if (draw_visibility[draw_index] == 0)
+	{
+		return;
+	}
 
     MeshDraw mesh_draw = mesh_draws[draw_index];
     MeshInfo mesh_info = mesh_infos[mesh_draw.mesh_index];
